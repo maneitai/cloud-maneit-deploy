@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — Game Designer</title>
+  <meta name="description" content="Game design portal for systems, mechanics, loops, progression, factions, classes, content structures, and design docs." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand"><div class="brand-mark">PM</div><div class="header-copy"><div class="eyebrow">PM</div><h1>Game Designer</h1><p>Design studio for game concepts, mechanics, progression, factions, systems, quest structure, and game design documentation.</p></div></div>
+      <nav class="global-nav" aria-label="Primary">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link" href="../projects/">Projects</a>
+        <a class="nav-link" href="../pipelines/">Pipelines</a>
+        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="../appcreator/">AppCreator</a>
+        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+        <a class="nav-link" href="../research-core/">Research Core</a>
+        <a class="nav-link" href="../lorecore/">LoreCore</a>
+        <a class="nav-link nav-link--active" href="../game-designer/">Game Designer</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link" href="../settings/">Settings</a>
+      </nav>
+      <div class="header-actions"><span class="chip">Systems</span><span class="chip">Loops</span><span class="chip">Design docs</span></div>
+    </header>
+
+    <details class="scope-drawer">
+      <summary>
+        <div>
+          <div class="eyebrow">Surface contract</div>
+          <strong>Purpose, ownership, boundaries</strong>
+        </div>
+        <span class="scope-drawer__hint">Open</span>
+      </summary>
+      <div class="scope-strip">
+        <article class="scope-card">
+          <div class="eyebrow">Purpose</div>
+          <h2>Playable system design</h2>
+          <p class="muted">Game Designer owns the playable side: loops, mechanics, systems, progression, quests, balancing thoughts, and design-doc structure.</p>
+        </article>
+        <article class="scope-card">
+          <div class="eyebrow">Owns</div>
+          <ul>
+            <li>core loops and system pillars</li>
+            <li>mechanics and progression</li>
+            <li>quest/content structure</li>
+            <li>design docs and playable framing</li>
+          </ul>
+        </article>
+        <article class="scope-card">
+          <div class="eyebrow">Does not own</div>
+          <ul>
+            <li>deep generic research ownership</li>
+            <li>final lore archive ownership</li>
+            <li>software implementation ownership</li>
+          </ul>
+        </article>
+      </div>
+    </details>
+
+    <section class="page-grid page-grid--game">
+      <aside class="panel panel-left">
+        <div class="panel-header"><div><div class="eyebrow">Left rail</div><h2>Design pillars</h2></div><span class="status-chip status-chip--good">Playable focus</span></div>
+        <div class="stack">
+          <article class="card card--compact">
+            <div class="eyebrow">Pillar rule</div>
+            <p class="muted">Keep the core loop, feel, progression, and systemic clarity visible before the design explodes into edge cases.</p>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Primary pillars</div>
+            <div id="pillarList" class="stack stack--sm"></div>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Doc scaffolds</div>
+            <div id="designDocList" class="stack stack--sm"></div>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="panel-header"><div><div class="eyebrow">Center surface</div><h2>Design studio</h2><p>Shape systems, tune loops, and decide what becomes design-doc truth versus what stays exploratory.</p></div><div class="button-row"><button class="button" id="newSystemBtn" type="button">New system</button><button class="button button--primary" id="draftDesignDocBtn" type="button">Draft design doc</button></div></div>
+
+        <section class="studio-board">
+          <article class="work-card">
+            <div class="eyebrow">Lane 1</div>
+            <h3>Core systems</h3>
+            <p class="muted">Rules, combat, interaction, economy, and progression logic.</p>
+            <div id="systemGrid" class="stack stack--sm section-list"></div>
+          </article>
+          <article class="work-card">
+            <div class="eyebrow">Lane 2</div>
+            <h3>Player experience</h3>
+            <p class="muted">Moment-to-moment feel, readability, friction, reward cadence, and replayability.</p>
+            <div id="experienceLaneList" class="stack stack--sm section-list"></div>
+          </article>
+          <article class="work-card">
+            <div class="eyebrow">Lane 3</div>
+            <h3>Production handoff</h3>
+            <p class="muted">What becomes a project record, what needs research, and what should move into pipelines or build surfaces.</p>
+            <div id="handoffLaneList" class="stack stack--sm section-list"></div>
+          </article>
+        </section>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="panel-header"><div><div class="eyebrow">Right rail</div><h2>Dependencies + outputs</h2></div><span class="status-chip status-chip--warn">Cross-portal</span></div>
+        <div class="stack">
+          <article class="card card--compact">
+            <div class="eyebrow">Feeds from</div>
+            <div id="inputFeedList" class="stack stack--sm"></div>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Exports to</div>
+            <div id="outputFeedList" class="stack stack--sm"></div>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Current shell status</div>
+            <div id="gameStatusList" class="stack stack--sm"></div>
+          </article>
+        </div>
+      </aside>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get('apiBase');
+    if (apiBase) {
+      const normalized = apiBase.replace(/\/+$/, '');
+      window.PM_API_BASE = normalized;
+      localStorage.setItem('PM_API_BASE', normalized);
+    } else {
+      const saved = localStorage.getItem('PM_API_BASE');
+      if (saved) window.PM_API_BASE = saved;
+    }
+  } catch (error) {}
+})();
+</script>
+  <script type="module" src="page.js"></script>
+</body>
+</html>

@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — LoreCore</title>
+  <meta name="description" content="Chat-first creative writing workspace with its own library, pipeline integration, worldbuilding, character design, scene planning, and drafting flow." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%0A%20%20%20%20%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%0A%20%20%20%20%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%0A%20%20%20%20%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand">
+        <div class="brand-mark">PM</div>
+        <div class="header-copy">
+          <div class="eyebrow">PM</div>
+          <h1>LoreCore</h1>
+          <p>Chat-first creative writing workspace with its own library, book records, worldbuilding, characters, scenes, and manuscript production.</p>
+        </div>
+      </div>
+
+      <nav class="global-nav" aria-label="Primary">
+  <a class="nav-link" href="../">Home</a>
+  <a class="nav-link" href="../projects/">Projects</a>
+  <a class="nav-link" href="../pipelines/">Pipelines</a>
+  <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+  <a class="nav-link" href="../appcreator/">AppCreator</a>
+  <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+  <a class="nav-link" href="../research-core/">Research Core</a>
+  <a class="nav-link nav-link--active" href="../lorecore/">LoreCore</a>
+  <a class="nav-link" href="../game-designer/">Game Designer</a>
+  <a class="nav-link" href="../state/">State</a>
+  <a class="nav-link" href="../settings/">Settings</a>
+</nav>
+
+      <div class="header-actions">
+        <span class="chip">Chat-first</span>
+        <span class="chip">Creative writing OS</span>
+        <span class="chip">Pipeline + agents</span>
+      </div>
+    </header>
+
+    <details class="scope-drawer">
+      <summary>
+        <div>
+          <div class="eyebrow">Surface contract</div>
+          <strong>Purpose, ownership, boundaries</strong>
+        </div>
+        <span class="scope-drawer__hint">Open</span>
+      </summary>
+      <div class="scope-strip">
+      <article class="scope-card">
+        <div class="eyebrow">Purpose</div>
+        <h2>Home + creative library + creator tooling</h2>
+        <p class="muted">LoreCore behaves like Home, Projects, and a domain portal in one surface, but only for books, worldbuilding, characters, scenes, drafts, and creative execution.</p>
+      </article>
+      <article class="scope-card">
+        <div class="eyebrow">Owns</div>
+        <ul>
+          <li>creative chat threads</li>
+          <li>lore library and notes</li>
+          <li>books, worlds, characters, scenes, drafts</li>
+          <li>writing-stage execution</li>
+        </ul>
+      </article>
+      <article class="scope-card">
+        <div class="eyebrow">Does not own</div>
+        <ul>
+          <li>global Projects library</li>
+          <li>full pipeline editor</li>
+          <li>full agent architecture</li>
+          <li>non-writing portal outputs</li>
+        </ul>
+      </article>
+    
+      </div>
+    </details>
+
+    <section class="page-grid page-grid--lorecore-chat">
+      <aside class="panel panel-left">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Library, books, threads</h2>
+          </div>
+          <span class="status-chip status-chip--good">Lore library</span>
+        </div>
+
+        <div class="stack">
+          <label class="inline-field">
+            <span class="soft">Library</span>
+            <select class="select" id="librarySelect"></select>
+          </label>
+
+          <article class="card" id="librarySummary">
+            <p class="muted">Loading library…</p>
+          </article>
+
+          <div class="button-row">
+            <button class="button button--primary" id="createBookBtn" type="button">Create book</button>
+          </div>
+
+          <section class="stack stack--sm">
+            <div class="panel-header panel-header--compact">
+              <div>
+                <div class="eyebrow">Books</div>
+                <h3>Creative library</h3>
+              </div>
+            </div>
+            <div id="bookList" class="stack stack--sm"></div>
+          </section>
+
+          <section class="stack stack--sm">
+            <div class="panel-header panel-header--compact">
+              <div>
+                <div class="eyebrow">Threads</div>
+                <h3>Creative chats</h3>
+              </div>
+              <div class="button-row button-row--compact">
+                <button class="button button--ghost" id="newThreadBtn" type="button">New</button>
+                <button class="button" id="branchThreadBtn" type="button">Branch</button>
+              </div>
+            </div>
+            <div id="threadList" class="stack stack--sm"></div>
+          </section>
+
+          <section class="stack stack--sm">
+            <div class="panel-header panel-header--compact">
+              <div>
+                <div class="eyebrow">Library notes</div>
+                <h3>Recent notes</h3>
+              </div>
+            </div>
+            <div id="noteList" class="stack stack--sm"></div>
+          </section>
+
+          <section class="stack stack--sm">
+            <div class="panel-header panel-header--compact">
+              <div>
+                <div class="eyebrow">Draft snapshots</div>
+                <h3>Recent drafts</h3>
+              </div>
+            </div>
+            <div id="draftList" class="stack stack--sm"></div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="panel panel-center lore-chat-panel chat-shell">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2 id="selectedBookTitle">LoreCore studio</h2>
+            <p id="selectedBookMeta">Creative discussion is the main workspace. Keep the chat open, then save or export only the material worth keeping.</p>
+          </div>
+          <div class="button-row">
+            <button class="button" id="saveBookBtn" type="button">Save book</button>
+            <button class="button button--ghost" id="seedPromptBtn" type="button">Starter</button>
+            <button class="button button--primary" id="runStageBtn" type="button">Run selected stage</button>
+          </div>
+        </div>
+
+        <section id="chatStream" class="chat-stream lore-chat-stream" aria-live="polite"></section>
+
+        <section class="stack lore-composer chat-composer">
+          <div class="field-grid">
+            <label class="inline-field">
+              <span class="soft">Optional export label</span>
+              <input class="input" id="exportTitleInput" placeholder="Optional title override for saved notes, scenes, or drafts" />
+            </label>
+            <label class="inline-field">
+              <span class="soft">Current book</span>
+              <input class="input" id="currentBookDisplay" disabled />
+            </label>
+          </div>
+          <div class="composer-note"><strong>Creative discussion first.</strong><span>Use chat to explore scenes, prose, worldbuilding, critique, and alternatives. Nothing becomes library material until you save or export it.</span></div>
+          <label class="inline-field">
+            <span class="soft">Message</span>
+            <textarea class="textarea" id="promptInput" placeholder="Ask for worldbuilding, character work, scene planning, prose, critique, rewrites, or a creative model discussion."></textarea>
+          </label>
+          <div class="composer-actions">
+            <div class="composer-hint">Enter sends · Shift+Enter adds a new line</div>
+            <div class="button-row">
+            <button class="button button--primary" id="sendPromptBtn" type="button">Send</button>
+            <button class="button" id="clearChatBtn" type="button">Clear</button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="panel panel-right lore-dock">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Creative setup</h2>
+          </div>
+          <span class="status-chip status-chip--warn" id="modeLabel">Open discussion</span>
+        </div>
+
+        <article class="rail-summary">
+          <div class="rail-summary__head">
+            <div>
+              <div class="eyebrow">Creative thread</div>
+              <strong id="chatSessionLabel">chat-lore-01</strong>
+            </div>
+            <span class="status-chip status-chip--warn" id="modeLabelDock">Open discussion</span>
+          </div>
+          <div class="rail-metrics">
+            <div class="metric-pill"><span>Models</span><strong id="selectedModelCount">0</strong></div>
+            <div class="metric-pill"><span>Active lanes</span><strong id="activeLaneCount">0</strong></div>
+            <div class="metric-pill"><span>Loaded</span><strong id="poolLoadedCountMini">0</strong></div>
+            <div class="metric-pill"><span>Stage</span><strong id="activeStageMini">capture</strong></div>
+          </div>
+          <p class="muted rail-summary__copy" id="bookContextLine">Keep the chat exploratory. Save notes, scenes, or drafts only when they are worth keeping.</p>
+        </article>
+
+        <div class="rail-stack" id="loreRail">
+          <details class="rail-section" data-dock-view="setup" open>
+            <summary>
+              <div>
+                <div class="eyebrow">Setup</div>
+                <strong>Mode + manual panel</strong>
+              </div>
+              <span class="rail-section__meta" id="setupSummary">Open discussion · 0 models</span>
+            </summary>
+            <div class="rail-section__body">
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Model mode</div>
+                <div class="stack stack--sm compact-list block-gap" id="modeOptions">
+                  <label class="list-item list-item--active">
+                    <input type="radio" name="mode" value="single" />
+                    <div>
+                      <strong>Direct reply</strong>
+                      <p class="muted">One model works the creative move directly.</p>
+                    </div>
+                  </label>
+                  <label class="list-item">
+                    <input type="radio" name="mode" value="parallel" />
+                    <div>
+                      <strong>Parallel compare</strong>
+                      <p class="muted">Compare multiple creative directions side by side.</p>
+                    </div>
+                  </label>
+                  <label class="list-item">
+                    <input type="radio" name="mode" value="discussion" checked />
+                    <div>
+                      <strong>Open discussion</strong>
+                      <p class="muted">Lead answer with supporting models for critique or extension.</p>
+                    </div>
+                  </label>
+                </div>
+              </article>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Manual participants</div>
+                <div id="modelOptions" class="tag-row block-gap"></div>
+              </article>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Selected panel</div>
+                <div id="selectedPanelList" class="stack stack--sm block-gap"></div>
+              </article>
+            </div>
+          </details>
+
+          <details class="rail-section" data-dock-view="outputs">
+            <summary>
+              <div>
+                <div class="eyebrow">Outputs</div>
+                <strong>Save, stage, agent group</strong>
+              </div>
+              <span class="rail-section__meta" id="outputSummary">capture stage · 0 exports</span>
+            </summary>
+            <div class="rail-section__body">
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Direct export targets</div>
+                <div id="exportTargets" class="stack stack--sm block-gap"></div>
+              </article>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Pipeline controls</div>
+                <div id="stageControls" class="tag-row block-gap"></div>
+                <p class="muted block-gap" id="stageStatusCopy">Select a stage to run.</p>
+              </article>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Selected agent group</div>
+                <div class="tag-row block-gap" id="agentGroup"></div>
+                <p class="muted block-gap">LoreCore reads the selected pipeline and team from the shared operating layer while keeping creative work local to this portal.</p>
+              </article>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Book metrics</div>
+                <div class="metric-grid metric-grid--compact block-gap">
+                  <article class="metric-card"><small>Word count</small><strong id="wordCount">0</strong></article>
+                  <article class="metric-card"><small>Word goal</small><strong id="wordGoalPreview">0</strong></article>
+                  <article class="metric-card"><small>Active stage</small><strong id="activeStage">capture</strong></article>
+                </div>
+              </article>
+            </div>
+          </details>
+
+          <details class="rail-section" data-dock-view="runtime">
+            <summary>
+              <div>
+                <div class="eyebrow">Runtime</div>
+                <strong>Lanes + pool</strong>
+              </div>
+              <span class="rail-section__meta" id="runtimeSummary">0 active · 0 loaded</span>
+            </summary>
+            <div class="rail-section__body">
+              <div class="button-row button-row--compact">
+                <button class="button" id="syncPoolBtn" type="button">Sync pool</button>
+                <button class="button button--ghost" id="releaseLanesBtn" type="button">Release lanes</button>
+              </div>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Live lanes</div>
+                <div id="activeLaneList" class="stack stack--sm block-gap"></div>
+              </article>
+
+              <article class="subcard subcard--dense">
+                <div class="eyebrow">Pool status</div>
+                <div class="field-grid metric-grid--compact block-gap">
+                  <div class="key-value"><strong>control mode</strong><span id="poolControlMode">observe</span></div>
+                  <div class="key-value"><strong>loaded</strong><span id="poolLoadedCount">0</span></div>
+                  <div class="key-value"><strong>starting</strong><span id="poolStartingCount">0</span></div>
+                  <div class="key-value"><strong>failed</strong><span id="poolFailedCount">0</span></div>
+                  <div class="key-value"><strong>catalog</strong><span id="poolCatalogCount">0</span></div>
+                  <div class="key-value"><strong>on disk</strong><span id="poolCatalogDiskCount">0</span></div>
+                </div>
+              </article>
+            </div>
+          </details>
+
+          <details class="rail-section" data-dock-view="catalog">
+            <summary>
+              <div>
+                <div class="eyebrow">Catalog</div>
+                <strong>Add or prepare models</strong>
+              </div>
+              <span class="rail-section__meta" id="catalogSummary">0 ready</span>
+            </summary>
+            <div class="rail-section__body">
+              <p class="muted compact-note">Broader pool for creative work: running services plus GGUF models discovered on disk.</p>
+              <div id="modelCatalogList" class="stack stack--sm catalog-list"></div>
+            </div>
+          </details>
+        </div>
+      </aside>
+    </section>
+
+    <section class="page-grid lorecore-studio-grid">
+      <main class="panel panel-center">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Creative workbench</div>
+            <h2>Book studio</h2>
+            <p>Manual editing stays available, but discussion remains the dominant way to produce and promote material.</p>
+          </div>
+        </div>
+
+        <section class="field-grid">
+          <label class="inline-field">
+            <span class="soft">Book title</span>
+            <input class="input" id="bookTitle" />
+          </label>
+          <label class="inline-field">
+            <span class="soft">Genre</span>
+            <input class="input" id="bookGenre" placeholder="Dark fantasy, political fantasy, sci-fi..." />
+          </label>
+          <label class="inline-field">
+            <span class="soft">Word goal</span>
+            <input class="input" id="wordGoal" type="number" />
+          </label>
+        </section>
+
+        <label class="inline-field" style="margin-top: var(--space-lg);">
+          <span class="soft">Premise</span>
+          <textarea class="textarea" id="bookPremise" placeholder="Capture the premise, tone, and story engine."></textarea>
+        </label>
+
+        <section class="studio-tabs" style="margin-top: var(--space-lg);">
+          <div id="loreTabNav" class="tab-row">
+            <button class="list-item list-item--active" data-tab="manuscript" type="button">Manuscript</button>
+            <button class="list-item" data-tab="outline" type="button">Outline</button>
+            <button class="list-item" data-tab="world" type="button">World</button>
+            <button class="list-item" data-tab="characters" type="button">Characters</button>
+            <button class="list-item" data-tab="scenes" type="button">Scenes</button>
+          </div>
+
+          <section class="lore-tab is-active" data-tab="manuscript">
+            <article class="card">
+              <div class="eyebrow">Drafting</div>
+              <h3>Manuscript</h3>
+              <textarea class="textarea lore-editor" id="manuscriptText" placeholder="Write or refine the manuscript here."></textarea>
+            </article>
+          </section>
+
+          <section class="lore-tab" data-tab="outline">
+            <article class="card">
+              <div class="eyebrow">Structure</div>
+              <h3>Outline</h3>
+              <textarea class="textarea lore-editor lore-editor--outline" id="outlineText" placeholder="Acts, arcs, scene order, and progression."></textarea>
+            </article>
+          </section>
+
+          <section class="lore-tab" data-tab="world">
+            <div class="stack">
+              <article class="card">
+                <div class="eyebrow">Worldbuilding</div>
+                <h3>Add world entry</h3>
+                <div class="field-grid" style="margin-top:0.8rem;">
+                  <label class="inline-field">
+                    <span class="soft">Name</span>
+                    <input class="input" id="worldName" placeholder="The Last Harbor" />
+                  </label>
+                </div>
+                <label class="inline-field" style="margin-top:0.8rem;">
+                  <span class="soft">Summary</span>
+                  <textarea class="textarea" id="worldSummary" placeholder="What makes this place or system distinct?"></textarea>
+                </label>
+                <div class="button-row" style="margin-top:0.8rem;">
+                  <button class="button button--primary" id="addWorldBtn" type="button">Add world entry</button>
+                </div>
+              </article>
+              <div id="worldList" class="stack stack--sm"></div>
+            </div>
+          </section>
+
+          <section class="lore-tab" data-tab="characters">
+            <div class="stack">
+              <article class="card">
+                <div class="eyebrow">Character forge</div>
+                <h3>Add character</h3>
+                <div class="field-grid" style="margin-top:0.8rem;">
+                  <label class="inline-field">
+                    <span class="soft">Name</span>
+                    <input class="input" id="characterName" placeholder="Maren Voss" />
+                  </label>
+                  <label class="inline-field">
+                    <span class="soft">Role</span>
+                    <input class="input" id="characterRole" placeholder="Protagonist" />
+                  </label>
+                </div>
+                <label class="inline-field" style="margin-top:0.8rem;">
+                  <span class="soft">Summary</span>
+                  <textarea class="textarea" id="characterSummary" placeholder="Goals, conflict, and voice."></textarea>
+                </label>
+                <div class="button-row" style="margin-top:0.8rem;">
+                  <button class="button button--primary" id="addCharacterBtn" type="button">Add character</button>
+                </div>
+              </article>
+              <div id="characterList" class="stack stack--sm"></div>
+            </div>
+          </section>
+
+          <section class="lore-tab" data-tab="scenes">
+            <div class="stack">
+              <article class="card">
+                <div class="eyebrow">Scene board</div>
+                <h3>Add scene</h3>
+                <div class="field-grid" style="margin-top:0.8rem;">
+                  <label class="inline-field">
+                    <span class="soft">Scene title</span>
+                    <input class="input" id="sceneTitle" placeholder="The first bell" />
+                  </label>
+                </div>
+                <label class="inline-field" style="margin-top:0.8rem;">
+                  <span class="soft">Summary</span>
+                  <textarea class="textarea" id="sceneSummary" placeholder="What changes in this scene?"></textarea>
+                </label>
+                <div class="button-row" style="margin-top:0.8rem;">
+                  <button class="button button--primary" id="addSceneBtn" type="button">Add scene</button>
+                </div>
+              </article>
+              <div id="sceneList" class="stack stack--sm"></div>
+            </div>
+          </section>
+        </section>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Output rail</div>
+            <h2>Runs, outputs, activity</h2>
+          </div>
+          <span class="status-chip status-chip--warn" id="executionStatus">Idle</span>
+        </div>
+
+        <div class="stack">
+          <section class="stack stack--sm">
+            <div class="eyebrow">Recent outputs</div>
+            <div id="outputGrid" class="stack stack--sm"></div>
+          </section>
+
+          <article class="card">
+            <div class="eyebrow">Activity log</div>
+            <div id="activityLog" class="timeline" style="margin-top:0.7rem;"></div>
+          </article>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">LoreCore is now chat-first: discuss, compare, refine, and export directly into the creative library without leaving the center lane.</p>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <script>
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get('apiBase');
+    if (apiBase) {
+      const normalized = apiBase.replace(/\/+$/, '');
+      window.PM_API_BASE = normalized;
+      localStorage.setItem('PM_API_BASE', normalized);
+    } else {
+      const saved = localStorage.getItem('PM_API_BASE');
+      if (saved) window.PM_API_BASE = saved;
+    }
+  } catch (error) {}
+})();
+</script>
+  <script src="page.js"></script>
+</body>
+</html>

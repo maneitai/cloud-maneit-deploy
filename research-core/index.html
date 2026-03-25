@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — Research Core</title>
+  <meta name="description" content="Deep research portal for corpus building, synthesis, evidence chains, and learning or training control." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand"><div class="brand-mark">PM</div><div class="header-copy"><div class="eyebrow">PM</div><h1>Research Core</h1><p>Deep research portal for source capture, dossier building, evidence chains, synthesis, and learning or training control that can feed every other portal.</p></div></div>
+      <nav class="global-nav" aria-label="Primary">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link" href="../projects/">Projects</a>
+        <a class="nav-link" href="../pipelines/">Pipelines</a>
+        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="../appcreator/">AppCreator</a>
+        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+        <a class="nav-link nav-link--active" href="../research-core/">Research Core</a>
+        <a class="nav-link" href="../lorecore/">LoreCore</a>
+        <a class="nav-link" href="../game-designer/">Game Designer</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link" href="../settings/">Settings</a>
+      </nav>
+      <div class="header-actions"><span class="chip">Deep research</span><span class="chip">Reusable evidence</span><span class="chip">Learning / training control</span></div>
+    </header>
+
+    <details class="scope-drawer">
+      <summary>
+        <div>
+          <div class="eyebrow">Surface contract</div>
+          <strong>Purpose, ownership, boundaries</strong>
+        </div>
+        <span class="scope-drawer__hint">Open</span>
+      </summary>
+      <div class="scope-strip">
+        <article class="scope-card">
+          <div class="eyebrow">Purpose</div>
+          <h2>Research substrate for the whole platform</h2>
+          <p class="muted">Research Core is where questions become source stacks, extracts, syntheses, and reusable evidence chains that can strengthen portal creation, software work, pipelines, lore, and game design.</p>
+        </article>
+        <article class="scope-card">
+          <div class="eyebrow">Owns</div>
+          <ul>
+            <li>source library and corpus</li>
+            <li>research chats and notes</li>
+            <li>dossiers and evidence chains</li>
+            <li>syntheses, eval packs, and training sets</li>
+          </ul>
+        </article>
+        <article class="scope-card">
+          <div class="eyebrow">Does not own</div>
+          <ul>
+            <li>final app or portal implementation</li>
+            <li>final lore archive ownership</li>
+            <li>final game-system ownership</li>
+          </ul>
+        </article>
+      </div>
+    </details>
+
+    <section class="page-grid page-grid--research">
+      <aside class="panel panel-left">
+        <div class="panel-header"><div><div class="eyebrow">Left rail</div><h2>Source stacks</h2></div><span class="status-chip status-chip--good">Evidence first</span></div>
+        <div class="stack">
+          <article class="card card--compact">
+            <div class="eyebrow">Capture rule</div>
+            <p class="muted">Collect raw material here before you collapse it into confident answers. Preserve contradiction and provenance.</p>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Collections</div>
+            <div id="sourceCollectionList" class="stack stack--sm"></div>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Current framing lanes</div>
+            <div id="questionBoard" class="stack stack--sm"></div>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="panel-header"><div><div class="eyebrow">Center surface</div><h2>Research workbench</h2><p>Frame questions, gather evidence, synthesize carefully, and decide what should become reusable training or evaluation material.</p></div><div class="button-row"><button class="button" id="newDossierBtn" type="button">New dossier</button><button class="button button--primary" id="runSynthesisBtn" type="button">Run synthesis</button></div></div>
+
+        <section class="research-board">
+          <article class="work-card">
+            <div class="eyebrow">Step 1</div>
+            <h3>Question framing</h3>
+            <p class="muted">State the thesis, uncertainty, constraints, and what would count as enough evidence.</p>
+            <div id="researchFramingList" class="stack stack--sm section-list"></div>
+          </article>
+          <article class="work-card">
+            <div class="eyebrow">Step 2</div>
+            <h3>Evidence chain</h3>
+            <p class="muted">Keep claims tied to sources, contradictions, and verification status instead of blending everything into one summary too early.</p>
+            <div id="evidenceBoard" class="stack stack--sm section-list"></div>
+          </article>
+          <article class="work-card">
+            <div class="eyebrow">Step 3</div>
+            <h3>Synthesis + handoff</h3>
+            <p class="muted">Turn mature research into dossiers, training packs, eval sets, or direct inputs for the other portals.</p>
+            <div id="dossierGrid" class="stack stack--sm section-list"></div>
+          </article>
+        </section>
+
+        <section class="research-value-grid">
+          <article class="card">
+            <div class="eyebrow">Feeds into</div>
+            <div id="portalFeedList" class="stack stack--sm"></div>
+          </article>
+          <article class="card">
+            <div class="eyebrow">Research status</div>
+            <div id="researchStatusList" class="stack stack--sm"></div>
+          </article>
+        </section>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="panel-header"><div><div class="eyebrow">Right rail</div><h2>Operations</h2></div><span class="status-chip status-chip--warn">Controlled</span></div>
+        <div class="stack">
+          <article class="card card--compact">
+            <div class="eyebrow">Learning / training</div>
+            <div id="trainingModeList" class="stack stack--sm"></div>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Boundary</div>
+            <p class="muted">Research Core can prepare learning and training material, but long-running production execution should still flow through Pipelines and production jobs.</p>
+          </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Export paths</div>
+            <div id="researchOutputList" class="stack stack--sm"></div>
+          </article>
+        </div>
+      </aside>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get('apiBase');
+    if (apiBase) {
+      const normalized = apiBase.replace(/\/+$/, '');
+      window.PM_API_BASE = normalized;
+      localStorage.setItem('PM_API_BASE', normalized);
+    } else {
+      const saved = localStorage.getItem('PM_API_BASE');
+      if (saved) window.PM_API_BASE = saved;
+    }
+  } catch (error) {}
+})();
+</script>
+  <script type="module" src="page.js"></script>
+</body>
+</html>

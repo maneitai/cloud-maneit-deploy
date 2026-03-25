@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redirecting…</title>
+  <meta name="robots" content="noindex" />
+</head>
+<body>
+  <script>
+    (function() {
+      const known = new Set(["home", "projects", "pipelines", "agent-factory", "appcreator", "portalcreator", "research-core", "lorecore", "game-designer", "state", "settings"]);
+      const path = window.location.pathname;
+      const clean = path.replace(/\/+$/, '');
+      const segments = clean.split('/').filter(Boolean);
+      const last = segments[segments.length - 1] || '';
+      if (last && known.has(last) && !path.endsWith('/')) {
+        window.location.replace(path + '/' + window.location.search + window.location.hash);
+        return;
+      }
+      window.location.replace(new URL('./', window.location.href).toString());
+    })();
+  </script>
+  <p>Redirecting…</p>
+</body>
+</html>

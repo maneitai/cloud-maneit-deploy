@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — Agent Factory</title>
+  <meta name="description" content="Advanced workforce design surface for reusable agent blueprints, verifier patterns, capability packs, and team compositions." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand"><div class="brand-mark">PM</div><div class="header-copy"><div class="eyebrow">PM</div><h1>Agent Factory</h1><p>Reusable workforce planning for agent blueprints, capability packs, verifier patterns, and team shells that can be reused across the portal.</p></div></div>
+      <nav class="global-nav" aria-label="Primary">
+  <a class="nav-link" href="../">Home</a>
+  <a class="nav-link" href="../projects/">Projects</a>
+  <a class="nav-link" href="../pipelines/">Pipelines</a>
+  <a class="nav-link nav-link--active" href="../agent-factory/">Agent Factory</a>
+  <a class="nav-link" href="../appcreator/">AppCreator</a>
+  <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+  <a class="nav-link" href="../research-core/">Research Core</a>
+  <a class="nav-link" href="../lorecore/">LoreCore</a>
+  <a class="nav-link" href="../game-designer/">Game Designer</a>
+  <a class="nav-link" href="../state/">State</a>
+  <a class="nav-link" href="../settings/">Settings</a>
+</nav>
+      <div class="header-actions"><span class="chip">Blueprints</span><span class="chip">Capability packs</span><span class="chip">Verifier roles</span></div>
+    </header>
+
+    <details class="scope-drawer">
+      <summary>
+        <div>
+          <div class="eyebrow">Surface contract</div>
+          <strong>Workforce design, not workflow logic</strong>
+        </div>
+        <span class="scope-drawer__hint">Open</span>
+      </summary>
+      <div class="scope-strip">
+        <article class="scope-card"><div class="eyebrow">Purpose</div><h2>Build reusable workforce patterns</h2><p class="muted">Agent Factory owns agent blueprints, role packs, permissions, memory boundaries, and verifier patterns that other portals can pull from.</p></article>
+        <article class="scope-card"><div class="eyebrow">Owns</div><ul><li>agent templates</li><li>team shells</li><li>capability packs</li><li>memory scope and tool boundaries</li><li>verifier patterns</li></ul></article>
+        <article class="scope-card"><div class="eyebrow">Does not own</div><ul><li>pipeline graph design</li><li>project registry ownership</li><li>portal-specific state</li><li>chat thread history</li></ul></article>
+      </div>
+    </details>
+
+    <section class="page-grid page-grid--agent">
+      <aside class="panel panel-left agent-side">
+        <div class="panel-header"><div><div class="eyebrow">Left rail</div><h2>Role groups + saved mocks</h2></div><span class="status-chip status-chip--good">Workforce layer</span></div>
+        <div class="stack stack--sm">
+          <label class="inline-field"><span class="soft">Role group</span><select class="select" id="roleGroupFilter"><option>All roles</option><option>Planner</option><option>Architect</option><option>Builder</option><option>Researcher</option><option>Verifier</option></select></label>
+          <article class="card card--compact"><div class="eyebrow">Factory rule</div><p class="muted">Agent Factory defines the workforce. Pipelines defines stage logic. Keep those two surfaces separate.</p></article>
+          <article class="card card--compact"><div class="eyebrow">Saved mocks</div><div id="savedMockList" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+          <article class="card card--compact"><div class="eyebrow">Role groups</div><div id="roleGroupList" class="tag-row block-gap"></div></article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="panel-header"><div><div class="eyebrow">Center surface</div><h2>Workforce board</h2><p>Design reusable teams, capability packs, and verifier lattices that can be attached to pipelines and creator portals later.</p></div><div class="button-row"><button class="button" id="createMockAgentBtn" type="button">Draft mock agent</button><button class="button button--primary" id="composeTeamBtn" type="button">Compose team shell</button></div></div>
+
+        <section class="two-col agent-board-grid">
+          <article class="card"><div class="eyebrow">Reusable team shells</div><div id="teamComposition" class="timeline block-gap"></div></article>
+          <article class="card"><div class="eyebrow">Capability packs</div><div id="capabilityPackList" class="timeline block-gap"></div></article>
+        </section>
+
+        <section class="two-col agent-board-grid">
+          <article class="card"><div class="eyebrow">Blueprint cards</div><div id="agentCardGrid" class="agent-blueprint-grid block-gap"></div></article>
+          <article class="card"><div class="eyebrow">Verifier lattice</div><div id="verifierPatternList" class="timeline block-gap"></div></article>
+        </section>
+      </main>
+
+      <aside class="panel panel-right agent-rail">
+        <div class="panel-header"><div><div class="eyebrow">Right rail</div><h2>Inspector + downstream fit</h2></div><span class="status-chip status-chip--warn">Blueprint</span></div>
+        <div class="stack stack--sm">
+          <article class="card card--compact"><div class="eyebrow">Agent inspector</div><div id="agentInspector" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+          <article class="card card--compact"><div class="eyebrow">Pipeline fit</div><div id="pipelineFitList" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+          <article class="card card--compact"><div class="eyebrow">Handoff notes</div><div id="agentOutputList" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+        </div>
+      </aside>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get('apiBase');
+    if (apiBase) {
+      const normalized = apiBase.replace(/\/+$/, '');
+      window.PM_API_BASE = normalized;
+      localStorage.setItem('PM_API_BASE', normalized);
+    } else {
+      const saved = localStorage.getItem('PM_API_BASE');
+      if (saved) window.PM_API_BASE = saved;
+    }
+  } catch (error) {}
+})();
+</script>
+  <script type="module" src="page.js"></script>
+</body>
+</html>

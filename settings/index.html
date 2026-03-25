@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — Settings</title>
+  <meta name="description" content="Contained support surface for operator defaults, runtime policy, privacy, promotion behavior, and interface density." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand"><div class="brand-mark">PM</div><div class="header-copy"><div class="eyebrow">PM</div><h1>Settings</h1><p>Contained defaults and guardrails for how PM behaves, without turning this page into a second workflow surface.</p></div></div>
+      <nav class="global-nav" aria-label="Primary">
+  <a class="nav-link" href="../">Home</a>
+  <a class="nav-link" href="../projects/">Projects</a>
+  <a class="nav-link" href="../pipelines/">Pipelines</a>
+  <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+  <a class="nav-link" href="../appcreator/">AppCreator</a>
+  <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+  <a class="nav-link" href="../research-core/">Research Core</a>
+  <a class="nav-link" href="../lorecore/">LoreCore</a>
+  <a class="nav-link" href="../game-designer/">Game Designer</a>
+  <a class="nav-link" href="../state/">State</a>
+  <a class="nav-link nav-link--active" href="../settings/">Settings</a>
+</nav>
+      <div class="header-actions"><span class="chip">Operator defaults</span><span class="chip">Runtime policy</span><span class="chip">Quiet support</span></div>
+    </header>
+
+    <details class="scope-drawer">
+      <summary>
+        <div>
+          <div class="eyebrow">Surface contract</div>
+          <strong>Defaults, guardrails, boundaries</strong>
+        </div>
+        <span class="scope-drawer__hint">Open</span>
+      </summary>
+      <div class="scope-strip">
+        <article class="scope-card"><div class="eyebrow">Purpose</div><h2>Support the portal, do not compete with it</h2><p class="muted">Settings owns defaults, density, privacy, routing policy, and promotion behavior so Home and the creation portals stay focused on work.</p></article>
+        <article class="scope-card"><div class="eyebrow">Owns</div><ul><li>environment profile</li><li>default mode + model routing</li><li>promotion defaults</li><li>privacy/history policy</li><li>shell density</li></ul></article>
+        <article class="scope-card"><div class="eyebrow">Does not own</div><ul><li>active chat sessions</li><li>deep runtime diagnostics</li><li>project registry content</li><li>pipeline design</li></ul></article>
+      </div>
+    </details>
+
+    <section class="page-grid page-grid--settings">
+      <aside class="panel panel-left settings-side">
+        <div class="panel-header"><div><div class="eyebrow">Left rail</div><h2>Profiles + quick jump</h2></div><span class="status-chip status-chip--warn">Support only</span></div>
+        <div class="stack stack--sm">
+          <section class="two-col settings-side-kpis">
+            <article class="metric-card"><span class="soft">Profile</span><strong>Operator</strong></article>
+            <article class="metric-card"><span class="soft">Density</span><strong>Compact</strong></article>
+          </section>
+          <label class="inline-field"><span class="soft">Quick jump</span><select class="select"><option selected>Operator baseline</option><option>Portal building</option><option>Research heavy</option><option>Creative writing</option><option>Runtime tuning</option></select></label>
+          <div id="settingGroupList" class="stack stack--sm"></div>
+          <article class="card card--compact"><div class="eyebrow">Boundary reminder</div><p class="muted">This page decides defaults. It should not become the place where work actually happens.</p></article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="panel-header"><div><div class="eyebrow">Center surface</div><h2>Default profile board</h2><p>Choose how PM behaves before work starts: discussion style, model routing, history persistence, promotion defaults, and shell density.</p></div><div class="button-row"><button class="button" id="resetDefaultsBtn" type="button">Reset defaults</button><button class="button button--primary" id="saveSettingsBtn" type="button">Save settings</button></div></div>
+
+        <section class="kpi-grid settings-kpis">
+          <article class="metric-card"><span class="soft">History persistence</span><strong>On</strong></article>
+          <article class="metric-card"><span class="soft">Default mode</span><strong>Discussion</strong></article>
+          <article class="metric-card"><span class="soft">Promotion gate</span><strong>Explicit</strong></article>
+          <article class="metric-card"><span class="soft">Privacy</span><strong>Local-first</strong></article>
+        </section>
+
+        <section class="two-col settings-summary-grid">
+          <article class="card"><div class="eyebrow">Operator baseline</div><div class="field-grid block-gap"><label class="inline-field"><span class="soft">Environment mode</span><select class="select"><option>local</option><option selected>staging</option><option>production</option></select></label><label class="inline-field"><span class="soft">Shell density</span><select class="select"><option>calm</option><option selected>compact</option><option>detailed</option></select></label><label class="inline-field"><span class="soft">Home default mode</span><select class="select"><option>single</option><option>parallel</option><option selected>discussion</option></select></label><label class="inline-field"><span class="soft">Pinned history view</span><select class="select"><option selected>split</option><option>combined</option></select></label></div></article>
+          <article class="card"><div class="eyebrow">Promotion defaults</div><div class="field-grid block-gap"><label class="inline-field"><span class="soft">Default project class</span><select class="select"><option>Portal</option><option>App</option><option>Pipeline</option><option>Agent</option><option>Research</option><option>Lore</option><option>Game</option><option selected>System</option></select></label><label class="inline-field"><span class="soft">Default target portal</span><select class="select"><option>PortalCreator</option><option>AppCreator</option><option>Pipelines</option><option>Agent Factory</option><option>Research Core</option><option>LoreCore</option><option>Game Designer</option><option selected>Projects</option></select></label><label class="inline-field"><span class="soft">Auto-pin promoted chats</span><select class="select"><option selected>true</option><option>false</option></select></label><label class="inline-field"><span class="soft">Require operator note</span><select class="select"><option selected>true</option><option>false</option></select></label></div></article>
+        </section>
+
+        <details class="ops-drawer" open>
+          <summary>
+            <div>
+              <div class="eyebrow">Workspace defaults</div>
+              <strong>Shell, history, and interaction rules</strong>
+            </div>
+            <span class="scope-drawer__hint">Base</span>
+          </summary>
+          <div class="ops-drawer__body">
+            <div class="field-grid">
+              <label class="inline-field"><span class="soft">Enter behavior</span><select class="select"><option selected>Send</option><option>New line</option></select></label>
+              <label class="inline-field"><span class="soft">Shift+Enter behavior</span><select class="select"><option selected>New line</option><option>Send</option></select></label>
+              <label class="inline-field"><span class="soft">Chat history mode</span><select class="select"><option selected>Pinned + history</option><option>History only</option></select></label>
+              <label class="inline-field"><span class="soft">Right rail density</span><select class="select"><option>expanded</option><option selected>compact</option><option>minimal</option></select></label>
+            </div>
+          </div>
+        </details>
+
+        <details class="ops-drawer" open>
+          <summary>
+            <div>
+              <div class="eyebrow">Model routing + pool</div>
+              <strong>Default discussion setup and activation policy</strong>
+            </div>
+            <span class="scope-drawer__hint">Models</span>
+          </summary>
+          <div class="ops-drawer__body">
+            <div class="field-grid">
+              <label class="inline-field"><span class="soft">Default selected models</span><input class="input" value="GPT-5.4 Pro, o4-mini, Claude 3.7 Sonnet" /></label>
+              <label class="inline-field"><span class="soft">Missing model behavior</span><select class="select"><option selected>Offer activation</option><option>Hide from picker</option><option>Soft warn only</option></select></label>
+              <label class="inline-field"><span class="soft">Parallel reply ceiling</span><select class="select"><option>2</option><option selected>3</option><option>4</option><option>6</option></select></label>
+              <label class="inline-field"><span class="soft">Pool control source</span><select class="select"><option selected>State + Home</option><option>State only</option></select></label>
+            </div>
+          </div>
+        </details>
+
+        <details class="ops-drawer">
+          <summary>
+            <div>
+              <div class="eyebrow">Promotion + registry</div>
+              <strong>What happens when chat becomes project work</strong>
+            </div>
+            <span class="scope-drawer__hint">Promote</span>
+          </summary>
+          <div class="ops-drawer__body">
+            <div class="field-grid">
+              <label class="inline-field"><span class="soft">Default destination</span><select class="select"><option selected>Projects</option><option>PortalCreator</option><option>AppCreator</option><option>Research Core</option><option>LoreCore</option><option>Game Designer</option></select></label>
+              <label class="inline-field"><span class="soft">Promotion note template</span><input class="input" value="Intent, scope, constraints, and next portal" /></label>
+              <label class="inline-field"><span class="soft">Queue placement</span><select class="select"><option selected>Inbox queue</option><option>Direct to target board</option></select></label>
+              <label class="inline-field"><span class="soft">History retention after promote</span><select class="select"><option selected>Keep thread open</option><option>Archive original thread</option></select></label>
+            </div>
+          </div>
+        </details>
+
+        <details class="ops-drawer">
+          <summary>
+            <div>
+              <div class="eyebrow">Privacy + notifications</div>
+              <strong>Storage, visibility, and noise level</strong>
+            </div>
+            <span class="scope-drawer__hint">Privacy</span>
+          </summary>
+          <div class="ops-drawer__body">
+            <div class="field-grid">
+              <label class="inline-field"><span class="soft">Privacy mode</span><select class="select"><option selected>local-first</option><option>cloud-assisted</option></select></label>
+              <label class="inline-field"><span class="soft">Notifications</span><select class="select"><option>digest</option><option selected>quiet</option><option>realtime</option></select></label>
+              <label class="inline-field"><span class="soft">Auto-save chat drafts</span><select class="select"><option selected>true</option><option>false</option></select></label>
+              <label class="inline-field"><span class="soft">Share runtime warnings to Home</span><select class="select"><option>false</option><option selected>true</option></select></label>
+            </div>
+          </div>
+        </details>
+      </main>
+
+      <aside class="panel panel-right settings-rail">
+        <div class="panel-header"><div><div class="eyebrow">Right rail</div><h2>Preview + guardrails</h2></div><span class="status-chip status-chip--good">Calm</span></div>
+        <div class="stack stack--sm">
+          <article class="card card--compact"><div class="eyebrow">Saved stack</div><div id="savedValueList" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+          <article class="card card--compact"><div class="eyebrow">Profile preview</div><div id="settingsPreviewList" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+          <article class="card card--compact"><div class="eyebrow">Guardrails</div><div id="settingsGuardrailList" class="timeline compact-timeline" style="margin-top:0.7rem;"></div></article>
+        </div>
+      </aside>
+    </section>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script>
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get('apiBase');
+    if (apiBase) {
+      const normalized = apiBase.replace(/\/+$/, '');
+      window.PM_API_BASE = normalized;
+      localStorage.setItem('PM_API_BASE', normalized);
+    } else {
+      const saved = localStorage.getItem('PM_API_BASE');
+      if (saved) window.PM_API_BASE = saved;
+    }
+  } catch (error) {}
+})();
+</script>
+  <script type="module" src="page.js"></script>
+</body>
+</html>

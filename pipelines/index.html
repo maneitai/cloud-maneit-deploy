@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — Pipelines</title>
+  <meta name="description" content="Node-graph design surface for workflow logic, verifier chains, branches, handoffs, and portal mapping." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%0A%20%20%20%20%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%0A%20%20%20%20%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%0A%20%20%20%20%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand">
+        <div class="brand-mark">PM</div>
+        <div class="header-copy">
+          <div class="eyebrow">PM</div>
+          <h1>Pipelines</h1>
+          <p>Node-graph design surface for workflow logic, verifier chains, branches, handoffs, and portal mapping.</p>
+        </div>
+      </div>
+
+      <nav class="global-nav" aria-label="Primary">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link" href="../projects/">Projects</a>
+        <a class="nav-link nav-link--active" href="../pipelines/">Pipelines</a>
+        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="../appcreator/">AppCreator</a>
+        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+        <a class="nav-link" href="../research-core/">Research Core</a>
+        <a class="nav-link" href="../lorecore/">LoreCore</a>
+        <a class="nav-link" href="../game-designer/">Game Designer</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link" href="../settings/">Settings</a>
+      </nav>
+
+      <div class="header-actions">
+        <span class="chip">Node graph</span>
+        <span class="chip">Verifiers + branches</span>
+        <span class="chip">Workbench</span>
+      </div>
+    </header>
+
+    <details class="scope-drawer">
+      <summary>
+        <div>
+          <div class="eyebrow">Surface contract</div>
+          <strong>Pipelines is the canonical workflow graph</strong>
+        </div>
+        <span class="scope-drawer__hint">Open</span>
+      </summary>
+      <div class="scope-strip">
+        <article class="scope-card">
+          <div class="eyebrow">Purpose</div>
+          <h2>Canonical node-graph workflow layer</h2>
+          <p class="muted">Pipelines is the advanced node-graph design surface for stages, branches, verifiers, tools, handoffs, and portal-view mapping.</p>
+        </article>
+        <article class="scope-card">
+          <div class="eyebrow">Owns</div>
+          <ul>
+            <li>pipeline templates</li><li>stages + branching</li><li>verifier chains</li><li>tool steps + handoffs</li><li>portal mapping</li>
+          </ul>
+        </article>
+        <article class="scope-card">
+          <div class="eyebrow">Does not own</div>
+          <ul>
+            <li>canonical project records</li><li>full agent architecture</li><li>domain-specific portal outputs</li>
+          </ul>
+        </article>
+      </div>
+    </details>
+
+    <section class="page-grid page-grid--pipelines">
+      <aside class="panel panel-left">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Library + palette</h2>
+            <p>Choose a pipeline, filter by portal compatibility, and keep the stage vocabulary close while you shape the graph.</p>
+          </div>
+          <span class="status-chip status-chip--good">Canonical flow layer</span>
+        </div>
+
+        <div class="stack">
+          <label class="inline-field">
+            <span class="soft">Filter by compatible portal</span>
+            <select class="select" id="pipelinePortalFilter">
+              <option value="">All portals</option>
+              <option>AppCreator</option>
+              <option>PortalCreator</option>
+              <option>LoreCore</option>
+              <option>State</option>
+            </select>
+          </label>
+
+          <section class="stack stack--sm library-list">
+            <div class="eyebrow">Pipeline library</div>
+            <div id="pipelineLibrary" class="stack stack--sm"></div>
+          </section>
+
+          <article class="card">
+            <div class="eyebrow">Stage palette</div>
+            <div class="tag-row" style="margin-top:0.7rem;">
+              <span class="tag">input</span>
+              <span class="tag">transform</span>
+              <span class="tag">branch</span>
+              <span class="tag">verify</span>
+              <span class="tag">handoff</span>
+            </div>
+            <p class="muted" style="margin-top:0.7rem;">Use the deep layer here, then map simplified controls into production portals.</p>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Quality rules</div>
+            <ul class="pipeline-rules" style="margin-top:0.75rem;">
+              <li>verifiers can stack per stage</li>
+              <li>handoffs must stay explicit</li>
+              <li>portal views are simplified projections, not the graph itself</li>
+            </ul>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center pipeline-shell">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2>Pipeline workbench</h2>
+            <p>Shape the graph here: stages, verifier chains, branches, and portal mapping live in this layer instead of being hidden inside projects or portals.</p>
+          </div>
+          <div class="button-row">
+            <button class="button" id="togglePreviewBtn" type="button">Toggle portal preview</button>
+            <button class="button button--primary" id="clonePipelineBtn" type="button">Clone pipeline</button>
+          </div>
+        </div>
+
+        <section class="workflow-summary">
+          <article class="workflow-chip"><strong>Stages</strong><span>ordered flow with clear handoffs</span></article>
+          <article class="workflow-chip"><strong>Verifiers</strong><span>quality gates per pipeline</span></article>
+          <article class="workflow-chip"><strong>Branches</strong><span>room for alternate routes</span></article>
+          <article class="workflow-chip"><strong>Portal map</strong><span>simplified projections downstream</span></article>
+        </section>
+
+        <section class="panel flow-workbench">
+          <div class="flow-legend">
+            <span class="tag">select stage</span>
+            <span class="tag">inspect verifier chain</span>
+            <span class="tag">clone before experimentation</span>
+            <span class="tag">preview portal projection</span>
+          </div>
+          <section class="flow">
+            <div id="flowPath" class="flow-path"></div>
+          </section>
+        </section>
+
+        <section class="panel" id="portalPreviewCard" style="padding: 0.95rem; border-radius: 18px;">
+          <div class="panel-header">
+            <div>
+              <div class="eyebrow">Simplified portal view</div>
+              <h3>Portal representation preview</h3>
+            </div>
+            <span class="chip" id="previewPortalLabel">PortalCreator</span>
+          </div>
+          <div id="portalPreview" class="tag-row"></div>
+        </section>
+      </main>
+
+      <aside class="panel panel-right panel-right--compact">
+        <div class="panel-header">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Inspector</h2>
+            <p>Keep the selected pipeline, stage, verifier chain, and tool requirements visible while the graph stays central.</p>
+          </div>
+          <span class="status-chip status-chip--warn" id="pipelineInspectorStatus">Select stage</span>
+        </div>
+
+        <div id="pipelineInspector" class="stack">
+          <article class="card">
+            <p class="muted">Select a pipeline or stage to inspect tools, validation, handoffs, and portal mapping.</p>
+          </article>
+        </div>
+      </aside>
+    </section>
+
+    <p class="footer-note">Pipelines is the canonical graph layer. Production portals should consume simplified projections from here rather than re-creating orchestration logic themselves.</p>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+  <script>
+(function(){
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const apiBase = params.get('apiBase');
+    if (apiBase) {
+      const normalized = apiBase.replace(/\/+$/, '');
+      window.PM_API_BASE = normalized;
+      localStorage.setItem('PM_API_BASE', normalized);
+    } else {
+      const saved = localStorage.getItem('PM_API_BASE');
+      if (saved) window.PM_API_BASE = saved;
+    }
+  } catch (error) {}
+})();
+</script>
+  <script src="page.js"></script>
+</body>
+</html>
