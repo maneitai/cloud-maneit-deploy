@@ -1,374 +1,557 @@
-const PM_PREVIEW_HOST = /\.github\.io$/i.test(window.location.hostname);
-const PM_API_BASE = window.PM_API_BASE || '/api';
-const PM_PREVIEW_NO_API = PM_PREVIEW_HOST && !window.PM_API_BASE;
+const PM_PROJECTS_KEY = "PM_PROJECTS_V1";
+const PM_API_BASE = window.PM_API_BASE || "";
 
-
-async function pmApi(path, options = {}) {
-  if (PM_PREVIEW_NO_API) {
-    throw new Error('GitHub Pages preview has no /api proxy. Add ?apiBase=https://your-host/api for live data.');
-  }
-  const config = { ...options };
-  config.headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  };
-  if (config.body && typeof config.body !== 'string') {
-    config.body = JSON.stringify(config.body);
-  }
-  const response = await fetch(`${PM_API_BASE}${path}`, config);
-  const text = await response.text();
-  let data = {};
-  try {
-    data = text ? JSON.parse(text) : {};
-  } catch (error) {
-    data = { raw: text };
-  }
-  if (!response.ok) {
-    const message = data.detail || data.error || response.statusText || 'Request failed';
-    throw new Error(message);
-  }
-  return data;
-}
-
-function pmShowToast(message) {
-  const toast = document.getElementById('toast');
-  if (!toast) return;
-  toast.textContent = message;
-  toast.classList.add('is-visible');
-  clearTimeout(pmShowToast.timer);
-  pmShowToast.timer = setTimeout(() => toast.classList.remove('is-visible'), 1800);
-}
-
-function pmEscapeHtml(value = '') {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
-
-const state = {
-  selectedId: null,
-  tagFilter: '',
-  projects: [],
+const defaultState = {
+  selectedProjectId: "proj-web-001",
+  filters: {
+    search: "",
+    status: "All",
+    readiness: "All"
+  },
+  projects: [
+    {
+      id: "proj-web-001",
+      title: "PM frontend shell final",
+      class: "Web",
+      subtype: "Frontend shell",
+      status: "Ready",
+      readiness: "Ready for pickup",
+      target: "PortalCreator",
+      preset: "portal_frontend_shell_v1",
+      nextAction: "Open in PortalCreator and continue page-by-page finalization.",
+      summary: "Unified frontend shell for Maneit pages with clear role separation, stable navigation, and reusable patterns across Home, Projects, Pipelines, Agent Factory, State and Settings.",
+      tags: "frontend, shell, registry, navigation, UX",
+      origin: "home/chat-1",
+      assets: "home/index.html\\nstate/index.html\\nsettings/index.html\\npipelines/index.html\\nagent-factory/index.html",
+      notes: "Keep layout language consistent across all pages. Do not let creator pages become pipeline editors. Home stays daily-driver discussion surface. Projects remains the central handoff library.",
+      pinned: true,
+      checks: [true, true, true, false]
+    },
+    {
+      id: "proj-sys-002",
+      title: "Maneit runtime benchmark pack",
+      class: "System",
+      subtype: "Benchmark tooling",
+      status: "Active",
+      readiness: "In creator",
+      target: "Research Core",
+      preset: "research_registry_v1",
+      nextAction: "Compare role-specialized model quality and latency.",
+      summary: "Backend benchmark pack for planner, coder, verifier and JS-specific model role testing.",
+      tags: "backend, runtime, benchmark, models",
+      origin: "home/chat-2",
+      assets: "runtime logs\\nbenchmark notes\\npipeline reports",
+      notes: "Used to validate role-specialized model routing and quality.",
+      pinned: true,
+      checks: [true, true, true, true]
+    },
+    {
+      id: "proj-app-001",
+      title: "Notebook capture app",
+      class: "App",
+      subtype: "Capture tool",
+      status: "Draft",
+      readiness: "Prep",
+      target: "AppCreator",
+      preset: "none",
+      nextAction: "Clarify scope and data model before creator pickup.",
+      summary: "Small capture app concept for fast note and artifact collection.",
+      tags: "capture, notes, quick entry",
+      origin: "home/chat-3",
+      assets: "rough notes only",
+      notes: "Not ready for creator handoff yet.",
+      pinned: false,
+      checks: [false, false, false, false]
+    },
+    {
+      id: "proj-app-002",
+      title: "Model routing dashboard",
+      class: "App",
+      subtype: "Ops tool",
+      status: "Ready",
+      readiness: "Ready for pickup",
+      target: "AppCreator",
+      preset: "creator_ui_compose_v1",
+      nextAction: "Open in AppCreator and scaffold project shell.",
+      summary: "Internal app for visualizing and editing role-to-model routing.",
+      tags: "routing, dashboard, ops",
+      origin: "projects/manual",
+      assets: "requirements draft\\nstate notes",
+      notes: "Needs compact, low-noise UI and explicit fallback visualization.",
+      pinned: false,
+      checks: [true, true, true, false]
+    },
+    {
+      id: "proj-web-002",
+      title: "State page redesign",
+      class: "Web",
+      subtype: "Portal page",
+      status: "Active",
+      readiness: "In creator",
+      target: "PortalCreator",
+      preset: "portal_frontend_shell_v1",
+      nextAction: "Refine runtime control grid and active census.",
+      summary: "Redesign of State page with quorum-aware runtime control and clear active model census.",
+      tags: "state, portal, quorum, runtime",
+      origin: "home/chat-4",
+      assets: "state/index.html\\nstate/page.css\\nstate/page.js",
+      notes: "Runtime stays here, not in Settings or Pipelines.",
+      pinned: false,
+      checks: [true, true, true, true]
+    },
+    {
+      id: "proj-web-003",
+      title: "Projects registry UX",
+      class: "Web",
+      subtype: "Registry surface",
+      status: "Draft",
+      readiness: "Prep",
+      target: "PortalCreator",
+      preset: "portal_frontend_shell_v1",
+      nextAction: "Decide final library/workspace/handoff balance.",
+      summary: "Registry-style UX for Projects as the source-of-truth library.",
+      tags: "projects, registry, UX",
+      origin: "home/chat-5",
+      assets: "projects drafts",
+      notes: "Library must stay compact and category-first.",
+      pinned: false,
+      checks: [true, false, false, false]
+    },
+    {
+      id: "proj-game-001",
+      title: "Guldardal systems draft",
+      class: "Game",
+      subtype: "Systems design",
+      status: "Draft",
+      readiness: "Prep",
+      target: "Game Designer",
+      preset: "none",
+      nextAction: "Lock laws for soul wandering and taboo bonding.",
+      summary: "Core systems concept notes for Guldardal Chronicles.",
+      tags: "guldardal, game, systems, myth",
+      origin: "home/proj-3",
+      assets: "story notes\\nworld rules",
+      notes: "Keep power bounded, costly and mythic.",
+      pinned: false,
+      checks: [false, false, false, false]
+    },
+    {
+      id: "proj-game-002",
+      title: "Encounter pacing sheet",
+      class: "Game",
+      subtype: "Combat pacing",
+      status: "Ready",
+      readiness: "Ready for pickup",
+      target: "Game Designer",
+      preset: "none",
+      nextAction: "Open in Game Designer for deeper balancing.",
+      summary: "Reusable pacing sheet for encounter flow and escalation.",
+      tags: "encounters, pacing, balance",
+      origin: "projects/manual",
+      assets: "spreadsheet draft",
+      notes: "Good candidate for game-side tooling.",
+      pinned: false,
+      checks: [true, true, true, false]
+    },
+    {
+      id: "proj-research-001",
+      title: "Model-role specialization study",
+      class: "Research",
+      subtype: "Capability study",
+      status: "Active",
+      readiness: "In creator",
+      target: "Research Core",
+      preset: "research_registry_v1",
+      nextAction: "Continue benchmarking planner, coder and verifier classes.",
+      summary: "Structured study of specialized models per role and task family.",
+      tags: "research, models, specialization",
+      origin: "home/chat-6",
+      assets: "benchmark outputs\\naudit notes",
+      notes: "Supports the architectural claim that specialized models are the viable path.",
+      pinned: false,
+      checks: [true, true, true, true]
+    },
+    {
+      id: "proj-research-002",
+      title: "Cloud provider comparison",
+      class: "Research",
+      subtype: "Provider evaluation",
+      status: "Draft",
+      readiness: "Prep",
+      target: "Research Core",
+      preset: "research_registry_v1",
+      nextAction: "Define provider benchmarks and cost-quality matrix.",
+      summary: "Study comparing Ollama cloud, enterprise providers and local models by role fit.",
+      tags: "providers, ollama, cloud, enterprise",
+      origin: "home/chat-7",
+      assets: "provider notes",
+      notes: "Needs tighter benchmark design before active work.",
+      pinned: false,
+      checks: [true, false, false, false]
+    }
+  ]
 };
 
-function getFilters() {
-  return {
-    search: document.getElementById('projectSearch').value.trim().toLowerCase(),
-    status: document.getElementById('statusFilter').value,
-    type: document.getElementById('typeFilter').value,
-    portal: document.getElementById('portalFilter').value,
-    pinnedOnly: document.getElementById('pinnedOnly').checked,
-  };
-}
+let state = loadState();
 
-function filteredProjects() {
-  const filters = getFilters();
-  return state.projects.filter(project => {
-    const text = [
-      project.public_id,
-      project.title,
-      project.type,
-      project.target_portal,
-      project.origin_chat_id,
-      ...(project.tags || []),
-    ].join(' ').toLowerCase();
-
-    return (!filters.search || text.includes(filters.search))
-      && (!filters.status || project.status === filters.status)
-      && (!filters.type || project.type === filters.type)
-      && (!filters.portal || project.target_portal === filters.portal)
-      && (!filters.pinnedOnly || project.pinned)
-      && (!state.tagFilter || (project.tags || []).includes(state.tagFilter));
-  });
-}
-
-function ensureSelection(projects) {
-  if (!projects.length) {
-    state.selectedId = null;
-    return;
-  }
-  if (!state.selectedId || !projects.some(project => project.public_id === state.selectedId)) {
-    state.selectedId = projects[0].public_id;
-  }
-}
-
-function countBy(items, key) {
-  return items.reduce((acc, item) => {
-    const value = item[key] || 'Unknown';
-    acc[value] = (acc[value] || 0) + 1;
-    return acc;
-  }, {});
-}
-
-function renderTagFilters() {
-  const tags = [...new Set(state.projects.flatMap(project => project.tags || []))].sort();
-  const container = document.getElementById('tagFilters');
-  container.innerHTML = tags.map(tag => `
-    <button type="button" class="tag-filter ${state.tagFilter === tag ? 'is-active' : ''}" data-tag="${pmEscapeHtml(tag)}">${pmEscapeHtml(tag)}</button>
-  `).join('') || '<span class="muted">No tags yet.</span>';
-}
-
-function renderQueueBoard(projects) {
-  const counts = countBy(projects, 'status');
-  document.getElementById('queueDraft').textContent = String(counts.Draft || 0);
-  document.getElementById('queueQueued').textContent = String(counts.Queued || 0);
-  document.getElementById('queueReview').textContent = String(counts.Review || 0);
-  document.getElementById('queueActive').textContent = String(counts.Active || 0);
-}
-
-function renderTargetStrip(projects) {
-  const targetCounts = Object.entries(countBy(projects, 'target_portal'))
-    .sort((a, b) => b[1] - a[1]);
-  const targetNode = document.getElementById('targetPortalStrip');
-  targetNode.innerHTML = targetCounts.map(([target, count]) => `
-    <article class="target-card">
-      <small>${pmEscapeHtml(target)}</small>
-      <strong>${count}</strong>
-      <span>${count === 1 ? 'record' : 'records'}</span>
-    </article>
-  `).join('') || '<article class="target-card target-card--empty"><small>Targets</small><strong>0</strong><span>No records visible.</span></article>';
-
-  document.getElementById('routingLaneSummary').innerHTML = targetCounts.slice(0, 6).map(([target, count]) => `
-    <div class="timeline-item">
-      <small>${count} ${count === 1 ? 'record' : 'records'}</small>
-      <span>${pmEscapeHtml(target)} is currently a downstream target.</span>
-    </div>
-  `).join('') || '<div class="timeline-item"><small>routing</small><span>No target portals visible yet.</span></div>';
-
-  document.getElementById('kpiTargets').textContent = String(targetCounts.length);
-}
-
-function renderTable() {
-  const projects = filteredProjects();
-  ensureSelection(projects);
-  const tbody = document.getElementById('projectRows');
-
-  tbody.innerHTML = projects.map(project => `
-    <tr data-id="${project.public_id}" class="${project.public_id === state.selectedId ? 'is-active' : ''}">
-      <td>
-        <strong>${pmEscapeHtml(project.title)}</strong>
-        <div class="meta">
-          <span>${pmEscapeHtml(project.public_id)}</span>
-          ${project.pinned ? '<span>pinned</span>' : ''}
-        </div>
-      </td>
-      <td>${pmEscapeHtml(project.type)}</td>
-      <td>${pmEscapeHtml(project.status)}</td>
-      <td>${pmEscapeHtml(project.target_portal)}</td>
-      <td>${pmEscapeHtml(project.next_action || '')}</td>
-      <td>${pmEscapeHtml(project.origin_chat_id || '')}</td>
-    </tr>
-  `).join('') || `
-    <tr>
-      <td colspan="6">
-        <div class="card">
-          <strong>No matching projects</strong>
-          <p class="muted">Adjust filters or create a manual record.</p>
-        </div>
-      </td>
-    </tr>
-  `;
-
-  document.getElementById('kpiTotal').textContent = String(state.projects.length);
-  document.getElementById('kpiActive').textContent = String(state.projects.filter(project => ['Active', 'Review'].includes(project.status)).length);
-  document.getElementById('kpiPinned').textContent = String(state.projects.filter(project => project.pinned).length);
-
-  renderQueueBoard(projects);
-  renderTargetStrip(projects);
-  renderInspector();
-}
-
-function renderInspector() {
-  const inspector = document.getElementById('projectInspector');
-  const statusChip = document.getElementById('inspectorStatus');
-  const project = state.projects.find(item => item.public_id === state.selectedId);
-
-  if (!project) {
-    inspector.innerHTML = '<article class="card"><p class="muted">Select a project to inspect its routing, notes, and cross-system links.</p></article>';
-    statusChip.textContent = 'No selection';
-    return;
-  }
-
-  statusChip.textContent = project.status;
-
-  inspector.innerHTML = `
-    <article class="card inspector-grid">
-      <div>
-        <div class="eyebrow">Selected record</div>
-        <h3>${pmEscapeHtml(project.title)}</h3>
-      </div>
-      <div class="tag-row">
-        <span class="tag">${pmEscapeHtml(project.type)}</span>
-        <span class="tag">${pmEscapeHtml(project.target_portal)}</span>
-        ${(project.tags || []).map(tag => `<span class="tag">${pmEscapeHtml(tag)}</span>`).join('')}
-      </div>
-      <div class="field-grid">
-        <div class="key-value"><strong>project_id</strong><span>${pmEscapeHtml(project.public_id)}</span></div>
-        <div class="key-value"><strong>status</strong><span>${pmEscapeHtml(project.status)}</span></div>
-        <div class="key-value"><strong>origin_chat_id</strong><span>${pmEscapeHtml(project.origin_chat_id || '—')}</span></div>
-        <div class="key-value"><strong>next_action</strong><span>${pmEscapeHtml(project.next_action || '—')}</span></div>
-      </div>
-    </article>
-
-    <article class="card link-grid">
-      <div class="eyebrow">Routing map</div>
-      <div class="timeline compact-timeline">
-        <div class="timeline-item"><small>upstream</small><span>${pmEscapeHtml(project.origin_chat_id || 'manual-entry')} feeds this registry record.</span></div>
-        <div class="timeline-item"><small>registry</small><span>${pmEscapeHtml(project.public_id)} is classified as ${pmEscapeHtml(project.type)}.</span></div>
-        <div class="timeline-item"><small>downstream</small><span>${pmEscapeHtml(project.target_portal)} owns the next portal-specific move.</span></div>
-      </div>
-    </article>
-
-    <article class="card link-grid">
-      <div class="eyebrow">Cross-system links</div>
-      <div class="key-value"><strong>recommended_pipeline_id</strong><span>${pmEscapeHtml(project.recommended_pipeline_id || '—')}</span></div>
-      <div class="key-value"><strong>active_pipeline_snapshot_id</strong><span>${pmEscapeHtml(project.active_pipeline_snapshot_id || '—')}</span></div>
-      <div class="key-value"><strong>linked_agent_group_id</strong><span>${pmEscapeHtml(project.linked_agent_group_id || '—')}</span></div>
-      <div class="key-value"><strong>target_portal</strong><span>${pmEscapeHtml(project.target_portal || '—')}</span></div>
-    </article>
-
-    <article class="card">
-      <div class="eyebrow">Notes</div>
-      <p class="muted" style="margin-top:0.7rem;">${pmEscapeHtml(project.notes || 'No notes yet.')}</p>
-    </article>
-
-    <article class="card">
-      <div class="eyebrow">Revision trail</div>
-      <div class="timeline compact-timeline" style="margin-top:0.7rem;">
-        ${(project.revisions || []).map((item, index) => `
-          <div class="timeline-item">
-            <small>revision ${index + 1}</small>
-            <span>${pmEscapeHtml(item)}</span>
-          </div>
-        `).join('') || '<div class="timeline-item"><small>revisions</small><span>No revisions yet.</span></div>'}
-      </div>
-    </article>
-
-    <div class="button-row">
-      <button class="button" id="pinToggleBtn" type="button">${project.pinned ? 'Unpin' : 'Pin'} project</button>
-      <button class="button button--primary" id="advanceStatusBtn" type="button">Advance status</button>
-    </div>
-  `;
-
-  document.getElementById('pinToggleBtn').addEventListener('click', async () => {
-    try {
-      const updated = await pmApi(`/projects/${project.public_id}`, {
-        method: 'PUT',
-        body: { pinned: !project.pinned },
-      });
-      state.projects = state.projects.map(item => item.public_id === updated.public_id ? updated : item);
-      renderTagFilters();
-      renderTable();
-      pmShowToast(updated.pinned ? 'Project pinned' : 'Project unpinned');
-    } catch (error) {
-      pmShowToast(error.message);
-    }
-  });
-
-  document.getElementById('advanceStatusBtn').addEventListener('click', async () => {
-    const order = ['Draft', 'Queued', 'Review', 'Active'];
-    const currentIndex = order.indexOf(project.status);
-    const nextStatus = order[(currentIndex + 1) % order.length];
-    try {
-      const updated = await pmApi(`/projects/${project.public_id}`, {
-        method: 'PUT',
-        body: { status: nextStatus },
-      });
-      state.projects = state.projects.map(item => item.public_id === updated.public_id ? updated : item);
-      renderTable();
-      pmShowToast(`Status set to ${updated.status}`);
-    } catch (error) {
-      pmShowToast(error.message);
-    }
-  });
-}
-
-async function loadProjects() {
+function loadState() {
   try {
-    const data = await pmApi('/projects');
-    state.projects = data.items || [];
-    renderTagFilters();
-    renderTable();
-  } catch (error) {
-    pmShowToast(error.message);
+    const raw = localStorage.getItem(PM_PROJECTS_KEY);
+    if (!raw) return clone(defaultState);
+    const parsed = JSON.parse(raw);
+    return {
+      ...clone(defaultState),
+      ...parsed,
+      filters: { ...clone(defaultState).filters, ...(parsed.filters || {}) },
+      projects: Array.isArray(parsed.projects) ? parsed.projects : clone(defaultState).projects
+    };
+  } catch {
+    return clone(defaultState);
   }
 }
 
-function defaultManualType() {
-  return document.getElementById('typeFilter').value || 'Portal';
+function saveState() {
+  localStorage.setItem(PM_PROJECTS_KEY, JSON.stringify(state));
 }
 
-function defaultManualTarget() {
-  return document.getElementById('portalFilter').value || 'PortalCreator';
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
-async function createManualProject() {
+function qs(selector, root = document) {
+  return root.querySelector(selector);
+}
+
+function qsa(selector, root = document) {
+  return Array.from(root.querySelectorAll(selector));
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function showToast(message, tone = "good") {
+  const toast = qs("#toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = `toast ${tone} is-visible`;
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
+    toast.classList.remove("is-visible");
+  }, 2600);
+}
+
+async function callApi(path, method = "GET", payload = null) {
+  if (!PM_API_BASE) return { ok: false, mock: true };
   try {
-    const record = await pmApi('/projects', {
-      method: 'POST',
-      body: {
-        title: 'Manual project record',
-        type: defaultManualType(),
-        tags: ['manual', 'registry'],
-        origin_chat_id: 'manual-entry',
-        target_portal: defaultManualTarget(),
-        status: 'Draft',
-        next_action: 'Classify, enrich, and hand off deliberately',
-        notes: 'Created directly inside Projects to reinforce it as the manual source-of-truth registry.',
-        revisions: ['Manual record created inside Projects'],
-      },
+    const res = await fetch(`${PM_API_BASE}${path}`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: payload ? JSON.stringify(payload) : undefined
     });
-    state.projects.unshift(record);
-    state.selectedId = record.public_id;
-    renderTagFilters();
-    renderTable();
-    pmShowToast('Manual project record created');
+    const contentType = res.headers.get("content-type") || "";
+    const body = contentType.includes("application/json") ? await res.json() : await res.text();
+    return { ok: res.ok, status: res.status, body };
   } catch (error) {
-    pmShowToast(error.message);
+    return { ok: false, error: String(error) };
   }
 }
 
-async function resetProjects() {
-  await loadProjects();
-  state.selectedId = state.projects[0]?.public_id || null;
-  state.tagFilter = '';
-  document.getElementById('projectSearch').value = '';
-  document.getElementById('statusFilter').value = '';
-  document.getElementById('typeFilter').value = '';
-  document.getElementById('portalFilter').value = '';
-  document.getElementById('pinnedOnly').checked = false;
-  renderTagFilters();
-  renderTable();
-  pmShowToast('Project registry reloaded');
+function getSelectedProject() {
+  return state.projects.find(project => project.id === state.selectedProjectId) || state.projects[0] || null;
 }
 
-function attachEvents() {
-  document.getElementById('projectRows').addEventListener('click', (event) => {
-    const row = event.target.closest('tr[data-id]');
-    if (!row) return;
-    state.selectedId = row.dataset.id;
-    renderTable();
-  });
+function filterProjects(projects) {
+  const search = state.filters.search.trim().toLowerCase();
+  return projects.filter(project => {
+    const matchesSearch = !search || [
+      project.title,
+      project.summary,
+      project.tags,
+      project.origin,
+      project.notes
+    ].join(" ").toLowerCase().includes(search);
 
-  document.getElementById('tagFilters').addEventListener('click', (event) => {
-    const button = event.target.closest('[data-tag]');
-    if (!button) return;
-    const tag = button.dataset.tag;
-    state.tagFilter = state.tagFilter === tag ? '' : tag;
-    renderTagFilters();
-    renderTable();
-  });
+    const matchesStatus = state.filters.status === "All" || project.status === state.filters.status;
+    const matchesReadiness = state.filters.readiness === "All" || project.readiness === state.filters.readiness;
 
-  ['projectSearch', 'statusFilter', 'typeFilter', 'portalFilter', 'pinnedOnly'].forEach(id => {
-    document.getElementById(id).addEventListener('input', renderTable);
-    document.getElementById(id).addEventListener('change', renderTable);
+    return matchesSearch && matchesStatus && matchesReadiness;
   });
-
-  document.getElementById('newProjectBtn').addEventListener('click', createManualProject);
-  document.getElementById('seedProjectsBtn').addEventListener('click', resetProjects);
 }
 
-attachEvents();
-loadProjects();
+function projectButtonMarkup(project) {
+  return `
+    <button class="library-item ${project.id === state.selectedProjectId ? "library-item--active" : ""}" type="button" data-project-id="${project.id}">
+      <span class="library-title">${escapeHtml(project.title)}</span>
+      <span class="library-meta">${escapeHtml(project.class)} · ${escapeHtml(project.status)}</span>
+    </button>
+  `;
+}
+
+function renderLibrarySection(containerId, items) {
+  const container = qs(containerId);
+  if (!container) return;
+  container.innerHTML = items.length
+    ? items.map(projectButtonMarkup).join("")
+    : `<div class="library-meta">No matching records</div>`;
+
+  qsa(".library-item", container).forEach(button => {
+    button.addEventListener("click", () => {
+      state.selectedProjectId = button.dataset.projectId;
+      saveState();
+      renderAll();
+    });
+  });
+}
+
+function renderLibrary() {
+  const filtered = filterProjects(state.projects);
+
+  renderLibrarySection("#pinnedProjectList", filtered.filter(project => project.pinned));
+  renderLibrarySection("#appProjectList", filtered.filter(project => project.class === "App"));
+  renderLibrarySection("#webProjectList", filtered.filter(project => project.class === "Web" || project.class === "Portal"));
+  renderLibrarySection("#gameProjectList", filtered.filter(project => project.class === "Game"));
+  renderLibrarySection("#researchProjectList", filtered.filter(project => project.class === "Research"));
+}
+
+function renderWorkspace() {
+  const project = getSelectedProject();
+  if (!project) return;
+
+  const map = {
+    "#workspaceClass": project.class,
+    "#workspaceStatus": project.status,
+    "#workspaceTarget": project.target,
+    "#workspaceReadiness": project.readiness,
+    "#projectName": project.title,
+    "#projectClass": project.class,
+    "#projectSubtype": project.subtype,
+    "#projectStatus": project.status,
+    "#projectSummary": project.summary,
+    "#projectTarget": project.target,
+    "#projectPreset": project.preset,
+    "#projectReadiness": project.readiness,
+    "#projectNextAction": project.nextAction,
+    "#projectTags": project.tags,
+    "#projectOrigin": project.origin,
+    "#projectAssets": project.assets,
+    "#projectNotes": project.notes
+  };
+
+  Object.entries(map).forEach(([selector, value]) => {
+    const el = qs(selector);
+    if (!el) return;
+    if ("value" in el) {
+      el.value = value;
+    } else {
+      el.textContent = value;
+    }
+  });
+
+  const handoffPreview = qs("#handoffPreview");
+  if (handoffPreview) {
+    handoffPreview.innerHTML = `
+      <strong>${escapeHtml(project.target)}</strong>
+      <span>${escapeHtml(project.preset)} · ${escapeHtml(project.readiness.toLowerCase())}</span>
+    `;
+  }
+
+  renderChecks(project);
+}
+
+function renderChecks(project) {
+  const container = qs(".check-list");
+  if (!container || !project) return;
+
+  const labels = [
+    "Structured enough to be reused",
+    "Correct creator target selected",
+    "Preset or next action is clear",
+    "Ready to move from library to active creator work"
+  ];
+
+  container.innerHTML = labels.map((label, index) => `
+    <label class="check-item" data-check-index="${index}">
+      <input type="checkbox" ${project.checks[index] ? "checked" : ""} />
+      <span>${escapeHtml(label)}</span>
+    </label>
+  `).join("");
+
+  qsa(".check-item input", container).forEach(input => {
+    input.addEventListener("change", event => {
+      const row = event.target.closest(".check-item");
+      if (!row) return;
+      const idx = Number(row.dataset.checkIndex);
+      const selected = getSelectedProject();
+      if (!selected) return;
+      selected.checks[idx] = event.target.checked;
+      saveState();
+    });
+  });
+}
+
+function updateSelectedProjectFromWorkspace() {
+  const project = getSelectedProject();
+  if (!project) return;
+
+  project.title = qs("#projectName")?.value || project.title;
+  project.class = qs("#projectClass")?.value || project.class;
+  project.subtype = qs("#projectSubtype")?.value || project.subtype;
+  project.status = qs("#projectStatus")?.value || project.status;
+  project.summary = qs("#projectSummary")?.value || project.summary;
+  project.target = qs("#projectTarget")?.value || project.target;
+  project.preset = qs("#projectPreset")?.value || project.preset;
+  project.readiness = qs("#projectReadiness")?.value || project.readiness;
+  project.nextAction = qs("#projectNextAction")?.value || project.nextAction;
+  project.tags = qs("#projectTags")?.value || project.tags;
+  project.origin = qs("#projectOrigin")?.value || project.origin;
+  project.assets = qs("#projectAssets")?.value || project.assets;
+  project.notes = qs("#projectNotes")?.value || project.notes;
+
+  saveState();
+  renderLibrary();
+  renderWorkspace();
+}
+
+function duplicateSelectedProject() {
+  const selected = getSelectedProject();
+  if (!selected) return;
+
+  const cloneProject = clone(selected);
+  cloneProject.id = `proj-${crypto.randomUUID().slice(0, 8)}`;
+  cloneProject.title = `${selected.title} Copy`;
+  cloneProject.pinned = false;
+
+  const index = state.projects.findIndex(project => project.id === selected.id);
+  state.projects.splice(index + 1, 0, cloneProject);
+  state.selectedProjectId = cloneProject.id;
+  saveState();
+  renderAll();
+  showToast("Project duplicated", "good");
+}
+
+function archiveSelectedProject() {
+  const selected = getSelectedProject();
+  if (!selected) return;
+  selected.status = "Archived";
+  selected.readiness = "Prep";
+  saveState();
+  renderAll();
+  showToast("Project archived", "warn");
+}
+
+async function saveSelectedProject() {
+  updateSelectedProjectFromWorkspace();
+  const selected = getSelectedProject();
+  const result = await callApi("/api/projects/save", "POST", selected);
+  showToast(result.ok ? "Project saved" : "Saved locally. API hook ready.", result.ok ? "good" : "warn");
+}
+
+function setTarget(target) {
+  const selected = getSelectedProject();
+  if (!selected) return;
+  selected.target = target;
+  saveState();
+  renderWorkspace();
+  showToast(`Target set to ${target}`, "good");
+}
+
+function targetPath(target) {
+  switch (target) {
+    case "AppCreator": return "../appcreator/";
+    case "PortalCreator": return "../portalcreator/";
+    case "Game Designer": return "../game-designer/";
+    case "Research Core": return "../research-core/";
+    case "LoreCore": return "../lorecore/";
+    default: return "../projects/";
+  }
+}
+
+function openTargetSurface() {
+  const selected = getSelectedProject();
+  if (!selected) return;
+  const path = targetPath(selected.target);
+  const url = `${path}?project=${encodeURIComponent(selected.id)}`;
+  window.location.href = url;
+}
+
+function bindFilters() {
+  qs("#projectSearch")?.addEventListener("input", event => {
+    state.filters.search = event.target.value;
+    saveState();
+    renderLibrary();
+  });
+
+  qs("#projectStatusFilter")?.addEventListener("change", event => {
+    state.filters.status = event.target.value;
+    saveState();
+    renderLibrary();
+  });
+
+  qs("#projectReadinessFilter")?.addEventListener("change", event => {
+    state.filters.readiness = event.target.value;
+    saveState();
+    renderLibrary();
+  });
+}
+
+function bindWorkspace() {
+  [
+    "#projectName",
+    "#projectClass",
+    "#projectSubtype",
+    "#projectStatus",
+    "#projectSummary",
+    "#projectTarget",
+    "#projectPreset",
+    "#projectReadiness",
+    "#projectNextAction",
+    "#projectTags",
+    "#projectOrigin",
+    "#projectAssets",
+    "#projectNotes"
+  ].forEach(selector => {
+    qs(selector)?.addEventListener("change", updateSelectedProjectFromWorkspace);
+    qs(selector)?.addEventListener("input", updateSelectedProjectFromWorkspace);
+  });
+}
+
+function bindButtons() {
+  qs("#duplicateProjectBtn")?.addEventListener("click", duplicateSelectedProject);
+  qs("#archiveProjectBtn")?.addEventListener("click", archiveSelectedProject);
+  qs("#saveProjectBtn")?.addEventListener("click", saveSelectedProject);
+
+  qs("#openTargetBtn")?.addEventListener("click", openTargetSurface);
+  qs("#routeToAppBtn")?.addEventListener("click", () => setTarget("AppCreator"));
+  qs("#routeToPortalBtn")?.addEventListener("click", () => setTarget("PortalCreator"));
+  qs("#routeToGameBtn")?.addEventListener("click", () => setTarget("Game Designer"));
+  qs("#routeToResearchBtn")?.addEventListener("click", () => setTarget("Research Core"));
+}
+
+function initFiltersUI() {
+  const search = qs("#projectSearch");
+  const status = qs("#projectStatusFilter");
+  const readiness = qs("#projectReadinessFilter");
+
+  if (search) search.value = state.filters.search;
+  if (status) status.value = state.filters.status;
+  if (readiness) readiness.value = state.filters.readiness;
+}
+
+function renderAll() {
+  initFiltersUI();
+  renderLibrary();
+  renderWorkspace();
+}
+
+function init() {
+  renderAll();
+  bindFilters();
+  bindWorkspace();
+  bindButtons();
+}
+
+document.addEventListener("DOMContentLoaded", init);
