@@ -1,282 +1,480 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM — Home</title>
-  <meta name="description" content="Daily-driver conversation surface for discussion, continuity, compact history, export to Projects, and lightweight daily organization." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="page.css" />
-</head>
-<body>
-  <div class="page-shell">
-    <header class="page-header">
-      <div class="brand">
-        <div class="brand-mark">PM</div>
-        <div class="header-copy">
-          <div class="eyebrow">PM</div>
-          <h1>Home</h1>
-          <p>Heavy operator workspace for open discussion, comparison, continuity, and promotion to Projects when work is ready.</p>
-        </div>
-      </div>
+const PM_HOME_KEY = "PM_HOME_V3";
+const PM_API_BASE = window.PM_API_BASE || "";
 
-      <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link nav-link--active" href="../">Home</a>
-        <a class="nav-link" href="../projects/">Projects</a>
-        <a class="nav-link" href="../pipelines/">Pipelines</a>
-        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
-        <a class="nav-link" href="../appcreator/">AppCreator</a>
-        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
-        <a class="nav-link" href="../research-core/">Research Core</a>
-        <a class="nav-link" href="../lorecore/">LoreCore</a>
-        <a class="nav-link" href="../game-designer/">Game Designer</a>
-        <a class="nav-link" href="../state/">State</a>
-        <a class="nav-link" href="../settings/">Settings</a>
-      </nav>
+const defaultState = {
+  activeChatId: "chat-1",
+  mode: "Discussion",
+  activeModels: "discussion panel",
+  participants: "3 models",
+  projectClass: "System",
+  promotionNote: "Intent, scope, constraints, and next action.",
+  chats: [
+    {
+      id: "chat-1",
+      title: "PM frontend shell final",
+      meta: "Pinned · Today",
+      section: "pinned",
+      messages: [
+        {
+          role: "system",
+          text: "Discussion only. Use chat to think, compare, challenge and refine. Nothing here becomes project work until you deliberately export it."
+        },
+        {
+          role: "user",
+          text: "Home needs to feel like something I actually want to open every day."
+        },
+        {
+          role: "assistant",
+          text: "Then it needs continuity, dense history, low-friction chat control, and a support rail that helps without becoming an admin wall."
+        }
+      ]
+    },
+    {
+      id: "chat-2",
+      title: "Pipeline benchmark notes",
+      meta: "Pinned · Yesterday",
+      section: "pinned",
+      messages: [
+        { role: "user", text: "We need stage-by-stage role benchmarks." },
+        { role: "assistant", text: "Benchmark planner, coder, verifier and JS-specific roles separately instead of relying on one generic pass." }
+      ]
+    },
+    {
+      id: "proj-1",
+      title: "State page polish",
+      meta: "Ongoing · not exported",
+      section: "projectFolder",
+      messages: [
+        { role: "user", text: "Need quorum and runtime control clearly separated." },
+        { role: "assistant", text: "Keep runtime control below and active census visible without scanning the full page." }
+      ]
+    },
+    {
+      id: "proj-2",
+      title: "Agent Factory final pass",
+      meta: "Ongoing · not exported",
+      section: "projectFolder",
+      messages: [
+        { role: "user", text: "Agent Factory should be library + workspace only." },
+        { role: "assistant", text: "Yes. Define reusable profiles there, then compose them later inside Pipelines." }
+      ]
+    },
+    {
+      id: "proj-3",
+      title: "Guldardal notes",
+      meta: "Ongoing · private",
+      section: "projectFolder",
+      messages: [
+        { role: "user", text: "Soul wandering is more interesting than classic magic." },
+        { role: "assistant", text: "That gives you danger, cost, identity-risk and mythic tone instead of generic spellcasting." }
+      ]
+    },
+    {
+      id: "chat-3",
+      title: "Home daily driver structure",
+      meta: "Today · 09:14",
+      section: "recent",
+      messages: [
+        { role: "user", text: "History needs to be compact like ChatGPT." },
+        { role: "assistant", text: "Use pinned, project folder and recent history as dense vertical lists." }
+      ]
+    },
+    {
+      id: "chat-4",
+      title: "Settings cloud provider split",
+      meta: "Today · 08:22",
+      section: "recent",
+      messages: [
+        { role: "user", text: "Settings should own providers and cloud policy." },
+        { role: "assistant", text: "Yes. State stays runtime-only and Pipelines stays composition-only." }
+      ]
+    },
+    {
+      id: "chat-5",
+      title: "State quorum layout",
+      meta: "Yesterday",
+      section: "recent",
+      messages: [
+        { role: "user", text: "Single-model approval is not acceptable." },
+        { role: "assistant", text: "Then use three-model groups and quorum gates." }
+      ]
+    },
+    {
+      id: "chat-6",
+      title: "Pipeline pass run notes",
+      meta: "Yesterday",
+      section: "recent",
+      messages: [
+        { role: "user", text: "The run passed once the right model owned the hot path." },
+        { role: "assistant", text: "That strongly supports specialized model assignment by role." }
+      ]
+    },
+    {
+      id: "chat-7",
+      title: "Creative writing model ideas",
+      meta: "Yesterday",
+      section: "recent",
+      messages: [
+        { role: "user", text: "Need stronger models for writing in established worlds." },
+        { role: "assistant", text: "Keep writing and lore verification separate and use stronger cloud roles when quality matters." }
+      ]
+    }
+  ],
+  currentTodo: [
+    { id: "todo-1", text: "Lock Home structure before coding", done: false },
+    { id: "todo-2", text: "Finish pipelines final version", done: false },
+    { id: "todo-3", text: "Export only when thread is truly ready", done: false }
+  ]
+};
 
-      <div class="header-actions">
-        <span class="chip">History first</span>
-        <span class="chip">Open discussion</span>
-        <span class="chip">Compact control rail</span>
-      </div>
-    </header>
+let state = loadState();
 
-    <section class="home-grid">
-      <aside class="panel home-left">
-        <div class="left-head">
-          <div>
-            <div class="eyebrow">Left lane</div>
-            <h2>Chats</h2>
-            <p class="muted">Open, resume, and branch conversations without losing context.</p>
-          </div>
-          <div class="button-row">
-            <button class="button button--small button--primary" id="newChatBtn" type="button">New</button>
-            <button class="button button--small" id="branchChatBtn" type="button">Branch</button>
-          </div>
-        </div>
+function loadState() {
+  try {
+    const raw = localStorage.getItem(PM_HOME_KEY);
+    if (!raw) return clone(defaultState);
+    const parsed = JSON.parse(raw);
+    return {
+      ...clone(defaultState),
+      ...parsed,
+      chats: Array.isArray(parsed.chats) ? parsed.chats : clone(defaultState.chats),
+      currentTodo: Array.isArray(parsed.currentTodo) ? parsed.currentTodo : clone(defaultState.currentTodo)
+    };
+  } catch {
+    return clone(defaultState);
+  }
+}
 
-        <div class="history-search">
-          <label class="inline-field">
-            <span class="soft">Search history</span>
-            <input class="input" id="historySearch" placeholder="Search title, summary, excerpt, or id..." />
-          </label>
-        </div>
+function saveState() {
+  localStorage.setItem(PM_HOME_KEY, JSON.stringify(state));
+}
 
-        <div class="history-section">
-          <div class="history-section-head">
-            <div class="eyebrow">Pinned chats</div>
-            <span class="counter" id="pinnedCount">0</span>
-          </div>
-          <div class="history-list" id="pinnedHistoryList"></div>
-        </div>
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
 
-        <div class="history-section">
-          <div class="history-section-head">
-            <div class="eyebrow">Project folder</div>
-            <span class="counter" id="projectFolderCount">0</span>
-          </div>
-          <p class="muted compact-note">Ongoing threads that are not ready for export yet.</p>
-          <div class="history-list" id="projectFolderList"></div>
-        </div>
+function qs(selector, root = document) {
+  return root.querySelector(selector);
+}
 
-        <div class="history-section">
-          <div class="history-section-head">
-            <div class="eyebrow">History</div>
-            <span class="counter" id="recentCount">0</span>
-          </div>
-          <div class="history-list" id="recentHistoryList"></div>
-        </div>
-      </aside>
+function qsa(selector, root = document) {
+  return Array.from(root.querySelectorAll(selector));
+}
 
-      <main class="panel home-center">
-        <div class="chat-control-bar">
-          <div class="chat-control-title">
-            <div class="eyebrow">Middle lane</div>
-            <h2>Conversation workspace</h2>
-          </div>
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
 
-          <div class="chat-controls">
-            <label class="inline-field chat-control-field">
-              <span class="soft">Mode</span>
-              <select class="select" id="chatMode">
-                <option>Single</option>
-                <option>Parallel</option>
-                <option selected>Discussion</option>
-              </select>
-            </label>
+function showToast(message, tone = "good") {
+  const toast = qs("#toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = `toast ${tone} is-visible`;
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => {
+    toast.classList.remove("is-visible");
+  }, 2600);
+}
 
-            <label class="inline-field chat-control-field">
-              <span class="soft">Active model set</span>
-              <select class="select" id="activeModels">
-                <option>single model</option>
-                <option>pair compare</option>
-                <option selected>discussion panel</option>
-                <option>custom</option>
-              </select>
-            </label>
+async function callApi(path, method = "GET", payload = null) {
+  if (!PM_API_BASE) return { ok: false, mock: true };
+  try {
+    const res = await fetch(`${PM_API_BASE}${path}`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: payload ? JSON.stringify(payload) : undefined
+    });
+    const contentType = res.headers.get("content-type") || "";
+    const body = contentType.includes("application/json") ? await res.json() : await res.text();
+    return { ok: res.ok, status: res.status, body };
+  } catch (error) {
+    return { ok: false, error: String(error) };
+  }
+}
 
-            <label class="inline-field chat-control-field">
-              <span class="soft">Participants</span>
-              <select class="select" id="participants">
-                <option>1 model</option>
-                <option>2 models</option>
-                <option selected>3 models</option>
-                <option>custom</option>
-              </select>
-            </label>
+function getActiveChat() {
+  return state.chats.find(chat => chat.id === state.activeChatId) || state.chats[0] || null;
+}
 
-            <div class="button-row">
-              <button class="button button--small" id="starterBtn" type="button">Starter</button>
-              <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
-            </div>
-          </div>
-        </div>
+function filterChatsBySearch(chats, search) {
+  const q = search.trim().toLowerCase();
+  if (!q) return chats;
+  return chats.filter(chat =>
+    chat.title.toLowerCase().includes(q) ||
+    chat.meta.toLowerCase().includes(q) ||
+    chat.messages.some(msg => msg.text.toLowerCase().includes(q))
+  );
+}
 
-        <div class="session-strip">
-          <span class="chip">Open discussion</span>
-          <span class="chip" id="selectedModelChip">3 models selected</span>
-          <span class="chip">Discussion stays a discussion until you deliberately promote it.</span>
-        </div>
+function renderHistorySection(containerId, chats) {
+  const container = qs(containerId);
+  if (!container) return;
+  container.innerHTML = chats.map(chat => `
+    <button class="history-item ${chat.id === state.activeChatId ? "history-item--active" : ""}" type="button" data-chat-id="${chat.id}">
+      <span class="history-title">${escapeHtml(chat.title)}</span>
+      <span class="history-meta">${escapeHtml(chat.meta)}</span>
+    </button>
+  `).join("");
 
-        <section class="chat-thread" id="chatThread">
-          <article class="message message--system">
-            <div class="message-role">System</div>
-            <div class="message-body">Discussion only. Use chat to think, challenge, compare, and refine. Nothing here is treated as a task unless you deliberately promote it.</div>
-          </article>
+  qsa(".history-item", container).forEach(button => {
+    button.addEventListener("click", () => {
+      state.activeChatId = button.dataset.chatId;
+      saveState();
+      renderAll();
+    });
+  });
+}
 
-          <article class="message message--user">
-            <div class="message-role">You</div>
-            <div class="message-body">Home needs to feel like something I actually want to open every day.</div>
-          </article>
+function renderHistory() {
+  const search = qs("#historySearch")?.value || "";
+  const filtered = filterChatsBySearch(state.chats, search);
 
-          <article class="message message--assistant">
-            <div class="message-role">PM</div>
-            <div class="message-body">Then it has to prioritize continuity, compact history, low-friction chat control, and a support rail that helps without becoming a control-panel wall.</div>
-          </article>
-        </section>
+  const pinned = filtered.filter(chat => chat.section === "pinned");
+  const projectFolder = filtered.filter(chat => chat.section === "projectFolder");
+  const recent = filtered.filter(chat => chat.section === "recent");
 
-        <section class="composer-shell">
-          <div class="composer-header">
-            <div>
-              <div class="eyebrow">Discussion only</div>
-              <strong>Use chat to think, compare, challenge, and refine</strong>
-            </div>
-          </div>
+  renderHistorySection("#pinnedHistoryList", pinned);
+  renderHistorySection("#projectFolderList", projectFolder);
+  renderHistorySection("#recentHistoryList", recent);
 
-          <label class="inline-field">
-            <span class="soft">Message</span>
-            <textarea class="textarea composer-textarea" id="composerInput" placeholder="Discuss openly. Ask questions, challenge assumptions, compare model perspectives, and refine direction together."></textarea>
-          </label>
+  const pinnedCount = qs("#pinnedCount");
+  const projectFolderCount = qs("#projectFolderCount");
+  const recentCount = qs("#recentCount");
 
-          <div class="composer-footer">
-            <span class="composer-note">Enter sends · Shift+Enter adds a new line</span>
-            <button class="button button--primary" id="sendBtn" type="button">Send</button>
-          </div>
-        </section>
-      </main>
+  if (pinnedCount) pinnedCount.textContent = String(pinned.length);
+  if (projectFolderCount) projectFolderCount.textContent = String(projectFolder.length);
+  if (recentCount) recentCount.textContent = String(recent.length);
+}
 
-      <aside class="panel home-right">
-        <div class="right-stack">
-          <article class="card card--compact">
-            <div class="eyebrow">Export</div>
-            <h3>Send to Projects</h3>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Project class</span>
-                <select class="select" id="projectClassSelect">
-                  <option selected>System</option>
-                  <option>Portal</option>
-                  <option>App</option>
-                  <option>Pipeline</option>
-                  <option>Research</option>
-                  <option>Lore</option>
-                  <option>Game</option>
-                </select>
-              </label>
+function renderChatThread() {
+  const thread = qs("#chatThread");
+  const active = getActiveChat();
+  if (!thread || !active) return;
 
-              <label class="inline-field">
-                <span class="soft">Promotion note</span>
-                <input class="input" id="promotionNote" value="Intent, scope, constraints, and next action." />
-              </label>
+  thread.innerHTML = active.messages.map(message => `
+    <article class="message message--${message.role}">
+      <div class="message-role">${message.role === "assistant" ? "PM" : message.role === "user" ? "You" : "System"}</div>
+      <div class="message-body">${escapeHtml(message.text)}</div>
+    </article>
+  `).join("");
+}
 
-              <button class="button button--primary" id="sendToProjectsBtn" type="button">Send to Projects</button>
-            </div>
-          </article>
+function renderControls() {
+  const mode = qs("#chatMode");
+  const activeModels = qs("#activeModels");
+  const participants = qs("#participants");
+  const projectClass = qs("#projectClassSelect");
+  const promotionNote = qs("#promotionNote");
+  const selectedModelChip = qs("#selectedModelChip");
 
-          <article class="card card--compact">
-            <div class="eyebrow">Current todo</div>
-            <div class="todo-list" id="currentTodoList"></div>
-            <div class="button-row">
-              <button class="button button--small" id="addTodoBtn" type="button">Add todo</button>
-              <button class="button button--small" id="clearDoneBtn" type="button">Clear done</button>
-            </div>
-          </article>
-        </div>
-      </aside>
-    </section>
+  if (mode) mode.value = state.mode;
+  if (activeModels) activeModels.value = state.activeModels;
+  if (participants) participants.value = state.participants;
+  if (projectClass) projectClass.value = state.projectClass;
+  if (promotionNote) promotionNote.value = state.promotionNote;
+  if (selectedModelChip) selectedModelChip.textContent = `${state.participants} selected`;
+}
 
-    <section class="panel daily-panel">
-      <div class="section-title">
-        <div>
-          <div class="eyebrow">Daily structure</div>
-          <h2>Calendar + organization</h2>
-        </div>
-        <span class="soft">Support the day without hijacking the chat</span>
-      </div>
+function renderTodo() {
+  const list = qs("#currentTodoList");
+  if (!list) return;
 
-      <div class="daily-grid">
-        <article class="card">
-          <div class="eyebrow">Today</div>
-          <ul class="daily-list">
-            <li>Finish frontend shell alignment</li>
-            <li>Benchmark backend model roles</li>
-            <li>Export only work that is ready</li>
-          </ul>
-        </article>
+  list.innerHTML = state.currentTodo.map(item => `
+    <label class="todo-item" data-todo-id="${item.id}">
+      <input type="checkbox" ${item.done ? "checked" : ""} />
+      <span>${escapeHtml(item.text)}</span>
+    </label>
+  `).join("");
 
-        <article class="card">
-          <div class="eyebrow">Calendar</div>
-          <div class="calendar-preview">
-            <div class="calendar-day is-active">Mon</div>
-            <div class="calendar-day">Tue</div>
-            <div class="calendar-day">Wed</div>
-            <div class="calendar-day">Thu</div>
-            <div class="calendar-day">Fri</div>
-            <div class="calendar-day">Sat</div>
-            <div class="calendar-day">Sun</div>
-          </div>
-        </article>
+  qsa(".todo-item input", list).forEach(input => {
+    input.addEventListener("change", event => {
+      const row = event.target.closest(".todo-item");
+      if (!row) return;
+      const todoId = row.dataset.todoId;
+      state.currentTodo = state.currentTodo.map(todo =>
+        todo.id === todoId ? { ...todo, done: event.target.checked } : todo
+      );
+      saveState();
+    });
+  });
+}
 
-        <article class="card">
-          <div class="eyebrow">Follow-ups</div>
-          <ul class="daily-list">
-            <li>Move ready threads into Projects</li>
-            <li>Keep ongoing work in project folder</li>
-            <li>Use Home as daily driver, not admin wall</li>
-          </ul>
-        </article>
-      </div>
-    </section>
-
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  </div>
-
-  <script>
-  (function(){
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const apiBase = params.get('apiBase');
-      if (apiBase) {
-        const normalized = apiBase.replace(/\\/+$/, '');
-        window.PM_API_BASE = normalized;
-        localStorage.setItem('PM_API_BASE', normalized);
-      } else {
-        const saved = localStorage.getItem('PM_API_BASE');
-        if (saved) window.PM_API_BASE = saved;
+function createChat({ title, section, meta, messages }) {
+  return {
+    id: `chat-${crypto.randomUUID().slice(0, 8)}`,
+    title,
+    section,
+    meta,
+    messages: messages || [
+      {
+        role: "system",
+        text: "Discussion only. Use this thread to think, compare, challenge and refine before exporting to Projects."
       }
-    } catch (error) {}
-  })();
-  </script>
-  <script type="module" src="page.js"></script>
-</body>
-</html>
+    ]
+  };
+}
+
+function createNewChat() {
+  const chat = createChat({
+    title: "New discussion",
+    section: "recent",
+    meta: "Today · new"
+  });
+
+  state.chats.unshift(chat);
+  state.activeChatId = chat.id;
+  saveState();
+  renderAll();
+  showToast("New chat created", "good");
+}
+
+function branchCurrentChat() {
+  const active = getActiveChat();
+  if (!active) return;
+
+  const branched = createChat({
+    title: `${active.title} (Branch)`,
+    section: "projectFolder",
+    meta: "Today · branched",
+    messages: clone(active.messages)
+  });
+
+  state.chats.unshift(branched);
+  state.activeChatId = branched.id;
+  saveState();
+  renderAll();
+  showToast("Chat branched into project folder", "good");
+}
+
+function addTodo() {
+  state.currentTodo.unshift({
+    id: `todo-${crypto.randomUUID().slice(0, 8)}`,
+    text: "New current-session todo",
+    done: false
+  });
+  saveState();
+  renderTodo();
+  showToast("Todo added", "good");
+}
+
+function clearDoneTodos() {
+  state.currentTodo = state.currentTodo.filter(item => !item.done);
+  saveState();
+  renderTodo();
+  showToast("Completed todos cleared", "good");
+}
+
+async function sendToProjects() {
+  const active = getActiveChat();
+  const payload = {
+    chat_id: active?.id,
+    title: active?.title,
+    project_class: state.projectClass,
+    promotion_note: state.promotionNote
+  };
+
+  const result = await callApi("/api/home/promote-to-projects", "POST", payload);
+  showToast(result.ok ? "Sent to Projects" : "Saved locally. API hook ready.", result.ok ? "good" : "warn");
+}
+
+function sendComposerMessage() {
+  const input = qs("#composerInput");
+  const active = getActiveChat();
+  if (!input || !active) return;
+
+  const text = input.value.trim();
+  if (!text) return;
+
+  active.messages.push({ role: "user", text });
+  active.messages.push({
+    role: "assistant",
+    text: "Captured in discussion mode. Keep refining it here, or send it to Projects once it is ready."
+  });
+
+  active.meta = "Today · active";
+  input.value = "";
+
+  saveState();
+  renderChatThread();
+  renderHistory();
+}
+
+function applyStarterText() {
+  const composer = qs("#composerInput");
+  if (!composer) return;
+  composer.value = "Help me clarify what I actually mean before we turn this into project work.";
+  composer.focus();
+}
+
+function refreshHome() {
+  renderAll();
+  showToast("Home refreshed", "good");
+}
+
+function bindTopControls() {
+  qs("#chatMode")?.addEventListener("change", event => {
+    state.mode = event.target.value;
+    saveState();
+    renderControls();
+  });
+
+  qs("#activeModels")?.addEventListener("change", event => {
+    state.activeModels = event.target.value;
+    saveState();
+    renderControls();
+  });
+
+  qs("#participants")?.addEventListener("change", event => {
+    state.participants = event.target.value;
+    saveState();
+    renderControls();
+  });
+
+  qs("#projectClassSelect")?.addEventListener("change", event => {
+    state.projectClass = event.target.value;
+    saveState();
+  });
+
+  qs("#promotionNote")?.addEventListener("input", event => {
+    state.promotionNote = event.target.value;
+    saveState();
+  });
+
+  qs("#historySearch")?.addEventListener("input", renderHistory);
+
+  qs("#composerInput")?.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendComposerMessage();
+    }
+  });
+}
+
+function bindButtons() {
+  qs("#newChatBtn")?.addEventListener("click", createNewChat);
+  qs("#branchChatBtn")?.addEventListener("click", branchCurrentChat);
+  qs("#addTodoBtn")?.addEventListener("click", addTodo);
+  qs("#clearDoneBtn")?.addEventListener("click", clearDoneTodos);
+  qs("#sendToProjectsBtn")?.addEventListener("click", sendToProjects);
+  qs("#sendBtn")?.addEventListener("click", sendComposerMessage);
+  qs("#starterBtn")?.addEventListener("click", applyStarterText);
+  qs("#refreshBtn")?.addEventListener("click", refreshHome);
+}
+
+function renderAll() {
+  renderHistory();
+  renderChatThread();
+  renderControls();
+  renderTodo();
+}
+
+function init() {
+  renderAll();
+  bindTopControls();
+  bindButtons();
+}
+
+document.addEventListener("DOMContentLoaded", init);
