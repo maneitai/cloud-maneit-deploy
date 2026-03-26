@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Projects</title>
-  <meta name="description" content="Registry and source-of-truth surface for portal, app, pipeline, research, lore, game, and system work." />
+  <meta name="description" content="Structured source-of-truth library for production-bound work across app, web, game, and research." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
@@ -16,7 +16,7 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Projects</h1>
-          <p>Source-of-truth registry for anything that should become real production work. Projects is not an export dump. It is the canonical handoff layer used by PortalCreator, AppCreator, Pipelines, Agent Factory, Research Core, LoreCore, and Game Designer.</p>
+          <p>Source-of-truth library for work that is structured enough to be used downstream by creator surfaces and pipelines.</p>
         </div>
       </div>
 
@@ -41,259 +41,374 @@
       </div>
     </header>
 
-    <details class="scope-drawer">
-      <summary>
-        <div>
-          <div class="eyebrow">Surface contract</div>
-          <strong>Purpose, ownership, boundaries</strong>
-        </div>
-        <span class="scope-drawer__hint">Open</span>
-      </summary>
-      <div class="scope-strip">
-        <article class="scope-card">
-          <div class="eyebrow">Purpose</div>
-          <h2>Registry, queue, and routing</h2>
-          <p class="muted">Projects collects deliberate exports and manual records, classifies them correctly, and keeps downstream portals pulling from a shared production registry instead of isolated page-local state.</p>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Owns</div>
-          <ul>
-            <li>project records</li>
-            <li>class + target portal</li>
-            <li>status, routing, and notes</li>
-            <li>links to chat, pipelines, and portal work</li>
-            <li>production-ready registry state</li>
-          </ul>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Does not own</div>
-          <ul>
-            <li>open-ended chat discussion</li>
-            <li>deep pipeline graph editing</li>
-            <li>deep research corpus ownership</li>
-            <li>deep lore/game design archive ownership</li>
-          </ul>
-        </article>
+    <section class="surface-banner panel">
+      <div>
+        <div class="eyebrow">Surface contract</div>
+        <strong>Projects is the structured source-of-truth library</strong>
       </div>
-    </details>
+      <div class="banner-note">Home exports here first. Creator pages and pipeline presets read from here later.</div>
+    </section>
 
-    <section class="page-grid page-grid--projects">
-      <aside class="panel panel-left">
-        <div class="panel-header">
+    <section class="projects-layout">
+      <aside class="panel projects-left">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Left rail</div>
-            <h2>Filters + intake</h2>
+            <h2>Library</h2>
           </div>
-          <span class="status-chip status-chip--good">Manual control</span>
+          <span class="status-chip status-chip--good">Readable first</span>
         </div>
 
-        <div class="stack">
+        <div class="stack stack--md">
           <article class="card card--compact">
-            <div class="eyebrow">Registry rule</div>
-            <p class="muted">Only deliberate exports and explicit manual records belong here. Chat stays chat until you promote it.</p>
-          </article>
+            <div class="eyebrow">Search + filter</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Search</span>
+                <input class="input" id="projectSearch" placeholder="Search title, summary, tags, or linked chat id..." />
+              </label>
 
-          <label class="inline-field">
-            <span class="soft">Search</span>
-            <input class="search" id="projectSearch" placeholder="Search title, id, tags, or linked chat..." />
-          </label>
+              <div class="two-col">
+                <label class="inline-field">
+                  <span class="soft">Status</span>
+                  <select class="select" id="projectStatusFilter">
+                    <option selected>All</option>
+                    <option>Draft</option>
+                    <option>Ready</option>
+                    <option>Active</option>
+                    <option>Archived</option>
+                  </select>
+                </label>
 
-          <div class="filter-grid">
-            <label class="inline-field">
-              <span class="soft">Status</span>
-              <select class="select" id="statusFilter">
-                <option value="">All</option>
-                <option>Draft</option>
-                <option>Queued</option>
-                <option>Review</option>
-                <option>Active</option>
-              </select>
-            </label>
-
-            <label class="inline-field">
-              <span class="soft">Project class</span>
-              <select class="select" id="typeFilter">
-                <option value="">All</option>
-                <option>Portal</option>
-                <option>App</option>
-                <option>Pipeline</option>
-                <option>Agent</option>
-                <option>Research</option>
-                <option>Lore</option>
-                <option>Game</option>
-                <option>System</option>
-              </select>
-            </label>
-          </div>
-
-          <label class="inline-field">
-            <span class="soft">Target portal</span>
-            <select class="select" id="portalFilter">
-              <option value="">All</option>
-              <option>PortalCreator</option>
-              <option>AppCreator</option>
-              <option>Pipelines</option>
-              <option>Agent Factory</option>
-              <option>Research Core</option>
-              <option>LoreCore</option>
-              <option>Game Designer</option>
-              <option>Projects</option>
-              <option>State</option>
-            </select>
-          </label>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Tags</div>
-            <div id="tagFilters" class="tag-row"></div>
-          </article>
-
-          <label class="list-item" id="pinnedOnlyWrap">
-            <input type="checkbox" id="pinnedOnly" />
-            <div>
-              <strong>Pinned only</strong>
-              <p class="muted">Show current operator priorities only.</p>
+                <label class="inline-field">
+                  <span class="soft">Readiness</span>
+                  <select class="select" id="projectReadinessFilter">
+                    <option selected>All</option>
+                    <option>Prep</option>
+                    <option>Ready for pickup</option>
+                    <option>In creator</option>
+                  </select>
+                </label>
+              </div>
             </div>
-          </label>
+          </article>
 
-          <article class="card card--compact intake-card">
-            <div class="eyebrow">Intake map</div>
-            <div class="timeline compact-timeline">
-              <div class="timeline-item"><small>Home</small><span>Open discussion promoted into deliberate records.</span></div>
-              <div class="timeline-item"><small>Research Core</small><span>Dossiers and syntheses become research-class projects.</span></div>
-              <div class="timeline-item"><small>LoreCore / Game Designer</small><span>Creative and design work becomes domain-linked project records.</span></div>
-              <div class="timeline-item"><small>Pipelines / Creators</small><span>Execution surfaces pull structured work back out of Projects.</span></div>
+          <article class="card card--compact">
+            <div class="eyebrow">Pinned</div>
+            <div class="library-list compact-list" id="pinnedProjectList">
+              <button class="library-item library-item--active" type="button" data-project-id="proj-web-001">
+                <span class="library-title">PM frontend shell final</span>
+                <span class="library-meta">Web · Ready</span>
+              </button>
+              <button class="library-item" type="button" data-project-id="proj-sys-002">
+                <span class="library-title">Maneit runtime benchmark pack</span>
+                <span class="library-meta">System · Active</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">App projects</div>
+            <div class="library-list compact-list" id="appProjectList">
+              <button class="library-item" type="button" data-project-id="proj-app-001">
+                <span class="library-title">Notebook capture app</span>
+                <span class="library-meta">App · Draft</span>
+              </button>
+              <button class="library-item" type="button" data-project-id="proj-app-002">
+                <span class="library-title">Model routing dashboard</span>
+                <span class="library-meta">App · Ready</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Web / portal projects</div>
+            <div class="library-list compact-list" id="webProjectList">
+              <button class="library-item library-item--active" type="button" data-project-id="proj-web-001">
+                <span class="library-title">PM frontend shell final</span>
+                <span class="library-meta">Web · Ready</span>
+              </button>
+              <button class="library-item" type="button" data-project-id="proj-web-002">
+                <span class="library-title">State page redesign</span>
+                <span class="library-meta">Portal · Active</span>
+              </button>
+              <button class="library-item" type="button" data-project-id="proj-web-003">
+                <span class="library-title">Projects registry UX</span>
+                <span class="library-meta">Portal · Prep</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Game projects</div>
+            <div class="library-list compact-list" id="gameProjectList">
+              <button class="library-item" type="button" data-project-id="proj-game-001">
+                <span class="library-title">Guldardal systems draft</span>
+                <span class="library-meta">Game · Draft</span>
+              </button>
+              <button class="library-item" type="button" data-project-id="proj-game-002">
+                <span class="library-title">Encounter pacing sheet</span>
+                <span class="library-meta">Game · Ready</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Research projects</div>
+            <div class="library-list compact-list" id="researchProjectList">
+              <button class="library-item" type="button" data-project-id="proj-research-001">
+                <span class="library-title">Model-role specialization study</span>
+                <span class="library-meta">Research · Active</span>
+              </button>
+              <button class="library-item" type="button" data-project-id="proj-research-002">
+                <span class="library-title">Cloud provider comparison</span>
+                <span class="library-meta">Research · Prep</span>
+              </button>
             </div>
           </article>
         </div>
       </aside>
 
-      <main class="panel panel-center">
-        <div class="panel-header">
+      <main class="panel projects-center">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Center surface</div>
-            <h2>Registry board</h2>
-            <p>Structured queue and routing surface for every class of work: portals, apps, pipelines, agents, research, lore, game design, and system work.</p>
+            <h2>Project workspace</h2>
+            <p class="muted">Tweak identity, classification, readiness, creator routing, presets and notes without leaving the registry.</p>
           </div>
           <div class="button-row">
-            <button class="button" id="seedProjectsBtn" type="button">Reload registry</button>
-            <button class="button button--primary" id="newProjectBtn" type="button">Create manual record</button>
+            <button class="button" id="duplicateProjectBtn" type="button">Duplicate</button>
+            <button class="button" id="archiveProjectBtn" type="button">Archive</button>
+            <button class="button button--primary" id="saveProjectBtn" type="button">Save project</button>
           </div>
         </div>
 
-        <section class="kpi-grid kpi-grid--projects">
+        <section class="workspace-kpis">
           <article class="metric-card">
-            <span class="soft">Total records</span>
-            <strong id="kpiTotal">0</strong>
+            <span class="soft">Class</span>
+            <strong id="workspaceClass">Web</strong>
           </article>
           <article class="metric-card">
-            <span class="soft">Active + review</span>
-            <strong id="kpiActive">0</strong>
+            <span class="soft">Status</span>
+            <strong id="workspaceStatus">Ready</strong>
           </article>
           <article class="metric-card">
-            <span class="soft">Pinned</span>
-            <strong id="kpiPinned">0</strong>
+            <span class="soft">Target</span>
+            <strong id="workspaceTarget">PortalCreator</strong>
           </article>
           <article class="metric-card">
-            <span class="soft">Distinct targets</span>
-            <strong id="kpiTargets">0</strong>
+            <span class="soft">Readiness</span>
+            <strong id="workspaceReadiness">Ready for pickup</strong>
           </article>
         </section>
 
-        <section class="queue-board" aria-label="Registry queues">
-          <article class="queue-card queue-card--draft">
-            <small>Draft</small>
-            <strong id="queueDraft">0</strong>
-            <span>Structured but still being defined.</span>
-          </article>
-          <article class="queue-card queue-card--queued">
-            <small>Queued</small>
-            <strong id="queueQueued">0</strong>
-            <span>Waiting for execution surface pickup.</span>
-          </article>
-          <article class="queue-card queue-card--review">
-            <small>Review</small>
-            <strong id="queueReview">0</strong>
-            <span>Needs operator judgment or verifier pass.</span>
-          </article>
-          <article class="queue-card queue-card--active">
-            <small>Active</small>
-            <strong id="queueActive">0</strong>
-            <span>Live work tied into a production surface.</span>
-          </article>
-        </section>
+        <div class="workspace-grid">
+          <article class="card">
+            <div class="eyebrow">Identity</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Project name</span>
+                <input class="input" id="projectName" value="PM frontend shell final" />
+              </label>
 
-        <section class="target-strip-wrap">
-          <div class="panel-subhead">
-            <div>
-              <div class="eyebrow">Routing</div>
-              <h3>Target portal distribution</h3>
+              <div class="three-col">
+                <label class="inline-field">
+                  <span class="soft">Class</span>
+                  <select class="select" id="projectClass">
+                    <option>App</option>
+                    <option selected>Web</option>
+                    <option>Portal</option>
+                    <option>Game</option>
+                    <option>Research</option>
+                    <option>System</option>
+                  </select>
+                </label>
+
+                <label class="inline-field">
+                  <span class="soft">Subtype</span>
+                  <select class="select" id="projectSubtype">
+                    <option selected>Frontend shell</option>
+                    <option>Portal page</option>
+                    <option>Registry surface</option>
+                    <option>Tooling</option>
+                  </select>
+                </label>
+
+                <label class="inline-field">
+                  <span class="soft">Status</span>
+                  <select class="select" id="projectStatus">
+                    <option>Draft</option>
+                    <option selected>Ready</option>
+                    <option>Active</option>
+                    <option>Archived</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="inline-field">
+                <span class="soft">Short summary</span>
+                <textarea class="textarea textarea--sm" id="projectSummary" placeholder="What is this project actually for?">Unified frontend shell for Maneit pages with clear role separation, stable navigation, and reusable patterns across Home, Projects, Pipelines, Agent Factory, State and Settings.</textarea>
+              </label>
             </div>
-          </div>
-          <div id="targetPortalStrip" class="target-strip"></div>
-        </section>
+          </article>
 
-        <section class="table-wrap registry-table-wrap">
-          <table class="table">
-            <thead>
-              <tr>
-                <th>Project</th>
-                <th>Class</th>
-                <th>Status</th>
-                <th>Target</th>
-                <th>Next action</th>
-                <th>Origin</th>
-              </tr>
-            </thead>
-            <tbody id="projectRows"></tbody>
-          </table>
-        </section>
+          <article class="card">
+            <div class="eyebrow">Routing + creator fit</div>
+            <div class="field-grid">
+              <div class="three-col">
+                <label class="inline-field">
+                  <span class="soft">Target creator</span>
+                  <select class="select" id="projectTarget">
+                    <option>AppCreator</option>
+                    <option selected>PortalCreator</option>
+                    <option>Game Designer</option>
+                    <option>Research Core</option>
+                    <option>LoreCore</option>
+                  </select>
+                </label>
+
+                <label class="inline-field">
+                  <span class="soft">Pipeline preset</span>
+                  <select class="select" id="projectPreset">
+                    <option>none</option>
+                    <option selected>portal_frontend_shell_v1</option>
+                    <option>creator_ui_compose_v1</option>
+                    <option>research_registry_v1</option>
+                  </select>
+                </label>
+
+                <label class="inline-field">
+                  <span class="soft">Readiness</span>
+                  <select class="select" id="projectReadiness">
+                    <option>Prep</option>
+                    <option selected>Ready for pickup</option>
+                    <option>In creator</option>
+                    <option>Blocked</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="inline-field">
+                <span class="soft">Next action</span>
+                <input class="input" id="projectNextAction" value="Open in PortalCreator and continue page-by-page finalization." />
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Tags + source</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Tags</span>
+                <input class="input" id="projectTags" value="frontend, shell, registry, navigation, UX" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Origin chat / source</span>
+                <input class="input" id="projectOrigin" value="home/chat-1" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Linked assets</span>
+                <textarea class="textarea textarea--sm" id="projectAssets" placeholder="Relevant files, pages, docs, notes...">home/index.html
+state/index.html
+settings/index.html
+pipelines/index.html
+agent-factory/index.html</textarea>
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Operator notes</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Notes</span>
+                <textarea class="textarea" id="projectNotes" placeholder="Reasoning, readiness notes, what is missing, what should not be changed, etc.">Keep layout language consistent across all pages. Do not let creator pages become pipeline editors. Home stays daily-driver discussion surface. Projects remains the central handoff library.</textarea>
+              </label>
+            </div>
+          </article>
+        </div>
       </main>
 
-      <aside class="panel panel-right">
-        <div class="panel-header">
+      <aside class="panel projects-right">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Inspector + routing</h2>
+            <h2>Handoff + actions</h2>
           </div>
-          <span class="status-chip status-chip--warn" id="inspectorStatus">No selection</span>
+          <span class="status-chip status-chip--good">Ready route</span>
         </div>
 
-        <div class="stack">
+        <div class="stack stack--md">
           <article class="card card--compact">
-            <div class="eyebrow">Handoff rule</div>
-            <p class="muted">A project record should know what it is, where it came from, where it should go next, and which surface owns the next move.</p>
+            <div class="eyebrow">Send to correct surface</div>
+            <div class="button-grid">
+              <button class="button button--primary" id="openTargetBtn" type="button">Open target surface</button>
+              <button class="button" id="routeToAppBtn" type="button">Send to AppCreator</button>
+              <button class="button" id="routeToPortalBtn" type="button">Send to PortalCreator</button>
+              <button class="button" id="routeToGameBtn" type="button">Send to Game Designer</button>
+              <button class="button" id="routeToResearchBtn" type="button">Send to Research Core</button>
+            </div>
           </article>
 
           <article class="card card--compact">
-            <div class="eyebrow">Cross-portal lanes</div>
-            <div id="routingLaneSummary" class="timeline compact-timeline"></div>
+            <div class="eyebrow">Current handoff</div>
+            <div class="preview-box" id="handoffPreview">
+              <strong>PortalCreator</strong>
+              <span>portal_frontend_shell_v1 · ready for pickup</span>
+            </div>
           </article>
 
-          <div id="projectInspector" class="stack"></div>
+          <article class="card card--compact">
+            <div class="eyebrow">Readiness checks</div>
+            <div class="check-list">
+              <label class="check-item">
+                <input type="checkbox" checked />
+                <span>Structured enough to be reused</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" checked />
+                <span>Correct creator target selected</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" checked />
+                <span>Preset or next action is clear</span>
+              </label>
+              <label class="check-item">
+                <input type="checkbox" />
+                <span>Ready to move from library to active creator work</span>
+              </label>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Registry note</div>
+            <p class="muted">Projects is the bridge between discussion and execution. Creator pages should read from here instead of inventing their own intake logic.</p>
+          </article>
         </div>
       </aside>
     </section>
 
-    <p class="footer-note">Projects stays structured on purpose: discussion is upstream, execution is downstream, and this registry is the canonical bridge between them.</p>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <div class="toast" id="toast" aria-live="polite"></div>
   <script>
-(function(){
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) {
-      const normalized = apiBase.replace(/\/+$/, '');
-      window.PM_API_BASE = normalized;
-      localStorage.setItem('PM_API_BASE', normalized);
-    } else {
-      const saved = localStorage.getItem('PM_API_BASE');
-      if (saved) window.PM_API_BASE = saved;
-    }
-  } catch (error) {}
-})();
-</script>
-  <script src="page.js"></script>
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get('apiBase');
+      if (apiBase) {
+        const normalized = apiBase.replace(/\\/+$/, '');
+        window.PM_API_BASE = normalized;
+        localStorage.setItem('PM_API_BASE', normalized);
+      } else {
+        const saved = localStorage.getItem('PM_API_BASE');
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
+  </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
