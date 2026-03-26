@@ -3,272 +3,404 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM — AppCreator</title>
-  <meta name="description" content="Software build surface for application logic, architecture, flows, implementation planning, and production handoff." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%0A%20%20%20%20%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%0A%20%20%20%20%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%0A%20%20%20%20%3C/svg%3E" />
-  <link rel="stylesheet" href="page.css" />
+  <title>AppCreator — PM</title>
+  <link rel="stylesheet" href="./page.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <header class="page-header">
-      <div class="brand">
+  <div class="pm-shell">
+    <header class="topbar">
+      <div class="brand-block">
         <div class="brand-mark">PM</div>
-        <div class="header-copy">
-          <div class="eyebrow">PM</div>
+        <div class="brand-copy">
           <h1>AppCreator</h1>
-          <p>Software build surface for application logic, architecture, implementation planning, build passes, and production handoff.</p>
+          <p>
+            Structured software production surface for architecture, modules, state,
+            API contracts, implementation planning, build passes, and delivery handoff.
+          </p>
         </div>
       </div>
 
-      <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link" href="../">Home</a>
-        <a class="nav-link" href="../projects/">Projects</a>
-        <a class="nav-link" href="../pipelines/">Pipelines</a>
-        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
-        <a class="nav-link nav-link--active" href="../appcreator/">AppCreator</a>
-        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
-        <a class="nav-link" href="../research-core/">Research Core</a>
-        <a class="nav-link" href="../lorecore/">LoreCore</a>
-        <a class="nav-link" href="../game-designer/">Game Designer</a>
-        <a class="nav-link" href="../state/">State</a>
-        <a class="nav-link" href="../settings/">Settings</a>
+      <nav class="topnav">
+        <a href="../home/index.html">Home</a>
+        <a href="../projects/index.html">Projects</a>
+        <a href="../pipelines/index.html">Pipelines</a>
+        <a href="../agent-factory/index.html">Agent Factory</a>
+        <a class="active" href="../appcreator/index.html">AppCreator</a>
+        <a href="../portalcreator/index.html">PortalCreator</a>
+        <a href="../research-core/index.html">Research Core</a>
+        <a href="../lorecore/index.html">LoreCore</a>
+        <a href="../game-designer/index.html">Game Designer</a>
+        <a href="../state/index.html">State</a>
+        <a href="../settings/index.html">Settings</a>
       </nav>
 
-      <div class="header-actions">
-        <span class="chip">Software creation</span>
-        <span class="chip">Architecture + build</span>
-        <span class="chip">Execution board</span>
+      <div class="top-actions">
+        <button class="chip active">Software build</button>
+        <button class="chip">Architecture-first</button>
+        <button class="chip">Quality-first execution</button>
       </div>
     </header>
 
-    <details class="scope-drawer">
-      <summary>
+    <section class="surface-contract">
+      <div class="surface-contract__toggle">
+        <span class="caret">▶</span>
         <div>
           <div class="eyebrow">Surface contract</div>
-          <strong>AppCreator builds software, not generic portal chrome</strong>
+          <strong>Purpose, ownership, boundaries</strong>
         </div>
-        <span class="scope-drawer__hint">Open</span>
-      </summary>
-      <div class="scope-strip">
-        <article class="scope-card">
-          <div class="eyebrow">Purpose</div>
-          <h2>Software build surface</h2>
-          <p class="muted">AppCreator takes projects from Projects, uses selected pipeline snapshots and agent groups, and provides a focused software production workspace for real application build work.</p>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Owns</div>
-          <ul>
-            <li>application execution state</li><li>architecture + module planning</li><li>implementation outputs</li><li>software production tools</li>
-          </ul>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Does not own</div>
-          <ul>
-            <li>canonical project records</li><li>full pipeline design</li><li>full agent architecture</li>
-          </ul>
-        </article>
       </div>
-    </details>
+      <div class="surface-contract__status">Open</div>
+    </section>
 
-    <section class="page-grid page-grid--portal">
-      <aside class="panel panel-left panel-left--source">
-        <div class="panel-header">
+    <main class="app-layout">
+      <!-- LEFT -->
+      <aside class="rail left-rail">
+        <div class="rail-head">
           <div>
             <div class="eyebrow">Left rail</div>
-            <h2>Source inputs</h2>
-            <p>Choose the project and stage context that should drive the current application build pass.</p>
+            <h2>Project Input / Build Context</h2>
           </div>
-          <span class="status-chip status-chip--good">AppCreator</span>
+          <span class="badge good">Focused</span>
         </div>
 
         <div class="stack">
-          <label class="inline-field">
-            <span class="soft">Linked project</span>
-            <select class="select" id="projectSelect"></select>
-          </label>
+          <section class="panel">
+            <div class="panel-label">Linked project</div>
+            <label class="field">
+              <span>Project</span>
+              <select id="linkedProject">
+                <option>Maneit Portal</option>
+                <option>Ironvale TD</option>
+                <option>Galdurdal Chronicles Tools</option>
+                <option>New Project</option>
+              </select>
+            </label>
 
-          <article class="card" id="projectReferenceCard">
-            <div class="eyebrow">Project record</div>
-            <p class="muted" style="margin-top:0.7rem;">Loading project reference…</p>
-          </article>
+            <label class="field">
+              <span>Work item</span>
+              <select id="linkedWorkItem">
+                <option>Home page rebuild</option>
+                <option>Projects registry UI</option>
+                <option>App shell architecture</option>
+                <option>API contract pass</option>
+              </select>
+            </label>
 
-          <article class="card">
-            <div class="eyebrow">Simplified stage controls</div>
-            <div id="stageControls" class="tag-row" style="margin-top:0.7rem;"></div>
-            <p class="source-note" style="margin-top:0.75rem;">AppCreator should stay focused on build work. The full graph and orchestration logic still live in Pipelines.</p>
-          </article>
+            <label class="field">
+              <span>Pipeline snapshot</span>
+              <select id="pipelineSnapshot">
+                <option>PL-APP-05</option>
+                <option>PL-APP-06</option>
+                <option>PL-APP-Frontend</option>
+                <option>PL-APP-Backend</option>
+              </select>
+            </label>
+          </section>
 
-          <article class="card">
-            <div class="eyebrow">Build focus</div>
-            <ul class="mini-list" style="margin-top:0.75rem;">
-              <li>software architecture before styling</li>
-              <li>module/state/api clarity</li>
-              <li>delivery-ready outputs and revisions</li>
-            </ul>
-          </article>
+          <section class="panel">
+            <div class="panel-label">Project record</div>
+            <div class="context-card">
+              <strong>Current objective</strong>
+              <p>
+                Build a cleaner application production surface that turns project intent
+                into module structure, state/data clarity, implementation notes,
+                and delivery-ready artifacts.
+              </p>
+            </div>
+            <div class="context-card">
+              <strong>Locked rule</strong>
+              <p>
+                AppCreator builds software. Canonical project ownership stays in Projects,
+                full orchestration stays in Pipelines. :contentReference[oaicite:1]{index=1}
+              </p>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Build focus</div>
+            <div class="pill-list">
+              <button class="pill active-pill">Architecture first</button>
+              <button class="pill">Module clarity</button>
+              <button class="pill">State + data model</button>
+              <button class="pill">API contracts</button>
+              <button class="pill">Revision handling</button>
+              <button class="pill">Delivery criteria</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Stage shortcuts</div>
+            <div class="list dense">
+              <button class="list-item active">
+                <span class="item-title">Architecture pass</span>
+                <span class="item-meta">System shape, boundaries, module map</span>
+              </button>
+              <button class="list-item">
+                <span class="item-title">Data + API pass</span>
+                <span class="item-meta">State, contracts, persistence, integrations</span>
+              </button>
+              <button class="list-item">
+                <span class="item-title">Implementation pass</span>
+                <span class="item-meta">Build tasks, file ownership, execution order</span>
+              </button>
+              <button class="list-item">
+                <span class="item-title">Delivery pass</span>
+                <span class="item-meta">QA, packaging, revision notes, handoff</span>
+              </button>
+            </div>
+          </section>
         </div>
       </aside>
 
-      <main class="panel panel-center panel-center--builder">
-        <div class="panel-header">
+      <!-- CENTER -->
+      <section class="center-surface">
+        <div class="surface-head">
           <div>
             <div class="eyebrow">Center surface</div>
-            <h2>Software build board</h2>
-            <p>Translate project intent into architecture, modules, state, API contracts, implementation notes, and delivery criteria.</p>
+            <h2>Software Build Board</h2>
+            <p>
+              Define the software build pass clearly. Structure architecture, modules,
+              state/data, APIs, revisions, and delivery instead of drifting into generic chat.
+            </p>
           </div>
-          <div class="button-row">
-            <button class="button" id="saveWorkspaceBtn" type="button">Save workspace notes</button>
-            <button class="button button--primary" id="runStageBtn" type="button">Run selected stage</button>
+
+          <div class="surface-actions">
+            <button class="btn secondary" id="saveWorkspaceBtn">Save workspace notes</button>
+            <button class="btn primary" id="runStageBtn">Run selected stage</button>
           </div>
         </div>
 
-        <section class="workspace-strip">
-          <article class="workspace-chip"><strong>Architecture</strong><span>system shape and boundaries</span></article>
-          <article class="workspace-chip"><strong>Modules</strong><span>components, flows, ownership</span></article>
-          <article class="workspace-chip"><strong>Data + API</strong><span>state, contracts, persistence</span></article>
-          <article class="workspace-chip"><strong>Delivery</strong><span>QA, revision, packaging</span></article>
-        </section>
+        <form class="workspace" id="appCreatorForm">
+          <section class="panel workspace-panel">
+            <div class="panel-label">1. App brief</div>
 
-        <section class="workspace-board">
-          <article class="card board-card board-card--wide">
-            <div class="eyebrow">Brief</div>
-            <h3>App brief</h3>
-            <p class="muted" style="margin-top:0.7rem;">Keep the domain workspace focused on software execution details rather than generic chat or portal chrome.</p>
-            <textarea class="textarea workspace-note" data-block="App brief" style="margin-top:0.8rem;">Build a clean app execution shell with module planning, architecture, revision handling, state/data clarity, and simplified pipeline controls.</textarea>
-          </article>
+            <div class="field-grid two">
+              <label class="field">
+                <span>Title</span>
+                <input type="text" id="jobTitle" value="PM App Surface — AppCreator rebuild" />
+              </label>
 
-          <article class="card board-card">
-            <div class="eyebrow">Architecture</div>
-            <h3>System shape</h3>
-            <p class="muted" style="margin-top:0.7rem;">State the boundaries between UI, backend, storage, worker logic, and long-running production flows.</p>
-            <textarea class="textarea workspace-note" data-block="Component plan" style="margin-top:0.8rem;">Modules: shell, inspector, execution workspace, revision board, data connectors. Dependencies: pipeline snapshot, selected agent group, project record.</textarea>
-          </article>
-
-          <article class="card board-card">
-            <div class="eyebrow">Revision</div>
-            <h3>Revision notes</h3>
-            <p class="muted" style="margin-top:0.7rem;">Track how the software output changes without mutating canonical project ownership from inside this page.</p>
-            <textarea class="textarea workspace-note" data-block="Revision notes" style="margin-top:0.8rem;">Reduce control clutter. Keep project record immutable here except for execution notes, build findings, and revision traces.</textarea>
-          </article>
-
-          <article class="card board-card">
-            <div class="eyebrow">Delivery</div>
-            <h3>Launch checklist</h3>
-            <p class="muted" style="margin-top:0.7rem;">Make delivery criteria explicit so build work stops drifting.</p>
-            <textarea class="textarea workspace-note" data-block="Launch checklist" style="margin-top:0.8rem;">QA pass, build notes, dependency review, state audit, API verification, output packaging.</textarea>
-          </article>
-        </section>
-
-        <section class="panel board-inline">
-          <div class="panel-header">
-            <div>
-              <div class="eyebrow">Production runner</div>
-              <h3>Quality-first execution</h3>
+              <label class="field">
+                <span>Stage focus</span>
+                <select id="stageFocus">
+                  <option>Architecture pass</option>
+                  <option>Data + API pass</option>
+                  <option>Implementation pass</option>
+                  <option>Revision pass</option>
+                  <option>Delivery pass</option>
+                </select>
+              </label>
             </div>
-            <div class="button-row">
-              <button class="button button--primary" id="runProductionBtn" type="button">Run production pass</button>
-              <button class="button button--ghost" id="refreshProductionBtn" type="button">Refresh jobs</button>
-            </div>
-          </div>
-          <div class="field-grid">
-            <label class="inline-field">
-              <span class="soft">Objective</span>
-              <textarea class="textarea" id="productionObjective" style="min-height: 118px;">Run a quality-first multi-perspective production pass for this application workspace. Produce concrete software artifacts rather than vague notes.</textarea>
+
+            <label class="field">
+              <span>App brief</span>
+              <textarea id="appBrief" rows="4">Build a focused AppCreator surface that takes a linked project and selected pipeline snapshot, then turns software intent into architecture, modules, data/state structure, API contracts, build tasks, and delivery-ready artifacts.</textarea>
             </label>
-            <label class="inline-field">
-              <span class="soft">Manual panel (optional)</span>
-              <input class="input" id="productionModelsInput" placeholder="qwen25_planner_7b, deepseek_verifier, gemma-3-12b-it" />
-            </label>
-          </div>
-          <p class="muted" style="margin-top:0.8rem;">Production runs are allowed to be slow. The goal here is artifact quality, not instant response.</p>
-        </section>
 
-        <section class="panel board-inline">
-          <div class="panel-header">
-            <div>
-              <div class="eyebrow">Focused tools</div>
-              <h3>App build kit</h3>
+            <div class="field-grid two">
+              <label class="field">
+                <span>Primary build goal</span>
+                <textarea id="buildGoal" rows="3">Create a software production workspace that is cleaner, more structured, and more execution-ready than a chat or generic creator surface.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Delivery target</span>
+                <textarea id="deliveryTarget" rows="3">Produce concrete artifacts: module map, architecture notes, API/schema definitions, revision trace, launch checklist, and implementation handoff.</textarea>
+              </label>
             </div>
-            <span class="chip">PL-APP-05</span>
-          </div>
-          <div class="build-tools">
-            <span class="portal-step">Spec writer</span><span class="portal-step">Component map</span><span class="portal-step">Schema board</span><span class="portal-step">API contract</span><span class="portal-step">UI diff</span>
-          </div>
-        </section>
-      </main>
+          </section>
 
-      <aside class="panel panel-right panel-right--compact">
-        <div class="panel-header">
+          <section class="panel workspace-panel">
+            <div class="panel-label">2. System shape</div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>System boundaries</span>
+                <textarea id="systemBoundaries" rows="4">Define boundaries between UI shell, backend services, storage, worker logic, long-running jobs, and project-linked artifacts.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Core modules</span>
+                <textarea id="coreModules" rows="4">Shell, navigation, main workspace, build inspector, revision board, data/API layer, job runner hooks, artifact outputs.</textarea>
+              </label>
+            </div>
+
+            <div class="field-grid three">
+              <label class="field">
+                <span>UI ownership</span>
+                <input type="text" id="uiOwnership" value="Shell, page layout, component state, operator flows" />
+              </label>
+
+              <label class="field">
+                <span>Backend ownership</span>
+                <input type="text" id="backendOwnership" value="Contracts, orchestration hooks, receipts, jobs, storage" />
+              </label>
+
+              <label class="field">
+                <span>Worker ownership</span>
+                <input type="text" id="workerOwnership" value="Long-running build passes, validation, packaging, artifact generation" />
+              </label>
+            </div>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">3. Data + API</div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>State model</span>
+                <textarea id="stateModel" rows="4">List the state that must exist on this page: linked project, selected work item, pipeline snapshot, stage focus, build notes, artifact receipts, execution status.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Data / persistence</span>
+                <textarea id="dataModel" rows="4">Decide what persists locally, what comes from Projects, what comes from Pipelines, and what becomes generated artifact output.</textarea>
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>API contracts</span>
+                <textarea id="apiContracts" rows="4">Define the API edges clearly: fetch project context, load pipeline snapshot, save workspace notes, run selected stage, refresh jobs, list outputs.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Schema / object outputs</span>
+                <textarea id="schemaOutputs" rows="4">App build spec, module map, component contract set, API contract set, revision record, delivery checklist, artifact receipt.</textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">4. Revision handling</div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>Revision notes</span>
+                <textarea id="revisionNotes" rows="4">Track what changed in the software output without mutating canonical project ownership. Preserve reasoning for important architecture or contract changes.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Known risks / blockers</span>
+                <textarea id="knownRisks" rows="4">Avoid control clutter. Do not duplicate full pipeline logic here. Keep page focused on software build execution and artifact clarity.</textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">5. Execution mode</div>
+
+            <div class="segment-group" id="executionModeGroup">
+              <button type="button" class="segment active" data-value="Spec writer">Spec writer</button>
+              <button type="button" class="segment" data-value="Component map">Component map</button>
+              <button type="button" class="segment" data-value="Schema board">Schema board</button>
+              <button type="button" class="segment" data-value="API contract">API contract</button>
+              <button type="button" class="segment" data-value="Implementation pass">Implementation pass</button>
+              <button type="button" class="segment" data-value="QA / delivery">QA / delivery</button>
+            </div>
+
+            <input type="hidden" id="executionMode" value="Spec writer" />
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">6. Main actions</div>
+
+            <div class="action-grid">
+              <button type="button" class="action-tile primary" data-action="Run selected stage">Run selected stage</button>
+              <button type="button" class="action-tile" data-action="Build architecture pack">Build architecture pack</button>
+              <button type="button" class="action-tile" data-action="Generate module map">Generate module map</button>
+              <button type="button" class="action-tile" data-action="Draft API contracts">Draft API contracts</button>
+              <button type="button" class="action-tile" data-action="Prepare implementation handoff">Prepare implementation handoff</button>
+              <button type="button" class="action-tile" data-action="Refresh jobs">Refresh jobs</button>
+            </div>
+          </section>
+        </form>
+      </section>
+
+      <!-- RIGHT -->
+      <aside class="rail right-rail">
+        <div class="rail-head">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Inspector + outputs</h2>
-            <p>Keep build status, jobs, artifacts, and current outputs visible without making the rail feel like a second workspace.</p>
+            <h2>Inspector + Outputs</h2>
           </div>
-          <span class="status-chip status-chip--warn" id="executionStatus">Idle</span>
+          <span class="badge warn">Artifacts</span>
         </div>
 
-        <div class="inspector-stack">
-          <article class="card status-card">
-            <div class="eyebrow">Execution status</div>
-            <div class="status-strip">
-              <span class="status-pill">focus <strong>software build</strong></span>
-              <span class="status-pill">team <strong id="agentGroup"></strong></span>
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-label">Execution status</div>
+            <div class="status-card">
+              <strong id="executionStatus">Idle</strong>
+              <p id="executionSummary">
+                Awaiting selected stage run for this application workspace.
+              </p>
             </div>
-            <div class="progress" style="margin-top:0.15rem;"><span id="executionProgress" style="width: 26%;"></span></div>
-            <div id="stageStatusCopy" class="muted progress-copy">Awaiting selected stage run.</div>
-          </article>
+          </section>
 
-          <details class="rail-fold" open>
-            <summary><strong>Production jobs</strong><span class="rail-fold__meta">live queue</span></summary>
-            <div class="rail-fold__body">
-              <div id="productionJobList" class="stack stack--sm"></div>
+          <section class="panel">
+            <div class="panel-label">Output summary</div>
+            <div class="summary-box">
+              <div class="summary-row">
+                <span>Project</span>
+                <strong id="summaryProject">Maneit Portal</strong>
+              </div>
+              <div class="summary-row">
+                <span>Work item</span>
+                <strong id="summaryWorkItem">Home page rebuild</strong>
+              </div>
+              <div class="summary-row">
+                <span>Pipeline</span>
+                <strong id="summaryPipeline">PL-APP-05</strong>
+              </div>
+              <div class="summary-row">
+                <span>Stage</span>
+                <strong id="summaryStage">Architecture pass</strong>
+              </div>
+              <div class="summary-row">
+                <span>Mode</span>
+                <strong id="summaryMode">Spec writer</strong>
+              </div>
             </div>
-          </details>
+          </section>
 
-          <details class="rail-fold" open>
-            <summary><strong>Artifacts</strong><span class="rail-fold__meta">saved outputs</span></summary>
-            <div class="rail-fold__body">
-              <div id="artifactList" class="stack stack--sm"></div>
+          <section class="panel">
+            <div class="panel-label">Production jobs</div>
+            <div class="list dense">
+              <div class="list-item static">
+                <span class="item-title">Live queue</span>
+                <span class="item-meta">No active production jobs loaded yet.</span>
+              </div>
+              <div class="list-item static">
+                <span class="item-title">Artifacts saved</span>
+                <span class="item-meta">Waiting for first concrete build output.</span>
+              </div>
             </div>
-          </details>
+          </section>
 
-          <details class="rail-fold" open>
-            <summary><strong>App outputs</strong><span class="rail-fold__meta">current draft set</span></summary>
-            <div class="rail-fold__body">
-              <div id="outputGrid" class="stack stack--sm"></div>
+          <section class="panel">
+            <div class="panel-label">Current draft set</div>
+            <div class="pill-list">
+              <span class="pill static-pill">Architecture notes</span>
+              <span class="pill static-pill">Module map</span>
+              <span class="pill static-pill">Schema board</span>
+              <span class="pill static-pill">API contracts</span>
+              <span class="pill static-pill">Revision log</span>
+              <span class="pill static-pill">Delivery checklist</span>
             </div>
-          </details>
+          </section>
 
-          <details class="rail-fold">
-            <summary><strong>Activity log</strong><span class="rail-fold__meta">workspace trace</span></summary>
-            <div class="rail-fold__body">
-              <div id="activityLog" class="timeline"></div>
+          <section class="panel">
+            <div class="panel-label">Activity log</div>
+            <div class="receipt" id="activityLog">
+              <div class="receipt-state idle">No build action started yet.</div>
             </div>
-          </details>
+          </section>
         </div>
       </aside>
-    </section>
-
-    <p class="footer-note">AppCreator is where a software project becomes concrete: architecture, modules, state, API contracts, build outputs, and delivery-ready artifacts.</p>
+    </main>
   </div>
 
-  <div class="toast" id="toast" aria-live="polite"></div>
-  <script>
-(function(){
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) {
-      const normalized = apiBase.replace(/\/+$/, '');
-      window.PM_API_BASE = normalized;
-      localStorage.setItem('PM_API_BASE', normalized);
-    } else {
-      const saved = localStorage.getItem('PM_API_BASE');
-      if (saved) window.PM_API_BASE = saved;
-    }
-  } catch (error) {}
-})();
-</script>
-  <script src="page.js"></script>
+  <script src="./page.js"></script>
 </body>
 </html>
