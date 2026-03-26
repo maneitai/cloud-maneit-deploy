@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Home</title>
-  <meta name="description" content="Daily-driver conversation surface for discussion, continuity, export to Projects, and lightweight daily organization." />
+  <meta name="description" content="Daily-driver conversation surface for discussion, continuity, compact history, export to Projects, and lightweight daily organization." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
@@ -16,7 +16,7 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Home</h1>
-          <p>Daily-driver conversation surface for discussion, continuity, quick capture and promotion to Projects when work is ready.</p>
+          <p>Heavy operator workspace for open discussion, comparison, continuity, and promotion to Projects when work is ready.</p>
         </div>
       </div>
 
@@ -35,18 +35,19 @@
       </nav>
 
       <div class="header-actions">
-        <span class="chip">Daily driver</span>
-        <span class="chip">Discussion first</span>
-        <span class="chip">Export → Projects</span>
+        <span class="chip">History first</span>
+        <span class="chip">Open discussion</span>
+        <span class="chip">Compact control rail</span>
       </div>
     </header>
 
-    <section class="home-layout">
-      <aside class="panel panel-left">
-        <div class="section-title">
+    <section class="home-grid">
+      <aside class="panel home-left">
+        <div class="left-head">
           <div>
             <div class="eyebrow">Left lane</div>
             <h2>Chats</h2>
+            <p class="muted">Open, resume, and branch conversations without losing context.</p>
           </div>
           <div class="button-row">
             <button class="button button--small button--primary" id="newChatBtn" type="button">New</button>
@@ -54,86 +55,48 @@
           </div>
         </div>
 
-        <div class="stack stack--sm">
+        <div class="history-search">
           <label class="inline-field">
             <span class="soft">Search history</span>
-            <input class="input" id="historySearch" placeholder="Search title, summary, excerpt..." />
+            <input class="input" id="historySearch" placeholder="Search title, summary, excerpt, or id..." />
           </label>
+        </div>
 
-          <article class="history-block">
-            <div class="history-label-row">
-              <div class="eyebrow">Pinned chats</div>
-              <span class="counter" id="pinnedCount">2</span>
-            </div>
-            <div class="history-list" id="pinnedHistoryList">
-              <button class="history-item history-item--active" type="button" data-chat-id="chat-1">
-                <span class="history-title">PM frontend shell final</span>
-                <span class="history-meta">Pinned · Today</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="chat-2">
-                <span class="history-title">Pipeline benchmark notes</span>
-                <span class="history-meta">Pinned · Yesterday</span>
-              </button>
-            </div>
-          </article>
+        <div class="history-section">
+          <div class="history-section-head">
+            <div class="eyebrow">Pinned chats</div>
+            <span class="counter" id="pinnedCount">0</span>
+          </div>
+          <div class="history-list" id="pinnedHistoryList"></div>
+        </div>
 
-          <article class="history-block">
-            <div class="history-label-row">
-              <div class="eyebrow">Project folder</div>
-              <span class="counter" id="projectFolderCount">3</span>
-            </div>
-            <p class="muted small-note">Ongoing threads not ready for export yet.</p>
-            <div class="history-list" id="projectFolderList">
-              <button class="history-item" type="button" data-chat-id="proj-1">
-                <span class="history-title">State page polish</span>
-                <span class="history-meta">Ongoing · not exported</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="proj-2">
-                <span class="history-title">Agent Factory final pass</span>
-                <span class="history-meta">Ongoing · not exported</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="proj-3">
-                <span class="history-title">Guldardal notes</span>
-                <span class="history-meta">Ongoing · private</span>
-              </button>
-            </div>
-          </article>
+        <div class="history-section">
+          <div class="history-section-head">
+            <div class="eyebrow">Project folder</div>
+            <span class="counter" id="projectFolderCount">0</span>
+          </div>
+          <p class="muted compact-note">Ongoing threads that are not ready for export yet.</p>
+          <div class="history-list" id="projectFolderList"></div>
+        </div>
 
-          <article class="history-block">
-            <div class="history-label-row">
-              <div class="eyebrow">Recent history</div>
-              <span class="counter" id="recentCount">8</span>
-            </div>
-            <div class="history-list" id="recentHistoryList">
-              <button class="history-item" type="button" data-chat-id="chat-3">
-                <span class="history-title">Home daily driver structure</span>
-                <span class="history-meta">Today · 09:14</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="chat-4">
-                <span class="history-title">Settings cloud provider split</span>
-                <span class="history-meta">Today · 08:22</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="chat-5">
-                <span class="history-title">State quorum layout</span>
-                <span class="history-meta">Yesterday</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="chat-6">
-                <span class="history-title">Pipeline pass run notes</span>
-                <span class="history-meta">Yesterday</span>
-              </button>
-              <button class="history-item" type="button" data-chat-id="chat-7">
-                <span class="history-title">Creative writing model ideas</span>
-                <span class="history-meta">Yesterday</span>
-              </button>
-            </div>
-          </article>
+        <div class="history-section">
+          <div class="history-section-head">
+            <div class="eyebrow">History</div>
+            <span class="counter" id="recentCount">0</span>
+          </div>
+          <div class="history-list" id="recentHistoryList"></div>
         </div>
       </aside>
 
-      <main class="panel panel-center">
+      <main class="panel home-center">
         <div class="chat-control-bar">
-          <div class="control-group control-group--grow">
-            <label class="inline-field">
+          <div class="chat-control-title">
+            <div class="eyebrow">Middle lane</div>
+            <h2>Conversation workspace</h2>
+          </div>
+
+          <div class="chat-controls">
+            <label class="inline-field chat-control-field">
               <span class="soft">Mode</span>
               <select class="select" id="chatMode">
                 <option>Single</option>
@@ -142,17 +105,17 @@
               </select>
             </label>
 
-            <label class="inline-field">
-              <span class="soft">Active models</span>
+            <label class="inline-field chat-control-field">
+              <span class="soft">Active model set</span>
               <select class="select" id="activeModels">
-                <option>router-a only</option>
-                <option>router-a + router-b</option>
+                <option>single model</option>
+                <option>pair compare</option>
                 <option selected>discussion panel</option>
-                <option>custom set</option>
+                <option>custom</option>
               </select>
             </label>
 
-            <label class="inline-field">
+            <label class="inline-field chat-control-field">
               <span class="soft">Participants</span>
               <select class="select" id="participants">
                 <option>1 model</option>
@@ -161,34 +124,34 @@
                 <option>custom</option>
               </select>
             </label>
-          </div>
 
-          <div class="control-group">
-            <button class="button button--small" id="starterBtn" type="button">Starter</button>
-            <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+            <div class="button-row">
+              <button class="button button--small" id="starterBtn" type="button">Starter</button>
+              <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+            </div>
           </div>
         </div>
 
         <div class="session-strip">
           <span class="chip">Open discussion</span>
           <span class="chip" id="selectedModelChip">3 models selected</span>
-          <span class="chip">Discussion stays discussion until you deliberately promote it.</span>
+          <span class="chip">Discussion stays a discussion until you deliberately promote it.</span>
         </div>
 
         <section class="chat-thread" id="chatThread">
           <article class="message message--system">
             <div class="message-role">System</div>
-            <div class="message-body">Discussion only. Use chat to think, compare, challenge, and refine. Nothing here is treated as a task unless you deliberately promote it.</div>
+            <div class="message-body">Discussion only. Use chat to think, challenge, compare, and refine. Nothing here is treated as a task unless you deliberately promote it.</div>
           </article>
 
           <article class="message message--user">
             <div class="message-role">You</div>
-            <div class="message-body">We need Home to feel like a daily driver, not a backend admin page.</div>
+            <div class="message-body">Home needs to feel like something I actually want to open every day.</div>
           </article>
 
           <article class="message message--assistant">
             <div class="message-role">PM</div>
-            <div class="message-body">Then Home must optimize for continuity, compact history, low-friction input, and simple export to Projects rather than deep runtime control.</div>
+            <div class="message-body">Then it has to prioritize continuity, compact history, low-friction chat control, and a support rail that helps without becoming a control-panel wall.</div>
           </article>
         </section>
 
@@ -196,7 +159,7 @@
           <div class="composer-header">
             <div>
               <div class="eyebrow">Discussion only</div>
-              <strong>Use chat to think, compare, challenge and refine</strong>
+              <strong>Use chat to think, compare, challenge, and refine</strong>
             </div>
           </div>
 
@@ -212,23 +175,16 @@
         </section>
       </main>
 
-      <aside class="panel panel-right">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Right lane</div>
-            <h2>Support</h2>
-          </div>
-          <span class="status-chip status-chip--warn">Current session</span>
-        </div>
-
-        <div class="stack stack--md">
+      <aside class="panel home-right">
+        <div class="right-stack">
           <article class="card card--compact">
-            <div class="eyebrow">Export / promote</div>
+            <div class="eyebrow">Export</div>
+            <h3>Send to Projects</h3>
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Project class</span>
                 <select class="select" id="projectClassSelect">
-                  <option>System</option>
+                  <option selected>System</option>
                   <option>Portal</option>
                   <option>App</option>
                   <option>Pipeline</option>
@@ -243,29 +199,13 @@
                 <input class="input" id="promotionNote" value="Intent, scope, constraints, and next action." />
               </label>
 
-              <div class="button-grid">
-                <button class="button button--primary" id="sendToProjectsBtn" type="button">Send to Projects</button>
-              </div>
+              <button class="button button--primary" id="sendToProjectsBtn" type="button">Send to Projects</button>
             </div>
           </article>
 
           <article class="card card--compact">
             <div class="eyebrow">Current todo</div>
-            <div class="todo-list" id="currentTodoList">
-              <label class="todo-item">
-                <input type="checkbox" />
-                <span>Lock Home structure before coding</span>
-              </label>
-              <label class="todo-item">
-                <input type="checkbox" />
-                <span>Finish pipelines final version</span>
-              </label>
-              <label class="todo-item">
-                <input type="checkbox" />
-                <span>Export only when thread is truly ready</span>
-              </label>
-            </div>
-
+            <div class="todo-list" id="currentTodoList"></div>
             <div class="button-row">
               <button class="button button--small" id="addTodoBtn" type="button">Add todo</button>
               <button class="button button--small" id="clearDoneBtn" type="button">Clear done</button>
@@ -288,9 +228,9 @@
         <article class="card">
           <div class="eyebrow">Today</div>
           <ul class="daily-list">
-            <li>Pipeline frontend finalization</li>
-            <li>Backend model-role benchmarking</li>
-            <li>Agent Factory alignment</li>
+            <li>Finish frontend shell alignment</li>
+            <li>Benchmark backend model roles</li>
+            <li>Export only work that is ready</li>
           </ul>
         </article>
 
@@ -310,9 +250,9 @@
         <article class="card">
           <div class="eyebrow">Follow-ups</div>
           <ul class="daily-list">
-            <li>Move finished work to Projects</li>
-            <li>Benchmark JS-capable models</li>
-            <li>Lock State / Settings frontend</li>
+            <li>Move ready threads into Projects</li>
+            <li>Keep ongoing work in project folder</li>
+            <li>Use Home as daily driver, not admin wall</li>
           </ul>
         </article>
       </div>
