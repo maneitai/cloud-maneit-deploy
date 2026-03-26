@@ -3,422 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM — State</title>
-  <meta name="description" content="Full backend control surface for model lifecycle, quorum-based role execution, reasoning layers, validation, and live pipeline testing." />
+  <title>PM — Settings</title>
+  <meta name="description" content="Provider registry, cloud control, API keys, role-class routing policy, and model plus layer matching for Maneit." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
-  <style>
-    :root {
-      --bg: #071019;
-      --bg-2: #0b1520;
-      --panel: rgba(11, 21, 32, 0.92);
-      --panel-2: rgba(15, 27, 40, 0.94);
-      --border: rgba(255,255,255,0.08);
-      --text: #eaf2fb;
-      --muted: #8ea0b5;
-      --accent: #6ee7ff;
-      --accent-2: #8b5cf6;
-      --good: #34d399;
-      --warn: #fbbf24;
-      --bad: #fb7185;
-      --shadow: 0 18px 60px rgba(0,0,0,0.35);
-      --radius: 20px;
-      --chip: rgba(255,255,255,0.05);
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top right, rgba(139,92,246,0.16), transparent 28%),
-        radial-gradient(circle at top left, rgba(110,231,255,0.12), transparent 22%),
-        linear-gradient(180deg, var(--bg), var(--bg-2));
-    }
-
-    .page-shell {
-      width: min(1840px, calc(100vw - 32px));
-      margin: 18px auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .page-header {
-      display: grid;
-      grid-template-columns: auto 1fr auto;
-      gap: 16px;
-      align-items: center;
-      padding: 18px 20px;
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      box-shadow: var(--shadow);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      min-width: 0;
-    }
-
-    .brand-mark {
-      width: 42px;
-      height: 42px;
-      border-radius: 14px;
-      display: grid;
-      place-items: center;
-      font-size: 13px;
-      font-weight: 800;
-      color: #08111f;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: var(--shadow);
-      flex: 0 0 auto;
-    }
-
-    .header-copy { min-width: 0; }
-    .eyebrow {
-      color: var(--muted);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      margin-bottom: 4px;
-    }
-
-    .page-header h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    .page-header p {
-      margin: 6px 0 0;
-      color: var(--muted);
-      max-width: 920px;
-      line-height: 1.55;
-      font-size: 14px;
-    }
-
-    .global-nav {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-
-    .nav-link {
-      text-decoration: none;
-      color: var(--muted);
-      border: 1px solid rgba(255,255,255,0.05);
-      background: rgba(255,255,255,0.02);
-      padding: 10px 12px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 700;
-      transition: .18s ease;
-    }
-
-    .nav-link:hover,
-    .nav-link--active {
-      color: var(--text);
-      border-color: var(--border);
-      background: rgba(255,255,255,0.05);
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: var(--chip);
-      border: 1px solid rgba(255,255,255,0.04);
-      font-size: 12px;
-      color: var(--text);
-    }
-    .chip.good { color: var(--good); }
-    .chip.warn { color: var(--warn); }
-    .chip.bad { color: var(--bad); }
-
-    .state-topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 18px;
-    }
-
-    .state-title h2 {
-      margin: 0;
-      font-size: 30px;
-    }
-
-    .state-title p {
-      margin: 8px 0 0;
-      max-width: 900px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .button-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-    }
-
-    .button {
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 11px 14px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .button--primary {
-      background: linear-gradient(135deg, rgba(110,231,255,0.18), rgba(139,92,246,0.18));
-      border-color: rgba(110,231,255,0.24);
-    }
-
-    .button--danger {
-      color: #ffdbe3;
-      border-color: rgba(251,113,133,0.26);
-    }
-
-    .button--small {
-      padding: 8px 10px;
-      font-size: 12px;
-      border-radius: 12px;
-    }
-
-    .panel {
-      background: linear-gradient(180deg, var(--panel), var(--panel-2));
-      border: 1px solid var(--border);
-      border-radius: 22px;
-      box-shadow: var(--shadow);
-      padding: 18px;
-    }
-
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 14px;
-    }
-
-    .section-title h3 {
-      margin: 0;
-      font-size: 17px;
-    }
-
-    .section-title span {
-      color: var(--muted);
-      font-size: 12px;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 14px;
-      margin-top: 16px;
-      margin-bottom: 16px;
-    }
-
-    .stat-label {
-      color: var(--muted);
-      font-size: 12px;
-      margin-bottom: 8px;
-    }
-
-    .stat-value {
-      font-size: 28px;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    .chip-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .main-layout {
-      display: grid;
-      grid-template-columns: 1.5fr 360px;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .stack { display: grid; gap: 16px; }
-
-    .role-table {
-      display: grid;
-      gap: 10px;
-    }
-
-    .role-row {
-      display: grid;
-      grid-template-columns: 1.15fr 1.25fr .95fr .7fr 1fr 1fr;
-      gap: 10px;
-      align-items: center;
-      padding: 12px;
-      border-radius: 16px;
-      background: rgba(255,255,255,0.025);
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-
-    .role-row.header {
-      background: transparent;
-      border: 0;
-      color: var(--muted);
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      padding: 2px 6px 6px;
-    }
-
-    .role-name {
-      font-weight: 700;
-    }
-
-    .role-sub {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.45;
-      margin-top: 4px;
-    }
-
-    .select {
-      background: #0b1520;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 10px 12px;
-      width: 100%;
-    }
-
-    .live-log {
-      display: grid;
-      gap: 10px;
-      max-height: 360px;
-      overflow: auto;
-    }
-
-    .log-line {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.05);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .footer-note {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.55;
-      margin-top: 8px;
-    }
-
-    .runtime-grid {
-      display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .runtime-model {
-      background: rgba(255,255,255,0.028);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 18px;
-      padding: 14px;
-      min-height: 180px;
-      display: grid;
-      gap: 10px;
-      align-content: start;
-    }
-
-    .runtime-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      align-items: flex-start;
-    }
-
-    .runtime-name {
-      font-weight: 700;
-      font-size: 14px;
-      line-height: 1.35;
-    }
-
-    .runtime-sub {
-      font-size: 12px;
-      color: var(--muted);
-      line-height: 1.45;
-    }
-
-    .model-tags {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .tag {
-      border-radius: 999px;
-      padding: 6px 8px;
-      background: rgba(255,255,255,0.05);
-      font-size: 11px;
-      border: 1px solid rgba(255,255,255,0.04);
-    }
-
-    .tag.router { border-color: rgba(110,231,255,0.18); color: #9febff; }
-    .tag.planner { border-color: rgba(139,92,246,0.2); color: #c7b7ff; }
-    .tag.python { border-color: rgba(52,211,153,0.18); color: #9ef0cf; }
-    .tag.cpp { border-color: rgba(251,191,36,0.18); color: #ffe28f; }
-    .tag.js { border-color: rgba(244,114,182,0.18); color: #ffc0df; }
-    .tag.verify { border-color: rgba(125,211,252,0.18); color: #b9edff; }
-
-    .control-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 1700px) {
-      .runtime-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    }
-
-    @media (max-width: 1450px) {
-      .main-layout { grid-template-columns: 1fr; }
-      .hero-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .runtime-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .page-header { grid-template-columns: 1fr; }
-      .header-actions { justify-content: flex-start; }
-      .global-nav { justify-content: flex-start; }
-    }
-
-    @media (max-width: 1180px) {
-      .page-shell { width: min(100vw - 18px, 1840px); }
-      .hero-grid { grid-template-columns: 1fr; }
-      .runtime-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .role-row { grid-template-columns: 1fr; }
-      .role-row.header { display: none; }
-      .state-topbar { display: grid; }
-    }
-
-    @media (max-width: 760px) {
-      .runtime-grid { grid-template-columns: 1fr; }
-    }
-  </style>
+  <link rel="stylesheet" href="page.css" />
 </head>
 <body>
   <div class="page-shell">
@@ -427,10 +15,11 @@
         <div class="brand-mark">PM</div>
         <div class="header-copy">
           <div class="eyebrow">PM</div>
-          <h1>State</h1>
-          <p>Full backend control surface for model lifecycle, quorum-based role execution, reasoning layers, validation and live pipeline testing.</p>
+          <h1>Settings</h1>
+          <p>Provider registry and cloud control for Ollama, enterprise APIs, API keys, routing policy, and model plus layer matching.</p>
         </div>
       </div>
+
       <nav class="global-nav" aria-label="Primary">
         <a class="nav-link" href="../">Home</a>
         <a class="nav-link" href="../projects/">Projects</a>
@@ -441,59 +30,60 @@
         <a class="nav-link" href="../research-core/">Research Core</a>
         <a class="nav-link" href="../lorecore/">LoreCore</a>
         <a class="nav-link" href="../game-designer/">Game Designer</a>
-        <a class="nav-link nav-link--active" href="../state/">State</a>
-        <a class="nav-link" href="../settings/">Settings</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link nav-link--active" href="../settings/">Settings</a>
       </nav>
+
       <div class="header-actions">
-        <span class="chip">Model runtime</span>
-        <span class="chip">Quorum roles</span>
-        <span class="chip">Testing slice</span>
+        <span class="chip">Provider registry</span>
+        <span class="chip">Cloud control</span>
+        <span class="chip">Keys + routing</span>
       </div>
     </header>
 
-    <div class="state-topbar">
-      <div class="state-title">
-        <h2>State</h2>
-        <p>Build the full endgame role architecture now, but test one slice at a time. No important role should be approved by a single model when quality matters.</p>
+    <div class="settings-topbar">
+      <div class="page-title">
+        <h2>Provider + Cloud Control</h2>
+        <p>Settings owns providers, API keys, cloud and enterprise policy, and model plus layer matching. State stays local runtime only. Pipelines stays pipeline composition only. Agent Factory stays reasoning layer creation only.</p>
       </div>
       <div class="button-row">
-        <button class="button">Save State Profile</button>
-        <button class="button">Open Testing Slice</button>
-        <button class="button button--primary">Run Locked Pipeline Test</button>
+        <button class="button" id="saveProfileBtn" type="button">Save provider profile</button>
+        <button class="button" id="testProvidersBtn" type="button">Test provider health</button>
+        <button class="button" id="reloadInventoryBtn" type="button">Reload inventory</button>
+        <button class="button button--primary" id="syncAliasesBtn" type="button">Sync cloud aliases</button>
       </div>
     </div>
 
     <section class="hero-grid">
-      <article class="panel">
-        <div class="stat-label">Active Models</div>
-        <div class="stat-value">7</div>
+      <article class="panel metric-card">
+        <div class="stat-label">Provider Mode</div>
+        <div class="stat-value" id="statProviderMode">Hybrid</div>
         <div class="chip-row">
-          <div class="chip good">GPU 3 active</div>
-          <div class="chip">CPU 4 active</div>
-          <div class="chip warn">2 cold standby</div>
+          <div class="chip good">Local + cloud</div>
         </div>
       </article>
-      <article class="panel">
-        <div class="stat-label">Quorum Roles</div>
-        <div class="stat-value">3-of-3</div>
+
+      <article class="panel metric-card">
+        <div class="stat-label">Configured Keys</div>
+        <div class="stat-value" id="statConfiguredKeys">4</div>
         <div class="chip-row">
-          <div class="chip good">No single-model approval</div>
+          <div class="chip good">Masked storage</div>
         </div>
       </article>
-      <article class="panel">
-        <div class="stat-label">Testing Slice</div>
-        <div class="stat-value">Homepage JS</div>
+
+      <article class="panel metric-card">
+        <div class="stat-label">Enabled Providers</div>
+        <div class="stat-value" id="statEnabledProviders">6</div>
         <div class="chip-row">
-          <div class="chip warn">2 roles active</div>
-          <div class="chip">Round robin off</div>
+          <div class="chip">Registry-backed</div>
         </div>
       </article>
-      <article class="panel">
-        <div class="stat-label">Last Pipeline Run</div>
-        <div class="stat-value">Pass</div>
+
+      <article class="panel metric-card">
+        <div class="stat-label">Cloud Eligible Roles</div>
+        <div class="stat-value" id="statCloudEligibleRoles">7</div>
         <div class="chip-row">
-          <div class="chip good">Verify OK</div>
-          <div class="chip good">Audit OK</div>
+          <div class="chip warn">Heavy only</div>
         </div>
       </article>
     </section>
@@ -502,316 +92,107 @@
       <div class="stack">
         <article class="panel">
           <div class="section-title">
-            <h3>Role Assignment + Quorum</h3>
-            <span>One role can map to a 3-model set instead of a single approval point</span>
+            <h3>Provider Registry</h3>
+            <span>What providers exist and whether they are allowed to take work</span>
           </div>
-          <div class="role-table">
-            <div class="role-row header">
-              <div>Role</div>
-              <div>Primary Set</div>
-              <div>Reasoning Layer</div>
-              <div>Timeout</div>
-              <div>Output Contract</div>
-              <div>Quorum Gate</div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">Router</div>
-                <div class="role-sub">Core orchestration · quorum advisory</div>
-              </div>
-              <div><select class="select"><option>router-a, router-b, router-c</option></select></div>
-              <div><select class="select"><option>router_operating_prompt</option></select></div>
-              <div><select class="select"><option>60s</option></select></div>
-              <div><select class="select"><option>strict_json_route</option></select></div>
-              <div><select class="select"><option>2-of-3 route agreement</option></select></div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">Planner</div>
-                <div class="role-sub">Structured planning · independent planning trio</div>
-              </div>
-              <div><select class="select"><option>planner-a, planner-b, planner-c</option></select></div>
-              <div><select class="select"><option>planner_operating_prompt</option></select></div>
-              <div><select class="select"><option>90s</option></select></div>
-              <div><select class="select"><option>structured_markdown_plan</option></select></div>
-              <div><select class="select"><option>2-of-3 plan agreement</option></select></div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">Python Generator</div>
-                <div class="role-sub">Software engineering · code quorum</div>
-              </div>
-              <div><select class="select"><option>python-a, python-b, python-c</option></select></div>
-              <div><select class="select"><option>python_reasoning_v1</option></select></div>
-              <div><select class="select"><option>120s</option></select></div>
-              <div><select class="select"><option>raw_python_file</option></select></div>
-              <div><select class="select"><option>3-way diff + verifier</option></select></div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">C++ Generator</div>
-                <div class="role-sub">Native systems · compile-first quorum</div>
-              </div>
-              <div><select class="select"><option>cpp-a, cpp-b, cpp-c</option></select></div>
-              <div><select class="select"><option>cpp_reasoning_v1</option></select></div>
-              <div><select class="select"><option>150s</option></select></div>
-              <div><select class="select"><option>raw_cpp_module</option></select></div>
-              <div><select class="select"><option>compile + 2 verifier votes</option></select></div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">JS Generator</div>
-                <div class="role-sub">Frontend interaction · contract-first trio</div>
-              </div>
-              <div><select class="select"><option>js-a, js-b, js-c</option></select></div>
-              <div><select class="select"><option>coder_operating_prompt</option></select></div>
-              <div><select class="select"><option>75s</option></select></div>
-              <div><select class="select"><option>raw_js_file</option></select></div>
-              <div><select class="select"><option>theme contract + 2-of-3</option></select></div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">Verifier</div>
-                <div class="role-sub">Strict validation · never single point of approval</div>
-              </div>
-              <div><select class="select"><option>verify-a, verify-b, verify-c</option></select></div>
-              <div><select class="select"><option>verifier_operating_prompt</option></select></div>
-              <div><select class="select"><option>60s</option></select></div>
-              <div><select class="select"><option>strict_json_verification</option></select></div>
-              <div><select class="select"><option>2-of-3 approval required</option></select></div>
-            </div>
-
-            <div class="role-row">
-              <div>
-                <div class="role-name">Auditor</div>
-                <div class="role-sub">Final review · separate from verifier quorum</div>
-              </div>
-              <div><select class="select"><option>audit-a, audit-b, audit-c</option></select></div>
-              <div><select class="select"><option>audit_operating_prompt</option></select></div>
-              <div><select class="select"><option>60s</option></select></div>
-              <div><select class="select"><option>markdown_audit</option></select></div>
-              <div><select class="select"><option>2-of-3 audit agreement</option></select></div>
-            </div>
-          </div>
+          <div class="registry-list" id="providerRegistry"></div>
         </article>
 
         <article class="panel">
           <div class="section-title">
-            <h3>Model Runtime Control</h3>
-            <span>Start, stop, warm, unload and pin without scanning the whole page</span>
+            <h3>API Keys + Secrets</h3>
+            <span>Masked credential fields for cloud and enterprise providers</span>
           </div>
-          <div class="runtime-grid">
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">router-a</div>
-                  <div class="runtime-sub">pipe_router_gemma4b · GPU · active</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag router">Router Family</div>
-                <div class="tag">Pinned GPU</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small button--danger">Stop</button>
-                <button class="button button--small">Warm</button>
-                <button class="button button--small">Unload</button>
-              </div>
-            </div>
+          <div class="secrets-grid" id="secretsGrid"></div>
+          <div class="footer-note">This page is where you configure access. State should never become a secret-management surface.</div>
+        </article>
 
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">router-b</div>
-                  <div class="runtime-sub">pipe_router_gemma4b · CPU · active</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag router">Router Family</div>
-                <div class="tag">Pin CPU</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small button--danger">Stop</button>
-                <button class="button button--small">Warm</button>
-                <button class="button button--small">Pin CPU</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">router-c</div>
-                  <div class="runtime-sub">pipe_router_gemma4b · cold standby</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag router">Router Family</div>
-                <div class="tag">Standby</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small button--primary">Start</button>
-                <button class="button button--small">Warm</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">planner-a</div>
-                  <div class="runtime-sub">pipe_planner_qwen3_8b · GPU · benchmark</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag planner">Planner Family</div>
-                <div class="tag">Benchmark</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small">Start</button>
-                <button class="button button--small button--danger">Disable</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">python-a</div>
-                  <div class="runtime-sub">pipe_python_coder_primary · CPU · cold</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag python">Python Family</div>
-                <div class="tag">Cold Standby</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small">Start</button>
-                <button class="button button--small">Pin CPU</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">cpp-a</div>
-                  <div class="runtime-sub">pipe_cpp_coder_primary · CPU · cold</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag cpp">C++ Family</div>
-                <div class="tag">Cold Standby</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small">Start</button>
-                <button class="button button--small">Pin CPU</button>
-              </div>
-            </div>
+        <article class="panel">
+          <div class="section-title">
+            <h3>Role-Class Provider Policy</h3>
+            <span>Which providers are preferred or allowed for each role class</span>
           </div>
+          <div class="policy-list" id="policyList"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h3>Model + Layer Matching</h3>
+            <span>Recommended provider and reasoning layer pairing by role family</span>
+          </div>
+          <div class="matching-list" id="matchingList"></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h3>Cloud Alias Mapping</h3>
+            <span>Alias remains the role contract, not the provider model name</span>
+          </div>
+          <div class="alias-list" id="aliasList"></div>
         </article>
       </div>
 
       <aside class="stack">
         <article class="panel">
           <div class="section-title">
-            <h3>Active Model Census</h3>
-            <span>What is active right now</span>
+            <h3>Provider Census</h3>
+            <span>At-a-glance availability</span>
+          </div>
+          <div class="chip-row" id="providerCensus"></div>
+          <div class="footer-note">You should be able to glance here and know what is connected, configured, or blocked without reading the whole page.</div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <h3>Integration Guardrails</h3>
+            <span>Rules that stop provider sprawl</span>
           </div>
           <div class="chip-row">
-            <div class="chip good">router-a active</div>
-            <div class="chip good">router-b active</div>
-            <div class="chip warn">planner-a benchmark</div>
-            <div class="chip">python-a cold</div>
-            <div class="chip">cpp-a cold</div>
-          </div>
-          <div class="footer-note">
-            This panel is intentionally simple: you should be able to glance here and know what is active without skimming the whole control surface.
+            <div class="chip">Alias is role contract</div>
+            <div class="chip">No direct model-name routing</div>
+            <div class="chip">Cloud use must be explicit</div>
+            <div class="chip good">Heavy roles only by policy</div>
+            <div class="chip">Secrets stay in Settings</div>
           </div>
         </article>
 
         <article class="panel">
           <div class="section-title">
-            <h3>Testing Slice</h3>
-            <span>Activate one narrow slice, keep the full role catalog visible</span>
+            <h3>Live Provider Trace</h3>
+            <span>Connection and sync feedback</span>
           </div>
-          <div class="chip-row">
-            <div class="chip good">Locked Execution</div>
-            <div class="chip good">3-model quorum enabled</div>
-            <div class="chip">Round robin off</div>
-          </div>
-          <div class="footer-note">
-            You do not test the whole endgame at once. You activate one slice at a time, but the system still keeps the full role architecture visible and ready.
-          </div>
+          <div class="live-log" id="providerTrace"></div>
         </article>
 
         <article class="panel">
           <div class="section-title">
-            <h3>Validation / Contracts</h3>
-            <span>Per-role guardrails + approval rules</span>
+            <h3>Cloud Runtime Controls</h3>
+            <span>Provider-facing alias management</span>
           </div>
-          <div class="chip-row">
-            <div class="chip">No markdown fences</div>
-            <div class="chip">No placeholder text</div>
-            <div class="chip">No truncation</div>
-            <div class="chip">Explicit fallback only</div>
-            <div class="chip">Theme contract required</div>
-            <div class="chip good">2-of-3 verifier quorum</div>
-            <div class="chip good">Separate auditor quorum</div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Live Pipeline Trace</h3>
-            <span>What is happening right now</span>
-          </div>
-          <div class="live-log">
-            <div class="log-line">[STAGE] js_generate → js-a, js-b, js-c</div>
-            <div class="log-line">[VOTE] js-a pass · js-b pass · js-c diverged</div>
-            <div class="log-line">[PASS] local_verify_initial passed=True</div>
-            <div class="log-line">[PASS] verifier 2-of-3 agreement reached</div>
-            <div class="log-line">[PASS] audit 2-of-3 agreement reached</div>
-            <div class="log-line">[FINAL] final_pass=True</div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Placement Policy</h3>
-            <span>Quality over speed</span>
-          </div>
-          <div class="chip-row">
-            <div class="chip good">Pinned GPU</div>
-            <div class="chip">Pinned CPU</div>
-            <div class="chip">Cold standby</div>
-            <div class="chip bad">Disabled</div>
-          </div>
-          <div class="footer-note">
-            Start with explicit locked models and quorum approval. Add larger pools and balancing later, after role quality is benchmarked and stable.
-          </div>
+          <div class="cloud-runtime-list" id="cloudRuntimeList"></div>
         </article>
       </aside>
     </section>
   </div>
 
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
   <script>
-    (function(){
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const apiBase = params.get('apiBase');
-        if (apiBase) {
-          const normalized = apiBase.replace(/\/+$/, '');
-          window.PM_API_BASE = normalized;
-          localStorage.setItem('PM_API_BASE', normalized);
-        } else {
-          const saved = localStorage.getItem('PM_API_BASE');
-          if (saved) window.PM_API_BASE = saved;
-        }
-      } catch (error) {}
-    })();
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get('apiBase');
+      if (apiBase) {
+        const normalized = apiBase.replace(/\/+$/, '');
+        window.PM_API_BASE = normalized;
+        localStorage.setItem('PM_API_BASE', normalized);
+      } else {
+        const saved = localStorage.getItem('PM_API_BASE');
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
   </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
