@@ -3,12 +3,401 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM — Home TEST</title>
+  <title>PM — Agent Factory</title>
+  <meta name="description" content="Library and workspace for reusable agent profiles, reasoning layers, contracts, gates, and compatibility defaults." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
-<body style="background:#0b1520;color:#eaf2fb;font-family:Inter,system-ui,sans-serif;padding:40px;">
-  <h1>HOME FILE TEST 73</h1>
-  <p>If you can see this exact text, the correct home/index.html is loading.</p>
+<body>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand">
+        <div class="brand-mark">PM</div>
+        <div class="header-copy">
+          <div class="eyebrow">PM</div>
+          <h1>Agent Factory</h1>
+          <p>Library and workspace for reusable agent profiles. Define reasoning defaults here, then compose them later in Pipelines.</p>
+        </div>
+      </div>
+
+      <nav class="global-nav" aria-label="Primary">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link" href="../projects/">Projects</a>
+        <a class="nav-link" href="../pipelines/">Pipelines</a>
+        <a class="nav-link nav-link--active" href="../agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="../appcreator/">AppCreator</a>
+        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+        <a class="nav-link" href="../research-core/">Research Core</a>
+        <a class="nav-link" href="../lorecore/">LoreCore</a>
+        <a class="nav-link" href="../game-designer/">Game Designer</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link" href="../settings/">Settings</a>
+      </nav>
+
+      <div class="header-actions">
+        <span class="chip">Library</span>
+        <span class="chip">Workspace</span>
+        <span class="chip">Reusable profiles</span>
+      </div>
+    </header>
+
+    <section class="surface-banner panel">
+      <div>
+        <div class="eyebrow">Surface contract</div>
+        <strong>Agent Factory creates reusable agent profiles</strong>
+      </div>
+      <div class="banner-note">This page defines agents. Pipelines uses them later. State runs them later. Settings decides what providers are possible later.</div>
+    </section>
+
+    <section class="factory-layout">
+      <aside class="panel panel-left">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Agent library</h2>
+          </div>
+          <span class="status-chip status-chip--good">Reusable inventory</span>
+        </div>
+
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Search + filter</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Search agents</span>
+                <input class="input" id="agentSearch" placeholder="Search by name, role, subtype..." />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Role class</span>
+                <select class="select" id="libraryRoleClass">
+                  <option selected>All</option>
+                  <option>Planner</option>
+                  <option>Coder</option>
+                  <option>Verifier</option>
+                  <option>Auditor</option>
+                  <option>Router</option>
+                  <option>Research</option>
+                  <option>Creative</option>
+                  <option>Systems</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Subtype</span>
+                <select class="select" id="librarySubtype">
+                  <option selected>All</option>
+                  <option>C++ Coder</option>
+                  <option>Python Coder</option>
+                  <option>JS Generator</option>
+                  <option>Strict Verifier</option>
+                  <option>Structured Planner</option>
+                  <option>Creative Writer</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Saved agents</div>
+            <div class="agent-library-list" id="agentLibraryList">
+              <button class="library-card library-card--active" type="button" data-agent-id="cpp_generator_v1">
+                <strong>C++ Generator v1</strong>
+                <span>C++ Coder · systems</span>
+              </button>
+
+              <button class="library-card" type="button" data-agent-id="python_generator_v1">
+                <strong>Python Generator v1</strong>
+                <span>Python Coder · software</span>
+              </button>
+
+              <button class="library-card" type="button" data-agent-id="js_generator_frontend_v1">
+                <strong>JS Generator Frontend v1</strong>
+                <span>JS Coder · frontend</span>
+              </button>
+
+              <button class="library-card" type="button" data-agent-id="planner_structured_v1">
+                <strong>Structured Planner v1</strong>
+                <span>Planner · orchestration</span>
+              </button>
+
+              <button class="library-card" type="button" data-agent-id="strict_verifier_v1">
+                <strong>Strict Verifier v1</strong>
+                <span>Verifier · gatekeeper</span>
+              </button>
+
+              <button class="library-card" type="button" data-agent-id="audit_writer_v1">
+                <strong>Audit Writer v1</strong>
+                <span>Auditor · final review</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Library rules</div>
+            <ul class="rule-list">
+              <li>Agent Factory defines reusable profiles.</li>
+              <li>Profiles carry defaults, not live runtime state.</li>
+              <li>Pipelines can override later without mutating the source profile.</li>
+              <li>State and Settings stay separate.</li>
+            </ul>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2>Agent workspace</h2>
+            <p class="muted">Build or edit a reusable agent profile here. This is where role identity, defaults, contracts and compatibility are defined.</p>
+          </div>
+          <div class="button-row">
+            <button class="button" id="newAgentBtn" type="button">New agent</button>
+            <button class="button" id="cloneAgentBtn" type="button">Clone selected</button>
+            <button class="button button--primary" id="saveAgentBtn" type="button">Save agent</button>
+          </div>
+        </div>
+
+        <section class="workspace-kpis">
+          <article class="metric-card">
+            <span class="soft">Role class</span>
+            <strong id="workspaceRoleClass">Coder</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Subtype</span>
+            <strong id="workspaceSubtype">C++ Coder</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Quorum default</span>
+            <strong id="workspaceQuorum">2-of-3</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Compatibility</span>
+            <strong id="workspaceCompatibility">Pipelines</strong>
+          </article>
+        </section>
+
+        <div class="workspace-grid">
+          <article class="card">
+            <div class="eyebrow">Identity</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Agent name</span>
+                <input class="input" id="agentName" value="C++ Generator v1" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Role class</span>
+                <select class="select" id="agentRoleClass">
+                  <option>Planner</option>
+                  <option selected>Coder</option>
+                  <option>Verifier</option>
+                  <option>Auditor</option>
+                  <option>Router</option>
+                  <option>Research</option>
+                  <option>Creative</option>
+                  <option>Systems</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Subtype</span>
+                <select class="select" id="agentSubtype">
+                  <option>C++ Coder</option>
+                  <option>Python Coder</option>
+                  <option>JS Generator</option>
+                  <option>Backend API Coder</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Description</span>
+                <textarea class="textarea" id="agentDescription" placeholder="What does this agent exist to do?">Reusable C++ generation profile for native code, modules and compile-first workflows.</textarea>
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Reasoning + prompt</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Reasoning layer</span>
+                <select class="select" id="agentReasoningLayer">
+                  <option>cpp_reasoning_v1</option>
+                  <option selected>cpp_architecture_strict_v1</option>
+                  <option>systems_coder_v1</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Prompt pack</span>
+                <select class="select" id="agentPromptPack">
+                  <option selected>coder_operating_prompt</option>
+                  <option>systems_prompt_pack</option>
+                  <option>strict_codegen_prompt_pack</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Default model family</span>
+                <select class="select" id="agentModelFamily">
+                  <option selected>DeepSeek</option>
+                  <option>Starcoder</option>
+                  <option>Llama</option>
+                  <option>Qwen Coder</option>
+                  <option>Ollama Cloud Heavy Coder</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Contracts + gates</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Output contract</span>
+                <select class="select" id="agentOutputContract">
+                  <option selected>raw_cpp_module</option>
+                  <option>raw_cpp_file</option>
+                  <option>patch_only</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Validation gate</span>
+                <select class="select" id="agentValidationGate">
+                  <option selected>cpp_compile_gate</option>
+                  <option>cpp_static_check</option>
+                  <option>contract_gate_v1</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Quorum default</span>
+                <select class="select" id="agentQuorumDefault">
+                  <option>single pass</option>
+                  <option selected>2-of-3</option>
+                  <option>3-of-3</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Fallback policy</span>
+                <select class="select" id="agentFallbackPolicy">
+                  <option selected>explicit fallback only</option>
+                  <option>same family fallback</option>
+                  <option>no fallback</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Default timeout</span>
+                <select class="select" id="agentTimeoutDefault">
+                  <option>60s</option>
+                  <option>90s</option>
+                  <option selected>120s</option>
+                  <option>150s</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Compatibility</div>
+            <div class="field-grid">
+              <label class="checkbox-row">
+                <input type="checkbox" checked />
+                <span>Usable in Pipelines</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" />
+                <span>Usable in Home discussion</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" />
+                <span>Usable in LoreCore discussion mode</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" checked />
+                <span>Usable in creator pipeline presets</span>
+              </label>
+            </div>
+          </article>
+        </div>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Tools + preview</h2>
+          </div>
+          <span class="status-chip status-chip--warn">Workspace support</span>
+        </div>
+
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Profile summary</div>
+            <strong id="previewAgentName">C++ Generator v1</strong>
+            <p class="muted" id="previewAgentDescription">Reusable C++ generation profile for native code, modules and compile-first workflows.</p>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Prompt preview</div>
+            <div class="preview-box" id="promptPreviewBox">
+              <strong>coder_operating_prompt</strong>
+              <span>Raw code only · no fences · no filler · contract-first generation</span>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Contract preview</div>
+            <div class="preview-box" id="contractPreviewBox">
+              <strong>raw_cpp_module</strong>
+              <span>Output should be a direct C++ module payload with no wrapper prose.</span>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Validation preview</div>
+            <div class="preview-box" id="validationPreviewBox">
+              <strong>cpp_compile_gate</strong>
+              <span>Compile-first validation with syntax and contract checks.</span>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Quick tools</div>
+            <div class="button-grid">
+              <button class="button" id="runSampleTestBtn" type="button">Run sample test</button>
+              <button class="button" id="checkCompatibilityBtn" type="button">Check compatibility</button>
+              <button class="button" id="archiveAgentBtn" type="button">Archive</button>
+            </div>
+          </article>
+        </div>
+      </aside>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script>
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get('apiBase');
+      if (apiBase) {
+        const normalized = apiBase.replace(/\\/+$/, '');
+        window.PM_API_BASE = normalized;
+        localStorage.setItem('PM_API_BASE', normalized);
+      } else {
+        const saved = localStorage.getItem('PM_API_BASE');
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
+  </script>
   <script type="module" src="page.js"></script>
 </body>
 </html>
