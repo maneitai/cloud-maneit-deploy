@@ -3,156 +3,486 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM — Research Core</title>
-  <meta name="description" content="Deep research portal for corpus building, synthesis, evidence chains, and learning or training control." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="page.css" />
+  <title>Research Core — PM</title>
+  <link rel="stylesheet" href="./page.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <header class="page-header">
-      <div class="brand"><div class="brand-mark">PM</div><div class="header-copy"><div class="eyebrow">PM</div><h1>Research Core</h1><p>Deep research portal for source capture, dossier building, evidence chains, synthesis, and learning or training control that can feed every other portal.</p></div></div>
-      <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link" href="../">Home</a>
-        <a class="nav-link" href="../projects/">Projects</a>
-        <a class="nav-link" href="../pipelines/">Pipelines</a>
-        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
-        <a class="nav-link" href="../appcreator/">AppCreator</a>
-        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
-        <a class="nav-link nav-link--active" href="../research-core/">Research Core</a>
-        <a class="nav-link" href="../lorecore/">LoreCore</a>
-        <a class="nav-link" href="../game-designer/">Game Designer</a>
-        <a class="nav-link" href="../state/">State</a>
-        <a class="nav-link" href="../settings/">Settings</a>
+  <div class="pm-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">PM</div>
+        <div class="brand-copy">
+          <h1>Research Core</h1>
+          <p>
+            Structured control surface for research, evidence building, synthesis,
+            evaluation, and model learning across the system.
+          </p>
+        </div>
+      </div>
+
+      <nav class="topnav">
+        <a href="../home/index.html">Home</a>
+        <a href="../projects/index.html">Projects</a>
+        <a href="../pipelines/index.html">Pipelines</a>
+        <a href="../agent-factory/index.html">Agent Factory</a>
+        <a href="../appcreator/index.html">AppCreator</a>
+        <a href="../portalcreator/index.html">PortalCreator</a>
+        <a class="active" href="../research-core/index.html">Research Core</a>
+        <a href="../lorecore/index.html">LoreCore</a>
+        <a href="../game-designer/index.html">Game Designer</a>
+        <a href="../state/index.html">State</a>
+        <a href="../settings/index.html">Settings</a>
       </nav>
-      <div class="header-actions"><span class="chip">Deep research</span><span class="chip">Reusable evidence</span><span class="chip">Learning / training control</span></div>
+
+      <div class="top-actions">
+        <button class="chip active">Deep research</button>
+        <button class="chip">Reusable evidence</button>
+        <button class="chip">Learning / training</button>
+      </div>
     </header>
 
-    <details class="scope-drawer">
-      <summary>
+    <section class="surface-contract">
+      <div class="surface-contract__toggle">
+        <span class="caret">▶</span>
         <div>
           <div class="eyebrow">Surface contract</div>
           <strong>Purpose, ownership, boundaries</strong>
         </div>
-        <span class="scope-drawer__hint">Open</span>
-      </summary>
-      <div class="scope-strip">
-        <article class="scope-card">
-          <div class="eyebrow">Purpose</div>
-          <h2>Research substrate for the whole platform</h2>
-          <p class="muted">Research Core is where questions become source stacks, extracts, syntheses, and reusable evidence chains that can strengthen portal creation, software work, pipelines, lore, and game design.</p>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Owns</div>
-          <ul>
-            <li>source library and corpus</li>
-            <li>research chats and notes</li>
-            <li>dossiers and evidence chains</li>
-            <li>syntheses, eval packs, and training sets</li>
-          </ul>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Does not own</div>
-          <ul>
-            <li>final app or portal implementation</li>
-            <li>final lore archive ownership</li>
-            <li>final game-system ownership</li>
-          </ul>
-        </article>
       </div>
-    </details>
-
-    <section class="page-grid page-grid--research">
-      <aside class="panel panel-left">
-        <div class="panel-header"><div><div class="eyebrow">Left rail</div><h2>Source stacks</h2></div><span class="status-chip status-chip--good">Evidence first</span></div>
-        <div class="stack">
-          <article class="card card--compact">
-            <div class="eyebrow">Capture rule</div>
-            <p class="muted">Collect raw material here before you collapse it into confident answers. Preserve contradiction and provenance.</p>
-          </article>
-          <article class="card card--compact">
-            <div class="eyebrow">Collections</div>
-            <div id="sourceCollectionList" class="stack stack--sm"></div>
-          </article>
-          <article class="card card--compact">
-            <div class="eyebrow">Current framing lanes</div>
-            <div id="questionBoard" class="stack stack--sm"></div>
-          </article>
-        </div>
-      </aside>
-
-      <main class="panel panel-center">
-        <div class="panel-header"><div><div class="eyebrow">Center surface</div><h2>Research workbench</h2><p>Frame questions, gather evidence, synthesize carefully, and decide what should become reusable training or evaluation material.</p></div><div class="button-row"><button class="button" id="newDossierBtn" type="button">New dossier</button><button class="button button--primary" id="runSynthesisBtn" type="button">Run synthesis</button></div></div>
-
-        <section class="research-board">
-          <article class="work-card">
-            <div class="eyebrow">Step 1</div>
-            <h3>Question framing</h3>
-            <p class="muted">State the thesis, uncertainty, constraints, and what would count as enough evidence.</p>
-            <div id="researchFramingList" class="stack stack--sm section-list"></div>
-          </article>
-          <article class="work-card">
-            <div class="eyebrow">Step 2</div>
-            <h3>Evidence chain</h3>
-            <p class="muted">Keep claims tied to sources, contradictions, and verification status instead of blending everything into one summary too early.</p>
-            <div id="evidenceBoard" class="stack stack--sm section-list"></div>
-          </article>
-          <article class="work-card">
-            <div class="eyebrow">Step 3</div>
-            <h3>Synthesis + handoff</h3>
-            <p class="muted">Turn mature research into dossiers, training packs, eval sets, or direct inputs for the other portals.</p>
-            <div id="dossierGrid" class="stack stack--sm section-list"></div>
-          </article>
-        </section>
-
-        <section class="research-value-grid">
-          <article class="card">
-            <div class="eyebrow">Feeds into</div>
-            <div id="portalFeedList" class="stack stack--sm"></div>
-          </article>
-          <article class="card">
-            <div class="eyebrow">Research status</div>
-            <div id="researchStatusList" class="stack stack--sm"></div>
-          </article>
-        </section>
-      </main>
-
-      <aside class="panel panel-right">
-        <div class="panel-header"><div><div class="eyebrow">Right rail</div><h2>Operations</h2></div><span class="status-chip status-chip--warn">Controlled</span></div>
-        <div class="stack">
-          <article class="card card--compact">
-            <div class="eyebrow">Learning / training</div>
-            <div id="trainingModeList" class="stack stack--sm"></div>
-          </article>
-          <article class="card card--compact">
-            <div class="eyebrow">Boundary</div>
-            <p class="muted">Research Core can prepare learning and training material, but long-running production execution should still flow through Pipelines and production jobs.</p>
-          </article>
-          <article class="card card--compact">
-            <div class="eyebrow">Export paths</div>
-            <div id="researchOutputList" class="stack stack--sm"></div>
-          </article>
-        </div>
-      </aside>
+      <div class="surface-contract__status">Open</div>
     </section>
+
+    <main class="research-layout">
+      <!-- LEFT -->
+      <aside class="rail left-rail">
+        <div class="rail-head">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Library / History</h2>
+          </div>
+          <span class="badge good">Reusable</span>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-label">Recent runs</div>
+            <div class="list dense" id="recentRuns">
+              <button class="list-item active">
+                <span class="item-title">Lore grounding — Norse trade routes</span>
+                <span class="item-meta">Synthesis notebook · 2h ago</span>
+              </button>
+              <button class="list-item">
+                <span class="item-title">Tower defense progression review</span>
+                <span class="item-meta">Research dossier · Yesterday</span>
+              </button>
+              <button class="list-item">
+                <span class="item-title">Model failure patterns — creator briefs</span>
+                <span class="item-meta">Training pack · 2d ago</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Saved briefs</div>
+            <div class="pill-list">
+              <button class="pill">Lore consistency audit</button>
+              <button class="pill">Game economy comparison</button>
+              <button class="pill">Portal IA support pack</button>
+              <button class="pill">Training objective template</button>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Knowledge objects</div>
+            <div class="object-grid">
+              <button class="object-card" data-object="source-stack">
+                <strong>Source stacks</strong>
+                <span>Papers, docs, notes, saved pages, raw source collections.</span>
+              </button>
+              <button class="object-card" data-object="evidence-chain">
+                <strong>Evidence chains</strong>
+                <span>Claims tied to provenance, contradictions, and verifier notes.</span>
+              </button>
+              <button class="object-card" data-object="dossier">
+                <strong>Research dossiers</strong>
+                <span>Matured research objects ready for Projects or creator support.</span>
+              </button>
+              <button class="object-card" data-object="synthesis">
+                <strong>Synthesis notebooks</strong>
+                <span>Operator-readable synthesis with uncertainty and next questions.</span>
+              </button>
+              <button class="object-card" data-object="eval">
+                <strong>Eval packs</strong>
+                <span>Evaluation datasets, tasks, expectations, and failure checks.</span>
+              </button>
+              <button class="object-card" data-object="training">
+                <strong>Training packs</strong>
+                <span>Structured learning assets for better future model behavior.</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </aside>
+
+      <!-- CENTER -->
+      <section class="center-surface">
+        <div class="surface-head">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2>Job Definition + Research / Learning Controls</h2>
+            <p>
+              Define the job clearly, choose how it should be researched or learned,
+              and produce a reusable knowledge object instead of loose chat output.
+            </p>
+          </div>
+
+          <div class="surface-actions">
+            <button class="btn secondary" id="saveDraftBtn">Save draft</button>
+            <button class="btn primary" id="startJobBtn">Start job</button>
+          </div>
+        </div>
+
+        <form class="workspace" id="researchForm">
+          <section class="panel workspace-panel">
+            <div class="panel-label">1. Job definition</div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>Title</span>
+                <input type="text" id="jobTitle" value="Lore grounding — Early Viking trade routes" />
+              </label>
+
+              <label class="field">
+                <span>Output type</span>
+                <select id="outputType">
+                  <option>Research dossier</option>
+                  <option>Synthesis notebook</option>
+                  <option>Evidence chain</option>
+                  <option>Eval pack</option>
+                  <option>Training pack</option>
+                  <option>Lore pack</option>
+                  <option>Creator support pack</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Brief</span>
+              <textarea id="brief" rows="4">Research trade routes, coastal movement, river access, and plausible movement patterns relevant to Norse, Anglo-Saxon, and continental interaction in the early Viking age. Preserve contradictions and uncertainty instead of flattening them.</textarea>
+            </label>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>Goal</span>
+                <textarea id="goal" rows="3">Build a reusable lore grounding object that can support Galdurdal Chronicles, map planning, and historically plausible logistics.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Question / problem</span>
+                <textarea id="problem" rows="3">What routes, ports, river systems, and travel assumptions are most credible for movement between England, Denmark, western Sweden, Trøndelag, Frisia, Francia, and Ireland?</textarea>
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>Success criteria</span>
+                <textarea id="successCriteria" rows="3">Output must separate strong evidence from plausible inference, include contradictions, and produce a usable object for lore and map design.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Constraints</span>
+                <textarea id="constraints" rows="3">No fantasy contamination. Preserve uncertainty. Prioritize provenance. Avoid collapsing disagreements into one clean answer.</textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">2. Job mode</div>
+
+            <div class="segment-group" id="jobModeGroup">
+              <button type="button" class="segment active" data-value="Research">Research</button>
+              <button type="button" class="segment" data-value="Evidence Review">Evidence Review</button>
+              <button type="button" class="segment" data-value="Synthesis">Synthesis</button>
+              <button type="button" class="segment" data-value="Eval Pack">Eval Pack</button>
+              <button type="button" class="segment" data-value="Training Pack">Training Pack</button>
+              <button type="button" class="segment" data-value="Lore Grounding">Lore Grounding</button>
+              <button type="button" class="segment" data-value="Creator Support">Creator Support</button>
+            </div>
+
+            <input type="hidden" id="jobMode" value="Research" />
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">3. Source scope</div>
+
+            <div class="field-grid three">
+              <label class="field">
+                <span>Source classes</span>
+                <select id="sourceClasses">
+                  <option>Mixed primary + secondary</option>
+                  <option>Primary-heavy</option>
+                  <option>Secondary-heavy</option>
+                  <option>Internal references only</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Time boundary</span>
+                <select id="timeBoundary">
+                  <option>Historically broad</option>
+                  <option>Tight period only</option>
+                  <option>Modern sources allowed</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Provenance strictness</span>
+                <select id="provenanceStrictness">
+                  <option>Strict</option>
+                  <option>Balanced</option>
+                  <option>Loose exploratory</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>Include sources</span>
+                <textarea id="includeSources" rows="3">Historical sources, archaeology, geography, map evidence, trade route analysis, river access, settlement relevance.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Exclude sources</span>
+                <textarea id="excludeSources" rows="3">Unsourced fantasy summaries, flattened timelines, low-trust content with no provenance.</textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">4. Verification controls</div>
+
+            <div class="field-grid four">
+              <label class="field">
+                <span>Verification depth</span>
+                <select id="verificationDepth">
+                  <option>Deep</option>
+                  <option>Standard</option>
+                  <option>Light</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Contradiction handling</span>
+                <select id="contradictionHandling">
+                  <option>Preserve explicitly</option>
+                  <option>Flag only major conflicts</option>
+                  <option>Minimize contradictions</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Confidence level</span>
+                <select id="confidenceLevel">
+                  <option>High confidence required</option>
+                  <option>Balanced confidence</option>
+                  <option>Exploratory acceptable</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Human review required</span>
+                <select id="humanReview">
+                  <option>Yes</option>
+                  <option>No</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Verifier style</span>
+              <input type="text" id="verifierStyle" value="Challenge assumptions, track contradictions, keep unsupported inferences visible." />
+            </label>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">5. Learning / training objective</div>
+
+            <div class="field-grid two">
+              <label class="field">
+                <span>What should the model(s) become better at?</span>
+                <textarea id="learningObjective" rows="3">Become better at building grounded creator support packs from structured research without flattening contradictions or inventing certainty.</textarea>
+              </label>
+
+              <label class="field">
+                <span>Failure pattern being corrected</span>
+                <textarea id="failurePattern" rows="3">Tendency to collapse multiple source positions into one overly clean answer and skip provenance details.</textarea>
+              </label>
+            </div>
+
+            <div class="field-grid three">
+              <label class="field">
+                <span>Target portal / page</span>
+                <select id="targetPortal">
+                  <option>LoreCore</option>
+                  <option>Game Designer</option>
+                  <option>AppCreator</option>
+                  <option>PortalCreator</option>
+                  <option>Home</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Target role</span>
+                <select id="targetRole">
+                  <option>Researcher</option>
+                  <option>Verifier</option>
+                  <option>Writer</option>
+                  <option>Game Designer</option>
+                  <option>Worldbuilder</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Preparation mode</span>
+                <select id="prepMode">
+                  <option>Build pack only</option>
+                  <option>Prepare for pipeline</option>
+                  <option>Prepare for review</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">6. Runtime intent</div>
+
+            <div class="segment-group" id="runtimeIntentGroup">
+              <button type="button" class="segment active" data-value="Run now">Run now</button>
+              <button type="button" class="segment" data-value="Save draft">Save draft</button>
+              <button type="button" class="segment" data-value="Queue for pipeline">Queue for pipeline</button>
+              <button type="button" class="segment" data-value="Build pack only">Build pack only</button>
+              <button type="button" class="segment" data-value="Prepare for review">Prepare for review</button>
+            </div>
+
+            <input type="hidden" id="runtimeIntent" value="Run now" />
+          </section>
+
+          <section class="panel workspace-panel">
+            <div class="panel-label">7. Main actions</div>
+
+            <div class="action-grid">
+              <button type="button" class="action-tile primary" data-action="Start job">Start job</button>
+              <button type="button" class="action-tile" data-action="Build dossier">Build dossier</button>
+              <button type="button" class="action-tile" data-action="Build evidence chain">Build evidence chain</button>
+              <button type="button" class="action-tile" data-action="Build eval pack">Build eval pack</button>
+              <button type="button" class="action-tile" data-action="Build training pack">Build training pack</button>
+              <button type="button" class="action-tile" data-action="Save reusable asset">Save reusable asset</button>
+              <button type="button" class="action-tile" data-action="Send to review queue">Send to review queue</button>
+            </div>
+          </section>
+        </form>
+      </section>
+
+      <!-- RIGHT -->
+      <aside class="rail right-rail">
+        <div class="rail-head">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Destination / Export / Downstream Use</h2>
+          </div>
+          <span class="badge warn">Structured</span>
+        </div>
+
+        <div class="stack">
+          <section class="panel">
+            <div class="panel-label">Destination</div>
+            <div class="field-grid one">
+              <label class="field">
+                <span>Destination project</span>
+                <select id="destinationProject">
+                  <option>Galdurdal Chronicles</option>
+                  <option>Ironvale TD</option>
+                  <option>Maneit Portal</option>
+                  <option>New Project</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Attach to work item</span>
+                <select id="workItem">
+                  <option>Worldbuilding / historical grounding</option>
+                  <option>Map planning</option>
+                  <option>Faction design</option>
+                  <option>Travel & logistics</option>
+                  <option>New Work Item</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Register as</span>
+                <select id="registerAs">
+                  <option>Research dossier</option>
+                  <option>Evidence chain</option>
+                  <option>Synthesis notebook</option>
+                  <option>Lore pack</option>
+                  <option>Eval pack</option>
+                  <option>Training pack</option>
+                  <option>Creator support pack</option>
+                </select>
+              </label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Downstream visibility</div>
+            <div class="check-list">
+              <label><input type="checkbox" checked /> Projects</label>
+              <label><input type="checkbox" checked /> Home project context</label>
+              <label><input type="checkbox" checked /> LoreCore</label>
+              <label><input type="checkbox" /> Game Designer</label>
+              <label><input type="checkbox" /> AppCreator</label>
+              <label><input type="checkbox" /> PortalCreator</label>
+              <label><input type="checkbox" /> Pipeline prep queue</label>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Export summary</div>
+            <div class="summary-box" id="exportSummary">
+              <div class="summary-row">
+                <span>Mode</span>
+                <strong id="summaryMode">Research</strong>
+              </div>
+              <div class="summary-row">
+                <span>Output</span>
+                <strong id="summaryOutput">Research dossier</strong>
+              </div>
+              <div class="summary-row">
+                <span>Runtime intent</span>
+                <strong id="summaryIntent">Run now</strong>
+              </div>
+              <div class="summary-row">
+                <span>Destination</span>
+                <strong id="summaryDestination">Galdurdal Chronicles</strong>
+              </div>
+              <div class="summary-row">
+                <span>Work item</span>
+                <strong id="summaryWorkItem">Worldbuilding / historical grounding</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-label">Job receipt</div>
+            <div class="receipt" id="jobReceipt">
+              <div class="receipt-state idle">No active job receipt yet.</div>
+            </div>
+          </section>
+        </div>
+      </aside>
+    </main>
   </div>
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script>
-(function(){
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) {
-      const normalized = apiBase.replace(/\/+$/, '');
-      window.PM_API_BASE = normalized;
-      localStorage.setItem('PM_API_BASE', normalized);
-    } else {
-      const saved = localStorage.getItem('PM_API_BASE');
-      if (saved) window.PM_API_BASE = saved;
-    }
-  } catch (error) {}
-})();
-</script>
-  <script type="module" src="page.js"></script>
+
+  <script src="./page.js"></script>
 </body>
 </html>
