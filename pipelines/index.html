@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Pipelines</title>
-  <meta name="description" content="Node-graph design surface for workflow logic, verifier chains, branches, handoffs, and portal mapping." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%0A%20%20%20%20%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%0A%20%20%20%20%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%0A%20%20%20%20%3C/svg%3E" />
+  <meta name="description" content="Canonical workflow graph for stages, branches, verifier chains, handoffs, and portal projections." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
@@ -16,7 +16,7 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Pipelines</h1>
-          <p>Node-graph design surface for workflow logic, verifier chains, branches, handoffs, and portal mapping.</p>
+          <p>Canonical workflow graph for stage logic, verifier chains, branches, handoffs, and downstream portal projections.</p>
         </div>
       </div>
 
@@ -36,173 +36,366 @@
 
       <div class="header-actions">
         <span class="chip">Node graph</span>
-        <span class="chip">Verifiers + branches</span>
-        <span class="chip">Workbench</span>
+        <span class="chip">Role-driven</span>
+        <span class="chip">Inspector-based overrides</span>
       </div>
     </header>
 
-    <details class="scope-drawer">
-      <summary>
-        <div>
-          <div class="eyebrow">Surface contract</div>
-          <strong>Pipelines is the canonical workflow graph</strong>
-        </div>
-        <span class="scope-drawer__hint">Open</span>
-      </summary>
-      <div class="scope-strip">
-        <article class="scope-card">
-          <div class="eyebrow">Purpose</div>
-          <h2>Canonical node-graph workflow layer</h2>
-          <p class="muted">Pipelines is the advanced node-graph design surface for stages, branches, verifiers, tools, handoffs, and portal-view mapping.</p>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Owns</div>
-          <ul>
-            <li>pipeline templates</li><li>stages + branching</li><li>verifier chains</li><li>tool steps + handoffs</li><li>portal mapping</li>
-          </ul>
-        </article>
-        <article class="scope-card">
-          <div class="eyebrow">Does not own</div>
-          <ul>
-            <li>canonical project records</li><li>full agent architecture</li><li>domain-specific portal outputs</li>
-          </ul>
-        </article>
+    <section class="surface-banner panel">
+      <div>
+        <div class="eyebrow">Surface contract</div>
+        <strong>Pipelines is the canonical workflow graph</strong>
       </div>
-    </details>
+      <div class="banner-note">Build the workflow here. Do not hide orchestration logic in portals or runtime pages.</div>
+    </section>
 
-    <section class="page-grid page-grid--pipelines">
+    <section class="pipeline-layout">
       <aside class="panel panel-left">
-        <div class="panel-header">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Left rail</div>
-            <h2>Library + palette</h2>
-            <p>Choose a pipeline, filter by portal compatibility, and keep the stage vocabulary close while you shape the graph.</p>
+            <h2>Spawn + library</h2>
           </div>
           <span class="status-chip status-chip--good">Canonical flow layer</span>
         </div>
 
-        <div class="stack">
-          <label class="inline-field">
-            <span class="soft">Filter by compatible portal</span>
-            <select class="select" id="pipelinePortalFilter">
-              <option value="">All portals</option>
-              <option>AppCreator</option>
-              <option>PortalCreator</option>
-              <option>LoreCore</option>
-              <option>State</option>
-            </select>
-          </label>
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Spawn node</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Role class</span>
+                <select class="select" id="spawnRoleClass">
+                  <option selected>Coder</option>
+                  <option>Planner</option>
+                  <option>Verifier</option>
+                  <option>Auditor</option>
+                  <option>Router</option>
+                  <option>Branch</option>
+                  <option>Handoff</option>
+                  <option>Export</option>
+                  <option>Portal Projection</option>
+                </select>
+              </label>
 
-          <section class="stack stack--sm library-list">
-            <div class="eyebrow">Pipeline library</div>
-            <div id="pipelineLibrary" class="stack stack--sm"></div>
-          </section>
+              <label class="inline-field">
+                <span class="soft">Subtype</span>
+                <select class="select" id="spawnSubtype">
+                  <option selected>C++ Coder</option>
+                  <option>Python Coder</option>
+                  <option>JS Coder</option>
+                  <option>HTML Coder</option>
+                  <option>CSS Coder</option>
+                  <option>Backend API Coder</option>
+                </select>
+              </label>
 
-          <article class="card">
-            <div class="eyebrow">Stage palette</div>
-            <div class="tag-row" style="margin-top:0.7rem;">
-              <span class="tag">input</span>
-              <span class="tag">transform</span>
-              <span class="tag">branch</span>
-              <span class="tag">verify</span>
-              <span class="tag">handoff</span>
+              <label class="inline-field">
+                <span class="soft">Profile / model family</span>
+                <select class="select" id="spawnProfile">
+                  <option selected>DeepSeek</option>
+                  <option>Starcoder</option>
+                  <option>Llama</option>
+                  <option>Qwen Coder</option>
+                  <option>Ollama Cloud Heavy Coder</option>
+                </select>
+              </label>
+
+              <div class="button-row">
+                <button class="button button--primary" id="spawnNodeBtn" type="button">Spawn node</button>
+                <button class="button" id="spawnBranchBtn" type="button">Spawn branch</button>
+              </div>
             </div>
-            <p class="muted" style="margin-top:0.7rem;">Use the deep layer here, then map simplified controls into production portals.</p>
           </article>
 
-          <article class="card">
-            <div class="eyebrow">Quality rules</div>
-            <ul class="pipeline-rules" style="margin-top:0.75rem;">
-              <li>verifiers can stack per stage</li>
-              <li>handoffs must stay explicit</li>
-              <li>portal views are simplified projections, not the graph itself</li>
+          <article class="card card--compact">
+            <div class="eyebrow">Role library</div>
+            <div class="library-list" id="roleLibraryList">
+              <button class="library-chip" type="button">Input</button>
+              <button class="library-chip" type="button">Planner</button>
+              <button class="library-chip" type="button">Python Generator</button>
+              <button class="library-chip" type="button">C++ Generator</button>
+              <button class="library-chip" type="button">JS Generator</button>
+              <button class="library-chip" type="button">Verifier</button>
+              <button class="library-chip" type="button">Auditor</button>
+              <button class="library-chip" type="button">Branch</button>
+              <button class="library-chip" type="button">Handoff</button>
+              <button class="library-chip" type="button">Export</button>
+              <button class="library-chip" type="button">Portal Projection</button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Graph rules</div>
+            <ul class="rule-list">
+              <li>Nodes represent roles or stages, not raw models.</li>
+              <li>Agent Factory defines defaults.</li>
+              <li>Pipelines composes and overrides.</li>
+              <li>State runs.</li>
+              <li>Settings decides provider policy.</li>
             </ul>
           </article>
         </div>
       </aside>
 
-      <main class="panel panel-center pipeline-shell">
-        <div class="panel-header">
+      <main class="panel panel-center">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Center surface</div>
             <h2>Pipeline workbench</h2>
-            <p>Shape the graph here: stages, verifier chains, branches, and portal mapping live in this layer instead of being hidden inside projects or portals.</p>
+            <p class="muted">Drag nodes, connect stages, branch explicitly, and keep verifier logic visible. The graph is the truth.</p>
           </div>
           <div class="button-row">
-            <button class="button" id="togglePreviewBtn" type="button">Toggle portal preview</button>
-            <button class="button button--primary" id="clonePipelineBtn" type="button">Clone pipeline</button>
+            <button class="button" id="togglePortalPreviewBtn" type="button">Toggle portal preview</button>
+            <button class="button" id="clonePipelineBtn" type="button">Clone pipeline</button>
+            <button class="button button--primary" id="runSelectedPipelineBtn" type="button">Run selected pipeline</button>
           </div>
         </div>
 
-        <section class="workflow-summary">
-          <article class="workflow-chip"><strong>Stages</strong><span>ordered flow with clear handoffs</span></article>
-          <article class="workflow-chip"><strong>Verifiers</strong><span>quality gates per pipeline</span></article>
-          <article class="workflow-chip"><strong>Branches</strong><span>room for alternate routes</span></article>
-          <article class="workflow-chip"><strong>Portal map</strong><span>simplified projections downstream</span></article>
+        <section class="workbench-meta">
+          <article class="meta-card">
+            <strong>Stages</strong>
+            <span>ordered flow with explicit handoffs</span>
+          </article>
+          <article class="meta-card">
+            <strong>Verifiers</strong>
+            <span>quality gates per pipeline</span>
+          </article>
+          <article class="meta-card">
+            <strong>Branches</strong>
+            <span>room for alternate routes</span>
+          </article>
+          <article class="meta-card">
+            <strong>Portal map</strong>
+            <span>simplified downstream projections</span>
+          </article>
         </section>
 
-        <section class="panel flow-workbench">
-          <div class="flow-legend">
-            <span class="tag">select stage</span>
-            <span class="tag">inspect verifier chain</span>
-            <span class="tag">clone before experimentation</span>
-            <span class="tag">preview portal projection</span>
-          </div>
-          <section class="flow">
-            <div id="flowPath" class="flow-path"></div>
-          </section>
-        </section>
+        <div class="workbench-toolbar">
+          <button class="chip-button" type="button">select stage</button>
+          <button class="chip-button" type="button">link nodes</button>
+          <button class="chip-button" type="button">inspect verifier chain</button>
+          <button class="chip-button" type="button">clone before experimentation</button>
+          <button class="chip-button" type="button">preview portal projection</button>
+        </div>
 
-        <section class="panel" id="portalPreviewCard" style="padding: 0.95rem; border-radius: 18px;">
-          <div class="panel-header">
-            <div>
-              <div class="eyebrow">Simplified portal view</div>
-              <h3>Portal representation preview</h3>
+        <section class="workbench-canvas" id="pipelineCanvas" aria-label="Pipeline graph canvas">
+          <div class="canvas-grid"></div>
+
+          <div class="edge edge--1"></div>
+          <div class="edge edge--2"></div>
+          <div class="edge edge--3"></div>
+          <div class="edge edge--4"></div>
+          <div class="edge edge--5"></div>
+
+          <article class="pipeline-node pipeline-node--input is-selected" data-node-id="node-input">
+            <div class="node-head">
+              <span class="node-type node-type--input">Input</span>
+              <span class="node-badge">default</span>
             </div>
-            <span class="chip" id="previewPortalLabel">PortalCreator</span>
-          </div>
-          <div id="portalPreview" class="tag-row"></div>
+            <strong>Brief Intake</strong>
+            <p>Receives task brief and constraints.</p>
+            <div class="node-meta">No quorum · raw input</div>
+          </article>
+
+          <article class="pipeline-node pipeline-node--planner" data-node-id="node-planner">
+            <div class="node-head">
+              <span class="node-type node-type--planner">Planner</span>
+              <span class="node-badge">2-of-3</span>
+            </div>
+            <strong>Structured Planner</strong>
+            <p>Builds constrained plan and handoff targets.</p>
+            <div class="node-meta">planner_structured_v1</div>
+          </article>
+
+          <article class="pipeline-node pipeline-node--coder" data-node-id="node-coder">
+            <div class="node-head">
+              <span class="node-type node-type--coder">Coder</span>
+              <span class="node-badge">2-of-3</span>
+            </div>
+            <strong>C++ Coder</strong>
+            <p>Role profile from Agent Factory, overridable here.</p>
+            <div class="node-meta">DeepSeek · cpp_generator_v1</div>
+          </article>
+
+          <article class="pipeline-node pipeline-node--verifier" data-node-id="node-verifier">
+            <div class="node-head">
+              <span class="node-type node-type--verifier">Verifier</span>
+              <span class="node-badge">3-way</span>
+            </div>
+            <strong>Strict Verifier</strong>
+            <p>Contract, output, and compile verification.</p>
+            <div class="node-meta">strict_verifier_v1</div>
+          </article>
+
+          <article class="pipeline-node pipeline-node--auditor" data-node-id="node-auditor">
+            <div class="node-head">
+              <span class="node-type node-type--auditor">Auditor</span>
+              <span class="node-badge">2-of-3</span>
+            </div>
+            <strong>Audit Node</strong>
+            <p>Final review before promotion or export.</p>
+            <div class="node-meta">audit_operating_v1</div>
+          </article>
+
+          <article class="pipeline-node pipeline-node--branch" data-node-id="node-branch">
+            <div class="node-head">
+              <span class="node-type node-type--branch">Branch</span>
+              <span class="node-badge">route split</span>
+            </div>
+            <strong>Fallback Path</strong>
+            <p>Optional alternate route with explicit trigger.</p>
+            <div class="node-meta">branch_if_fail</div>
+          </article>
+
+          <article class="pipeline-node pipeline-node--projection" data-node-id="node-projection">
+            <div class="node-head">
+              <span class="node-type node-type--projection">Projection</span>
+              <span class="node-badge">portal</span>
+            </div>
+            <strong>Portal Projection</strong>
+            <p>Simplified downstream representation only.</p>
+            <div class="node-meta">Projects → AppCreator</div>
+          </article>
+        </section>
+
+        <section class="portal-preview">
+          <div class="eyebrow">Simplified portal view</div>
+          <strong>Portal representation preview</strong>
+          <span class="portal-tag">PortalCreator</span>
         </section>
       </main>
 
-      <aside class="panel panel-right panel-right--compact">
-        <div class="panel-header">
+      <aside class="panel panel-right">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
             <h2>Inspector</h2>
-            <p>Keep the selected pipeline, stage, verifier chain, and tool requirements visible while the graph stays central.</p>
           </div>
-          <span class="status-chip status-chip--warn" id="pipelineInspectorStatus">Select stage</span>
+          <span class="status-chip status-chip--warn">Selected stage</span>
         </div>
 
-        <div id="pipelineInspector" class="stack">
-          <article class="card">
-            <p class="muted">Select a pipeline or stage to inspect tools, validation, handoffs, and portal mapping.</p>
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Selected node</div>
+            <strong id="selectedNodeTitle">Brief Intake</strong>
+            <p class="muted">Input node selected. This is where work enters the graph.</p>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Agent Factory defaults</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Role profile</span>
+                <select class="select">
+                  <option selected>brief_intake_v1</option>
+                  <option>brief_intake_strict_v2</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Default reasoning layer</span>
+                <select class="select">
+                  <option selected>input_normalizer_v1</option>
+                  <option>structured_router_v1</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Default output contract</span>
+                <select class="select">
+                  <option selected>raw_brief_payload</option>
+                  <option>normalized_brief_json</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Default validation gate</span>
+                <select class="select">
+                  <option selected>brief_schema_gate</option>
+                  <option>input_contract_gate</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Pipeline overrides</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Primary model group</span>
+                <select class="select">
+                  <option selected>router-a, router-b, router-c</option>
+                  <option>planner-a, planner-b, planner-c</option>
+                  <option>js-a, js-b, js-c</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Fallback group</span>
+                <select class="select">
+                  <option selected>none</option>
+                  <option>router fallback group</option>
+                  <option>cloud heavy fallback</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Timeout</span>
+                <select class="select">
+                  <option selected>60s</option>
+                  <option>90s</option>
+                  <option>120s</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Quorum rule</span>
+                <select class="select">
+                  <option selected>single pass</option>
+                  <option>2-of-3</option>
+                  <option>3-of-3</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Override reasoning layer</span>
+                <select class="select">
+                  <option selected>inherit from Agent Factory</option>
+                  <option>coder_reasoning_v2</option>
+                  <option>strict_verifier_v2</option>
+                </select>
+              </label>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Node notes</div>
+            <textarea class="textarea" placeholder="Operator note, experiment note, or reason for override..."></textarea>
           </article>
         </div>
       </aside>
     </section>
 
-    <p class="footer-note">Pipelines is the canonical graph layer. Production portals should consume simplified projections from here rather than re-creating orchestration logic themselves.</p>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <div class="toast" id="toast" aria-live="polite"></div>
   <script>
-(function(){
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) {
-      const normalized = apiBase.replace(/\/+$/, '');
-      window.PM_API_BASE = normalized;
-      localStorage.setItem('PM_API_BASE', normalized);
-    } else {
-      const saved = localStorage.getItem('PM_API_BASE');
-      if (saved) window.PM_API_BASE = saved;
-    }
-  } catch (error) {}
-})();
-</script>
-  <script src="page.js"></script>
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get('apiBase');
+      if (apiBase) {
+        const normalized = apiBase.replace(/\\/+$/, '');
+        window.PM_API_BASE = normalized;
+        localStorage.setItem('PM_API_BASE', normalized);
+      } else {
+        const saved = localStorage.getItem('PM_API_BASE');
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
+  </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
