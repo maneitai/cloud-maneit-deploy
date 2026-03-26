@@ -1,149 +1,48 @@
-const PM_HOME_KEY = "PM_HOME_V2";
+const PM_HOME_KEY = "PM_HOME_V1";
 const PM_API_BASE = window.PM_API_BASE || "";
 
 const defaultState = {
-  activeChatId: "chat-1",
-  mode: "Discussion",
-  activeModels: "discussion panel",
-  participants: "3 models",
-  projectClass: "System",
-  promotionNote: "Intent, scope, constraints, and next action.",
-  chats: [
-    {
-      id: "chat-1",
-      title: "PM frontend shell final",
-      meta: "Pinned · Today",
-      section: "pinned",
-      pinned: true,
-      projectFolder: false,
-      messages: [
-        {
-          role: "system",
-          text: "Discussion only. Use chat to think, challenge, compare, and refine. Nothing here is treated as a task unless you deliberately promote it."
-        },
-        {
-          role: "user",
-          text: "Home needs to feel like something I actually want to open every day."
-        },
-        {
-          role: "assistant",
-          text: "Then it has to prioritize continuity, compact history, low-friction chat control, and a support rail that helps without becoming a control-panel wall."
-        }
-      ]
-    },
-    {
-      id: "chat-2",
-      title: "Pipeline benchmark notes",
-      meta: "Pinned · Yesterday",
-      section: "pinned",
-      pinned: true,
-      projectFolder: false,
-      messages: [
-        { role: "user", text: "We need stage-by-stage role benchmarks." },
-        { role: "assistant", text: "Then benchmark planner, coder, verifier and JS-specific roles separately, not as one generic pass." }
-      ]
-    },
-    {
-      id: "proj-1",
-      title: "State page polish",
-      meta: "Ongoing · not exported",
-      section: "projectFolder",
-      pinned: false,
-      projectFolder: true,
-      messages: [
-        { role: "user", text: "Need quorum and runtime control clearly separated." },
-        { role: "assistant", text: "Keep runtime grid below and census up right." }
-      ]
-    },
-    {
-      id: "proj-2",
-      title: "Agent Factory final pass",
-      meta: "Ongoing · not exported",
-      section: "projectFolder",
-      pinned: false,
-      projectFolder: true,
-      messages: [
-        { role: "user", text: "Agent Factory should be library + workspace only." },
-        { role: "assistant", text: "Yes. Define reusable profiles here, compose them in Pipelines later." }
-      ]
-    },
-    {
-      id: "proj-3",
-      title: "Guldardal notes",
-      meta: "Ongoing · private",
-      section: "projectFolder",
-      pinned: false,
-      projectFolder: true,
-      messages: [
-        { role: "user", text: "Soul wandering is more interesting than classic magic." },
-        { role: "assistant", text: "That gives you cost, danger, identity-risk and mythic tone." }
-      ]
-    },
-    {
-      id: "chat-3",
-      title: "Home daily driver structure",
-      meta: "Today · 09:14",
-      section: "recent",
-      pinned: false,
-      projectFolder: false,
-      messages: [
-        { role: "user", text: "History needs to be compact like ChatGPT." },
-        { role: "assistant", text: "Use pinned, project folder and recent history in a dense left rail." }
-      ]
-    },
-    {
-      id: "chat-4",
-      title: "Settings cloud provider split",
-      meta: "Today · 08:22",
-      section: "recent",
-      pinned: false,
-      projectFolder: false,
-      messages: [
-        { role: "user", text: "Settings should own providers and cloud policy." },
-        { role: "assistant", text: "Yes. State stays runtime-only." }
-      ]
-    },
-    {
-      id: "chat-5",
-      title: "State quorum layout",
-      meta: "Yesterday",
-      section: "recent",
-      pinned: false,
-      projectFolder: false,
-      messages: [
-        { role: "user", text: "Single-model approval is not acceptable." },
-        { role: "assistant", text: "Then use 3-model groups with quorum gates." }
-      ]
-    },
-    {
-      id: "chat-6",
-      title: "Pipeline pass run notes",
-      meta: "Yesterday",
-      section: "recent",
-      pinned: false,
-      projectFolder: false,
-      messages: [
-        { role: "user", text: "The run passed once the right model owned the hot path." },
-        { role: "assistant", text: "That strongly supports role-specialized model assignment." }
-      ]
-    },
-    {
-      id: "chat-7",
-      title: "Creative writing model ideas",
-      meta: "Yesterday",
-      section: "recent",
-      pinned: false,
-      projectFolder: false,
-      messages: [
-        { role: "user", text: "Need stronger models for writing in established worlds." },
-        { role: "assistant", text: "Use cloud-heavy writing roles and keep lore verification separate." }
-      ]
-    }
+  selectedChatId: "frontend_backend_handoff",
+  mode: "single",
+  singleModel: "Jeff main / GPT-style assistant",
+  multiModelSet: "Gameplay + Engine + Coder",
+  discussionPreset: "Game design discussion",
+  selectedProjectType: "App",
+  chats: {
+    pinned: [
+      { id: "frontend_backend_handoff", title: "Frontend Backend Handoff" },
+      { id: "ai_assistent_portal_design", title: "AI-assistent portal design" }
+    ],
+    projectFolder: [
+      { id: "game_designer_workflow", title: "Game designer workflow" },
+      { id: "web_portal_redesign", title: "Web portal redesign" },
+      { id: "ai_message_filtering", title: "AI message filtering system" }
+    ],
+    history: [
+      { id: "chatgpt_handoff_request", title: "ChatGPT Handoff Request" },
+      { id: "pipeline_test_setup", title: "Pipeline test setup" },
+      { id: "webpage_redesign_workflow", title: "Webpage Redesign Workflow" },
+      { id: "pipeline_fleet_provisioning", title: "Pipeline Fleet Provisioning" },
+      { id: "vurdere_sponsing", title: "Vurdere sponsing av prosjekt" },
+      { id: "operativ_overlevering", title: "Operativ overlevering PM" },
+      { id: "home_page_redesign", title: "Home Page Redesign" },
+      { id: "programmer_for_windows", title: "Programmer for Windows" },
+      { id: "pm_backend_session", title: "PM Backend Session" }
+    ]
+  },
+  todos: [
+    { id: "todo_1", title: "Lock tower categories", detail: "Basic, cannon, frost, fire, poison, anti-air.", done: false },
+    { id: "todo_2", title: "Clarify mode behavior", detail: "Single, Multi, and Discussion now have different purposes.", done: true },
+    { id: "todo_3", title: "Decide export timing", detail: "Only export once the core concept is stable enough for Projects.", done: false }
   ],
-  currentTodo: [
-    { id: "todo-1", text: "Lock Home structure before coding", done: false },
-    { id: "todo-2", text: "Finish pipelines final version", done: false },
-    { id: "todo-3", text: "Export only when thread is truly ready", done: false }
+  calendar: [
+    { day: "Mon", date: "24", items: [{ title: "Portal layout review", tone: "default" }, { title: "Writing block", tone: "good" }] },
+    { day: "Tue", date: "25", items: [{ title: "Admin / email", tone: "warn" }, { title: "Game planning", tone: "default" }] },
+    { day: "Wed", date: "26", today: true, items: [{ title: "Home page lock-in", tone: "good" }, { title: "Projects next", tone: "default" }] },
+    { day: "Thu", date: "27", items: [{ title: "Pipeline cleanup", tone: "default" }] },
+    { day: "Fri", date: "28", items: [{ title: "Creative writing", tone: "default" }] },
+    { day: "Sat", date: "29", items: [{ title: "Reset / planning", tone: "warn" }] },
+    { day: "Sun", date: "30", items: [{ title: "Open creative block", tone: "good" }] }
   ]
 };
 
@@ -159,8 +58,13 @@ function loadState() {
     return {
       ...deepClone(defaultState),
       ...parsed,
-      chats: Array.isArray(parsed.chats) ? parsed.chats : deepClone(defaultState).chats,
-      currentTodo: Array.isArray(parsed.currentTodo) ? parsed.currentTodo : deepClone(defaultState).currentTodo
+      chats: {
+        pinned: Array.isArray(parsed?.chats?.pinned) ? parsed.chats.pinned : deepClone(defaultState).chats.pinned,
+        projectFolder: Array.isArray(parsed?.chats?.projectFolder) ? parsed.chats.projectFolder : deepClone(defaultState).chats.projectFolder,
+        history: Array.isArray(parsed?.chats?.history) ? parsed.chats.history : deepClone(defaultState).chats.history
+      },
+      todos: Array.isArray(parsed.todos) ? parsed.todos : deepClone(defaultState).todos,
+      calendar: Array.isArray(parsed.calendar) ? parsed.calendar : deepClone(defaultState).calendar
     };
   } catch {
     return deepClone(defaultState);
@@ -194,14 +98,12 @@ function showToast(message, tone = "good") {
 
 async function callApi(path, method = "GET", payload = null) {
   if (!PM_API_BASE) return { ok: false, mock: true };
-
   try {
     const res = await fetch(`${PM_API_BASE}${path}`, {
       method,
       headers: { "Content-Type": "application/json" },
       body: payload ? JSON.stringify(payload) : undefined
     });
-
     const contentType = res.headers.get("content-type") || "";
     const body = contentType.includes("application/json") ? await res.json() : await res.text();
     return { ok: res.ok, status: res.status, body };
@@ -210,290 +112,214 @@ async function callApi(path, method = "GET", payload = null) {
   }
 }
 
-function getActiveChat() {
-  return state.chats.find(chat => chat.id === state.activeChatId) || state.chats[0];
-}
+function renderHistorySection(targetId, items, options = {}) {
+  const root = qs(targetId);
+  if (!root) return;
 
-function filterChats(chats, search) {
-  const q = search.trim().toLowerCase();
-  if (!q) return chats;
-  return chats.filter(chat =>
-    chat.title.toLowerCase().includes(q) ||
-    chat.meta.toLowerCase().includes(q) ||
-    chat.messages.some(m => m.text.toLowerCase().includes(q))
-  );
-}
+  const search = (qs("#chatSearch")?.value || "").trim().toLowerCase();
+  const filtered = items.filter(item => !search || item.title.toLowerCase().includes(search));
 
-function chatButtonMarkup(chat, activeId) {
-  return `
-    <button class="history-item ${chat.id === activeId ? "history-item--active" : ""}" type="button" data-chat-id="${chat.id}">
-      <span class="history-title">${escapeHtml(chat.title)}</span>
-      <span class="history-meta">${escapeHtml(chat.meta)}</span>
-    </button>
-  `;
+  root.innerHTML = filtered.map(item => `
+    <a class="history-link ${item.id === state.selectedChatId ? "history-link--active" : ""} ${options.folder ? "history-link--folder" : ""}" href="#" data-chat-id="${item.id}">
+      <span class="history-link__dot"></span>
+      <span class="history-link__title">${item.title}</span>
+    </a>
+  `).join("");
 }
 
 function renderHistory() {
-  const search = qs("#historySearch")?.value || "";
-  const filtered = filterChats(state.chats, search);
+  renderHistorySection("#pinnedChatsList", state.chats.pinned);
+  renderHistorySection("#projectFolderList", state.chats.projectFolder, { folder: true });
+  renderHistorySection("#chatHistoryList", state.chats.history);
 
-  const pinned = filtered.filter(chat => chat.section === "pinned");
-  const projectFolder = filtered.filter(chat => chat.section === "projectFolder");
-  const recent = filtered.filter(chat => chat.section === "recent");
-
-  const pinnedList = qs("#pinnedHistoryList");
-  const projectList = qs("#projectFolderList");
-  const recentList = qs("#recentHistoryList");
-
-  if (pinnedList) pinnedList.innerHTML = pinned.map(chat => chatButtonMarkup(chat, state.activeChatId)).join("");
-  if (projectList) projectList.innerHTML = projectFolder.map(chat => chatButtonMarkup(chat, state.activeChatId)).join("");
-  if (recentList) recentList.innerHTML = recent.map(chat => chatButtonMarkup(chat, state.activeChatId)).join("");
-
-  const pinnedCount = qs("#pinnedCount");
-  const projectCount = qs("#projectFolderCount");
-  const recentCount = qs("#recentCount");
-
-  if (pinnedCount) pinnedCount.textContent = String(pinned.length);
-  if (projectCount) projectCount.textContent = String(projectFolder.length);
-  if (recentCount) recentCount.textContent = String(recent.length);
-
-  qsa(".history-item").forEach(button => {
-    button.addEventListener("click", () => {
-      state.activeChatId = button.dataset.chatId;
+  qsa(".history-link").forEach(link => {
+    link.addEventListener("click", event => {
+      event.preventDefault();
+      state.selectedChatId = link.dataset.chatId;
       saveState();
-      renderAll();
+      renderHistory();
+      showToast("Chat selected", "good");
     });
   });
 }
 
-function renderChatThread() {
-  const thread = qs("#chatThread");
-  const chat = getActiveChat();
-  if (!thread || !chat) return;
+function renderModeCards() {
+  qsa(".metric-card--mode").forEach(card => {
+    const isActive = card.dataset.mode === state.mode;
+    card.classList.toggle("is-active", isActive);
+  });
+}
 
-  thread.innerHTML = chat.messages.map(message => `
-    <article class="message message--${message.role}">
-      <div class="message-role">${message.role === "assistant" ? "PM" : message.role === "user" ? "You" : "System"}</div>
-      <div class="message-body">${escapeHtml(message.text)}</div>
+function renderModeHelp() {
+  const map = {
+    single: "<strong>Single:</strong> one selected model answers directly.",
+    multi: "<strong>Multi:</strong> the same prompt is sent to all selected models and each responds separately.",
+    discussion: "<strong>Discussion:</strong> selected specialists participate more like a group conversation when their expertise becomes relevant."
+  };
+  const help = qs("#modeHelpText");
+  if (help) help.innerHTML = map[state.mode] || map.single;
+  const status = qs("#composerStatus");
+  if (status) {
+    status.textContent =
+      state.mode === "single" ? "Single mode ready" :
+      state.mode === "multi" ? "Multi mode ready" :
+      "Discussion mode ready";
+  }
+}
+
+function renderTodos() {
+  const root = qs("#todoList");
+  if (!root) return;
+  root.innerHTML = state.todos.map(todo => `
+    <label class="todo-item">
+      <input type="checkbox" data-todo-id="${todo.id}" ${todo.done ? "checked" : ""} />
+      <div class="todo-item__body">
+        <strong>${todo.title}</strong>
+        <span>${todo.detail || ""}</span>
+      </div>
+    </label>
+  `).join("");
+
+  qsa('#todoList input[type="checkbox"]').forEach(input => {
+    input.addEventListener("change", () => {
+      const todo = state.todos.find(item => item.id === input.dataset.todoId);
+      if (!todo) return;
+      todo.done = input.checked;
+      saveState();
+    });
+  });
+}
+
+function renderCalendar() {
+  const root = qs("#calendarGrid");
+  if (!root) return;
+  root.innerHTML = state.calendar.map(day => `
+    <article class="calendar-day ${day.today ? "calendar-day--today" : ""}">
+      <div class="calendar-day__head">
+        <strong>${day.day}</strong>
+        <span class="soft">${day.date}</span>
+      </div>
+      ${day.items.map(item => `
+        <div class="calendar-entry ${item.tone === "good" ? "calendar-entry--good" : ""} ${item.tone === "warn" ? "calendar-entry--warn" : ""}">
+          <strong>${item.title}</strong>
+          <span>${item.tone === "good" ? "Focus block" : item.tone === "warn" ? "Attention" : "Planned"}</span>
+        </div>
+      `).join("")}
     </article>
   `).join("");
 }
 
-function renderControls() {
-  const mode = qs("#chatMode");
-  const activeModels = qs("#activeModels");
-  const participants = qs("#participants");
-  const projectClass = qs("#projectClassSelect");
-  const promotionNote = qs("#promotionNote");
-  const selectedModelChip = qs("#selectedModelChip");
-
-  if (mode) mode.value = state.mode;
-  if (activeModels) activeModels.value = state.activeModels;
-  if (participants) participants.value = state.participants;
-  if (projectClass) projectClass.value = state.projectClass;
-  if (promotionNote) promotionNote.value = state.promotionNote;
-  if (selectedModelChip) selectedModelChip.textContent = `${state.participants} selected`;
-}
-
-function renderTodo() {
-  const list = qs("#currentTodoList");
-  if (!list) return;
-
-  list.innerHTML = state.currentTodo.map(item => `
-    <label class="todo-item" data-todo-id="${item.id}">
-      <input type="checkbox" ${item.done ? "checked" : ""} />
-      <span>${escapeHtml(item.text)}</span>
-    </label>
-  `).join("");
-
-  qsa(".todo-item input", list).forEach(input => {
-    input.addEventListener("change", event => {
-      const row = event.target.closest(".todo-item");
-      if (!row) return;
-      const todoId = row.dataset.todoId;
-      state.currentTodo = state.currentTodo.map(todo =>
-        todo.id === todoId ? { ...todo, done: event.target.checked } : todo
-      );
+function bindControls() {
+  qsa(".metric-card--mode").forEach(card => {
+    card.addEventListener("click", () => {
+      state.mode = card.dataset.mode;
       saveState();
+      renderModeCards();
+      renderModeHelp();
     });
   });
-}
 
-function renderDailyPanel() {
-  // Placeholder for future calendar wiring if needed
-}
-
-function createChat(title, section = "recent", meta = "Today · new") {
-  return {
-    id: `chat-${crypto.randomUUID().slice(0, 8)}`,
-    title,
-    meta,
-    section,
-    pinned: section === "pinned",
-    projectFolder: section === "projectFolder",
-    messages: [
-      {
-        role: "system",
-        text: "Discussion only. Use this thread to think, compare, challenge and refine before exporting to Projects."
-      }
-    ]
-  };
-}
-
-function bindButtons() {
-  qs("#newChatBtn")?.addEventListener("click", () => {
-    const chat = createChat("New discussion", "recent", "Today · new");
-    state.chats.unshift(chat);
-    state.activeChatId = chat.id;
+  qs("#singleModel")?.addEventListener("change", event => {
+    state.singleModel = event.target.value;
     saveState();
-    renderAll();
-    showToast("New chat created", "good");
   });
 
-  qs("#branchChatBtn")?.addEventListener("click", () => {
-    const active = getActiveChat();
-    if (!active) return;
-    const branched = deepClone(active);
-    branched.id = `chat-${crypto.randomUUID().slice(0, 8)}`;
-    branched.title = `${active.title} (Branch)`;
-    branched.meta = "Today · branched";
-    branched.section = "projectFolder";
-    branched.pinned = false;
-    branched.projectFolder = true;
-    state.chats.unshift(branched);
-    state.activeChatId = branched.id;
+  qs("#multiModelSet")?.addEventListener("change", event => {
+    state.multiModelSet = event.target.value;
     saveState();
-    renderAll();
-    showToast("Chat branched into project folder", "good");
+  });
+
+  qs("#discussionPreset")?.addEventListener("change", event => {
+    state.discussionPreset = event.target.value;
+    saveState();
+  });
+
+  qs("#chatSearch")?.addEventListener("input", renderHistory);
+
+  qs("#projectTypeTags")?.addEventListener("click", event => {
+    const button = event.target.closest("[data-tag]");
+    if (!button) return;
+    state.selectedProjectType = button.dataset.tag;
+    saveState();
+    qsa("#projectTypeTags .tag-button").forEach(tag => {
+      tag.classList.toggle("tag-button--active", tag.dataset.tag === state.selectedProjectType);
+    });
   });
 
   qs("#addTodoBtn")?.addEventListener("click", () => {
-    state.currentTodo.unshift({
-      id: `todo-${crypto.randomUUID().slice(0, 8)}`,
-      text: "New current-session todo",
+    const input = qs("#todoInput");
+    const value = (input?.value || "").trim();
+    if (!value) {
+      showToast("Write a todo first", "warn");
+      return;
+    }
+    state.todos.unshift({
+      id: `todo_${crypto.randomUUID().slice(0, 8)}`,
+      title: value,
+      detail: "Added from the Home thread.",
       done: false
     });
+    if (input) input.value = "";
     saveState();
-    renderTodo();
+    renderTodos();
     showToast("Todo added", "good");
   });
 
-  qs("#clearDoneBtn")?.addEventListener("click", () => {
-    state.currentTodo = state.currentTodo.filter(item => !item.done);
-    saveState();
-    renderTodo();
-    showToast("Completed todos cleared", "good");
+  qs("#sendBtn")?.addEventListener("click", async () => {
+    const input = qs("#composerInput");
+    const text = (input?.value || "").trim();
+    if (!text) {
+      showToast("Write something first", "warn");
+      return;
+    }
+    const result = await callApi("/api/home/send", "POST", {
+      mode: state.mode,
+      singleModel: state.singleModel,
+      multiModelSet: state.multiModelSet,
+      discussionPreset: state.discussionPreset,
+      prompt: text
+    });
+    showToast(result.ok ? "Message sent" : "Saved locally. API hook ready.", result.ok ? "good" : "warn");
+    if (input) input.value = "";
   });
 
-  qs("#sendToProjectsBtn")?.addEventListener("click", async () => {
-    const active = getActiveChat();
+  qs("#exportBtn")?.addEventListener("click", async () => {
     const payload = {
-      chat_id: active?.id,
-      title: active?.title,
-      project_class: state.projectClass,
-      promotion_note: state.promotionNote
+      title: qs("#exportTitle")?.value || "",
+      tag: state.selectedProjectType,
+      note: qs("#exportNote")?.value || "",
+      chatId: state.selectedChatId
     };
-
-    const result = await callApi("/api/home/promote-to-projects", "POST", payload);
-    showToast(result.ok ? "Sent to Projects" : "Saved locally. API hook ready.", result.ok ? "good" : "warn");
+    const result = await callApi("/api/home/export-to-projects", "POST", payload);
+    showToast(result.ok ? "Export requested" : "Export hook ready. No live API yet.", result.ok ? "good" : "warn");
   });
 
-  qs("#sendBtn")?.addEventListener("click", handleSend);
-
-  qs("#starterBtn")?.addEventListener("click", () => {
-    const composer = qs("#composerInput");
-    if (composer) {
-      composer.value = "Help me clarify what I actually mean before we turn this into project work.";
-      composer.focus();
-    }
-  });
-
-  qs("#refreshBtn")?.addEventListener("click", () => {
-    renderAll();
-    showToast("Home refreshed", "good");
-  });
+  qs("#newChatBtn")?.addEventListener("click", () => showToast("New chat action ready", "good"));
+  qs("#branchChatBtn")?.addEventListener("click", () => showToast("Branch action ready", "good"));
+  qs("#pinChatBtn")?.addEventListener("click", () => showToast("Pin / unpin action ready", "good"));
 }
 
-function bindInputs() {
-  qs("#historySearch")?.addEventListener("input", renderHistory);
+function hydrateFields() {
+  const single = qs("#singleModel");
+  const multi = qs("#multiModelSet");
+  const discussion = qs("#discussionPreset");
+  if (single) single.value = state.singleModel;
+  if (multi) multi.value = state.multiModelSet;
+  if (discussion) discussion.value = state.discussionPreset;
 
-  qs("#chatMode")?.addEventListener("change", event => {
-    state.mode = event.target.value;
-    saveState();
-    renderControls();
+  qsa("#projectTypeTags .tag-button").forEach(tag => {
+    tag.classList.toggle("tag-button--active", tag.dataset.tag === state.selectedProjectType);
   });
-
-  qs("#activeModels")?.addEventListener("change", event => {
-    state.activeModels = event.target.value;
-    saveState();
-    renderControls();
-  });
-
-  qs("#participants")?.addEventListener("change", event => {
-    state.participants = event.target.value;
-    saveState();
-    renderControls();
-  });
-
-  qs("#projectClassSelect")?.addEventListener("change", event => {
-    state.projectClass = event.target.value;
-    saveState();
-  });
-
-  qs("#promotionNote")?.addEventListener("input", event => {
-    state.promotionNote = event.target.value;
-    saveState();
-  });
-
-  qs("#composerInput")?.addEventListener("keydown", event => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      handleSend();
-    }
-  });
-}
-
-function handleSend() {
-  const input = qs("#composerInput");
-  const active = getActiveChat();
-  if (!input || !active) return;
-
-  const text = input.value.trim();
-  if (!text) return;
-
-  active.messages.push({ role: "user", text });
-  active.messages.push({
-    role: "assistant",
-    text: "Captured in discussion mode. Refine further, challenge it, or promote it to Projects when it is ready."
-  });
-
-  active.meta = "Today · active";
-  input.value = "";
-
-  saveState();
-  renderChatThread();
-  renderHistory();
-}
-
-function escapeHtml(text) {
-  return String(text)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
-function renderAll() {
-  renderHistory();
-  renderChatThread();
-  renderControls();
-  renderTodo();
-  renderDailyPanel();
 }
 
 function init() {
-  renderAll();
-  bindButtons();
-  bindInputs();
+  hydrateFields();
+  renderHistory();
+  renderModeCards();
+  renderModeHelp();
+  renderTodos();
+  renderCalendar();
+  bindControls();
 }
 
 document.addEventListener("DOMContentLoaded", init);
