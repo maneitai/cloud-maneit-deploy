@@ -4,326 +4,301 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Home</title>
-  <meta name="description" content="Operator hub for multi-model reasoning, discussion, structured export, and production handoff." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%0A%20%20%20%20%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%0A%20%20%20%20%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%0A%20%20%20%20%3C/svg%3E" />
-  <link rel="stylesheet" href="home/page.css" />
+  <meta name="description" content="Daily-driver AI workspace with compact history, mode controls, export, thread todo support, and calendar organisation." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
 </head>
 <body>
   <div class="page-shell">
-    <header class="page-header page-header--compact">
+    <header class="page-header">
       <div class="brand">
         <div class="brand-mark">PM</div>
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Home</h1>
-          <p>Heavy operator workspace for open discussion, comparison, structure, and promotion. History stays strong, chat stays central, control stays compact.</p>
+          <p>Daily-driver chat surface with compact history, model modes, export to Projects, thread todo support and calendar organisation.</p>
         </div>
       </div>
 
       <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link nav-link--active" href="./">Home</a>
-        <a class="nav-link" href="projects/">Projects</a>
-        <a class="nav-link" href="pipelines/">Pipelines</a>
-        <a class="nav-link" href="agent-factory/">Agent Factory</a>
-        <a class="nav-link" href="appcreator/">AppCreator</a>
-        <a class="nav-link" href="portalcreator/">PortalCreator</a>
-        <a class="nav-link" href="research-core/">Research Core</a>
-        <a class="nav-link" href="lorecore/">LoreCore</a>
-        <a class="nav-link" href="game-designer/">Game Designer</a>
-        <a class="nav-link" href="state/">State</a>
-        <a class="nav-link" href="settings/">Settings</a>
+        <a class="nav-link nav-link--active" href="../">Home</a>
+        <a class="nav-link" href="../projects/">Projects</a>
+        <a class="nav-link" href="../pipelines/">Pipelines</a>
+        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="../appcreator/">AppCreator</a>
+        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+        <a class="nav-link" href="../research-core/">Research Core</a>
+        <a class="nav-link" href="../lorecore/">LoreCore</a>
+        <a class="nav-link" href="../game-designer/">Game Designer</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link" href="../settings/">Settings</a>
       </nav>
 
       <div class="header-actions">
-        <span class="chip">History first</span>
-        <span class="chip">Open discussion</span>
-        <span class="chip">Compact control rail</span>
+        <span class="chip">Daily driver</span>
+        <span class="chip">Chat-first</span>
+        <span class="chip">Continuity-first</span>
       </div>
     </header>
 
-    <section class="page-grid page-grid--home">
-      <aside class="panel history-panel">
-        <div class="panel-top panel-top--compact">
-          <div>
-            <div class="eyebrow">Left lane</div>
-            <h2>Chats</h2>
-            <p>Open, resume, and branch conversations without losing context.</p>
-          </div>
-          <div class="button-row button-row--compact">
-            <button class="button button--ghost" id="newThreadBtn" type="button">New</button>
-            <button class="button" id="branchThreadBtn" type="button">Branch</button>
-          </div>
-        </div>
-
-        <label class="inline-field search-wrap">
-          <span class="soft">Search history</span>
-          <input class="search" id="threadSearch" placeholder="Search title, summary, excerpt, or id..." />
-        </label>
-
-        <section class="history-block">
-          <div class="section-head section-head--compact">
-            <div>
-              <div class="eyebrow">Pinned chats</div>
-              <h3>Keep close</h3>
-            </div>
-            <span class="count-pill" id="pinnedCount">0</span>
-          </div>
-          <div id="pinnedThreadList" class="thread-list"></div>
-        </section>
-
-        <section class="history-block history-block--grow">
-          <div class="section-head section-head--compact">
-            <div>
-              <div class="eyebrow">History</div>
-              <h3>Continue earlier work</h3>
-            </div>
-            <span class="count-pill" id="recentCount">0</span>
-          </div>
-          <div id="recentThreadList" class="thread-list thread-list--grow"></div>
-        </section>
-      </aside>
-
-      <main class="panel chat-panel">
-        <div class="chat-topbar chat-topbar--compact">
-          <div>
-            <div class="eyebrow">Middle lane</div>
-            <h2 id="sessionTitle">Conversation workspace</h2>
-            <p id="sessionSubtitle">Home is the operator surface for open discussion, comparison, structure, and promotion.</p>
-          </div>
-          <div class="button-row button-row--compact">
-            <button class="button button--ghost" id="seedPromptBtn" type="button">Starter</button>
-            <button class="button" id="clearChatBtn" type="button">Refresh</button>
-          </div>
-        </div>
-
-        <div class="chat-statusbar">
-          <span class="inline-pill" id="modeLabel">Open discussion</span>
-          <span class="inline-pill"><strong id="selectedModelCount">0</strong> models selected</span>
-          <span class="inline-pill">Discussion stays a discussion until you deliberately promote it.</span>
-        </div>
-
-        <section id="chatStream" class="chat-stream" aria-live="polite"></section>
-
-        <section class="composer-shell">
-          <div class="composer-note">
-            <strong>Discussion only.</strong>
-            <span>Use chat to think, challenge, compare, and refine. Nothing here is treated as a task unless you deliberately promote it.</span>
-          </div>
-
-          <label class="inline-field composer-field">
-            <span class="soft">Message</span>
-            <textarea class="textarea composer-textarea" id="promptInput" placeholder="Discuss openly. Ask questions, challenge assumptions, compare model perspectives, and refine direction together."></textarea>
-          </label>
-
-          <div class="composer-actions">
-            <div class="composer-hint">Enter sends · Shift+Enter adds a new line</div>
-            <div class="button-row">
-              <button class="button button--primary" id="sendPromptBtn" type="button">Send</button>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <aside class="panel control-panel">
-        <div class="panel-top panel-top--compact panel-top--rail">
-          <div>
-            <div class="eyebrow">Right lane</div>
-            <h2>Control rail</h2>
-            <p>Keep setup, promotion, runtime, and model prep visible without letting the side rail dominate the page.</p>
-          </div>
-        </div>
-
-        <article class="rail-summary rail-summary--compact">
-          <div class="rail-summary__head rail-summary__head--stack">
-            <div>
-              <div class="eyebrow">Live thread</div>
-              <strong id="sessionChatId">chat-home</strong>
-            </div>
-            <span class="status-chip status-chip--warn" id="modeLabelDock">Open discussion</span>
-          </div>
-          <div class="rail-metrics rail-metrics--tight">
-            <div class="metric-pill"><span>Models</span><strong id="selectedModelCountBadge">0</strong></div>
-            <div class="metric-pill"><span>Lanes</span><strong id="activeLaneCount">0</strong></div>
-            <div class="metric-pill"><span>Loaded</span><strong id="poolLoadedCountMini">0</strong></div>
-            <div class="metric-pill"><span>Target</span><strong id="exportTargetSummary">PortalCreator</strong></div>
-          </div>
-          <p class="muted rail-summary__copy rail-summary__copy--tight" id="sessionFocusLine">Discussion stays a discussion until you promote it.</p>
-        </article>
-
-        <div class="rail-stack" id="homeRail">
-          <details class="rail-section" data-dock-view="setup" open>
-            <summary>
-              <div>
-                <div class="eyebrow">Setup</div>
-                <strong>Mode + model panel</strong>
-              </div>
-              <span class="rail-section__meta" id="setupSummary">Open discussion · 0 models</span>
-            </summary>
-            <div class="rail-section__body">
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Mode</div>
-                <div id="modeOptions" class="mode-list compact-list rail-mode-list block-gap">
-                  <label class="list-item list-item--active option-card">
-                    <input type="radio" name="mode" value="single" />
-                    <div>
-                      <strong>Direct reply</strong>
-                      <p class="muted">One selected model responds directly.</p>
-                    </div>
-                  </label>
-                  <label class="list-item option-card">
-                    <input type="radio" name="mode" value="parallel" />
-                    <div>
-                      <strong>Parallel compare</strong>
-                      <p class="muted">Multiple selected models answer the same message side by side.</p>
-                    </div>
-                  </label>
-                  <label class="list-item option-card">
-                    <input type="radio" name="mode" value="discussion" checked />
-                    <div>
-                      <strong>Open discussion</strong>
-                      <p class="muted">Lead lane answers while supporting models critique or extend.</p>
-                    </div>
-                  </label>
-                </div>
-              </article>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Selected models</div>
-                <div id="modelOptions" class="tag-row block-gap"></div>
-              </article>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Resolved panel</div>
-                <div id="selectedPanelList" class="stack stack--sm block-gap"></div>
-              </article>
-            </div>
-          </details>
-
-          <details class="rail-section" data-dock-view="export">
-            <summary>
-              <div>
-                <div class="eyebrow">Promote</div>
-                <strong>Send discussion forward</strong>
-              </div>
-              <span class="rail-section__meta" id="exportSummary">Portal → PortalCreator</span>
-            </summary>
-            <div class="rail-section__body">
-              <label class="inline-field">
-                <span class="soft">Promotion title</span>
-                <input class="input" id="exportTitle" placeholder="Use the thread title or override it here" />
-              </label>
-
-              <div class="field-grid field-grid--dock">
-                <label class="inline-field">
-                  <span class="soft">Project class</span>
-                  <select class="select" id="projectType">
-                    <option>Portal</option>
-                    <option>App</option>
-                    <option>Pipeline</option>
-                    <option>Agent</option>
-                    <option>Research</option>
-                    <option>Lore</option>
-                    <option>Game</option>
-                    <option>System</option>
-                  </select>
-                </label>
-                <label class="inline-field">
-                  <span class="soft">Target portal</span>
-                  <select class="select" id="projectPortal">
-                    <option>PortalCreator</option>
-                    <option>AppCreator</option>
-                    <option>Pipelines</option>
-                    <option>Agent Factory</option>
-                    <option>Research Core</option>
-                    <option>LoreCore</option>
-                    <option>Game Designer</option>
-                    <option>Projects</option>
-                    <option>State</option>
-                  </select>
-                </label>
-              </div>
-
-              <label class="inline-field">
-                <span class="soft">Classification / handoff note</span>
-                <input class="input" id="exportNote" placeholder="Optional note for how this discussion should be organized downstream" />
-              </label>
-
-              <div class="button-row button-row--compact">
-                <button class="button button--primary" id="exportProjectBtn" type="button">Promote to Projects / portals</button>
-              </div>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Recent promotions</div>
-                <div id="exportList" class="stack stack--sm block-gap"></div>
-              </article>
-            </div>
-          </details>
-
-          <details class="rail-section" data-dock-view="runtime">
-            <summary>
-              <div>
-                <div class="eyebrow">Runtime</div>
-                <strong>Live lanes + pool</strong>
-              </div>
-              <span class="rail-section__meta" id="runtimeSummary">0 lanes · 0 loaded</span>
-            </summary>
-            <div class="rail-section__body">
-              <div class="button-row button-row--compact">
-                <button class="button" id="syncPoolBtn" type="button">Sync pool</button>
-                <button class="button button--ghost" id="releaseLanesBtn" type="button">Release lanes</button>
-              </div>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Active lanes</div>
-                <div id="activeLaneList" class="stack stack--sm block-gap"></div>
-              </article>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Pool status</div>
-                <div id="poolStatusList" class="stack stack--sm block-gap"></div>
-              </article>
-            </div>
-          </details>
-
-          <details class="rail-section" data-dock-view="catalog">
-            <summary>
-              <div>
-                <div class="eyebrow">Catalog</div>
-                <strong>Add or prepare models</strong>
-              </div>
-              <span class="rail-section__meta" id="catalogSummary">0 prepared</span>
-            </summary>
-            <div class="rail-section__body">
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Model catalog</div>
-                <div id="modelCatalogList" class="stack stack--sm catalog-list"></div>
-              </article>
-            </div>
-          </details>
-        </div>
-      </aside>
+    <section class="surface-banner panel">
+      <div>
+        <div class="eyebrow">Surface contract</div>
+        <strong>Home is the daily-driver return surface</strong>
+      </div>
+      <div class="banner-note">Think here, compare here, keep unfinished work alive here, and only export to Projects when the work is mature enough to move forward.</div>
     </section>
 
-    <p class="footer-note">Home is the open discussion surface. Think here, compare here, and only promote material when it is ready to move into Projects or another portal.</p>
+    <section class="home-layout">
+      <aside class="panel panel-left">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Chats</h2>
+          </div>
+          <span class="status-chip status-chip--good">Compact history</span>
+        </div>
+
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Search</div>
+            <label class="inline-field">
+              <span class="soft">Search chats</span>
+              <input class="input" id="chatSearch" placeholder="Search title..." />
+            </label>
+          </article>
+
+          <article class="card card--compact">
+            <div class="section-title section-title--tight">
+              <div>
+                <div class="eyebrow">Pinned chats</div>
+              </div>
+              <span class="status-chip">2</span>
+            </div>
+            <div class="chat-history-list" id="pinnedChatsList"></div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="section-title section-title--tight">
+              <div>
+                <div class="eyebrow">Project folder</div>
+              </div>
+              <span class="status-chip status-chip--good">3</span>
+            </div>
+            <div class="chat-history-list" id="projectFolderList"></div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="section-title section-title--tight">
+              <div>
+                <div class="eyebrow">History</div>
+              </div>
+              <span class="status-chip">128+</span>
+            </div>
+            <div class="chat-history-list" id="chatHistoryList"></div>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2>Home chat</h2>
+            <p class="muted">Main conversation area. Single is one model. Multi sends the same prompt to all selected models. Discussion lets selected specialists contribute when relevant.</p>
+          </div>
+          <div class="button-row">
+            <button class="button" id="newChatBtn" type="button">New chat</button>
+            <button class="button" id="branchChatBtn" type="button">Branch</button>
+            <button class="button button--primary" id="pinChatBtn" type="button">Pin / unpin</button>
+          </div>
+        </div>
+
+        <section class="workspace-kpis">
+          <article class="metric-card metric-card--mode is-active" data-mode="single">
+            <span class="soft">Mode</span>
+            <strong>Single</strong>
+          </article>
+          <article class="metric-card metric-card--mode" data-mode="multi">
+            <span class="soft">Mode</span>
+            <strong>Multi</strong>
+          </article>
+          <article class="metric-card metric-card--mode" data-mode="discussion">
+            <span class="soft">Mode</span>
+            <strong>Discussion</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Export target</span>
+            <strong>Projects</strong>
+          </article>
+        </section>
+
+        <div class="home-grid">
+          <article class="card home-controls-card">
+            <div class="eyebrow">Chat controls</div>
+
+            <div class="field-grid field-grid--triple">
+              <label class="inline-field">
+                <span class="soft">Single mode / main model</span>
+                <select class="select" id="singleModel">
+                  <option>Jeff main / GPT-style assistant</option>
+                  <option>Qwen Planner</option>
+                  <option>DeepSeek Coder</option>
+                  <option>Creative Writer</option>
+                  <option>Research Assistant</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Multi-model set</span>
+                <select class="select" id="multiModelSet">
+                  <option>Gameplay + Engine + Coder</option>
+                  <option>Writer + Researcher + Planner</option>
+                  <option>Frontend + Backend + Verifier</option>
+                  <option>Custom selected group</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Discussion specialists</span>
+                <select class="select" id="discussionPreset">
+                  <option>Game design discussion</option>
+                  <option>Web build discussion</option>
+                  <option>Writing room</option>
+                  <option>System planning room</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="mode-help" id="modeHelpText">
+              <strong>Single:</strong> one selected model answers directly.
+            </div>
+          </article>
+
+          <article class="card home-chat-card">
+            <div class="eyebrow">Thread</div>
+            <div class="chat-thread" id="chatThread">
+              <div class="chat-bubble chat-bubble--assistant">
+                <div class="chat-bubble-head">Home daily driver</div>
+                <p>This is the main chat area. Use it for daily work, ideation, planning, and long-running unfinished threads before export.</p>
+              </div>
+
+              <div class="chat-bubble chat-bubble--user">
+                <div class="chat-bubble-head">User</div>
+                <p>I want to design a tower defense game with strong lane identity, meaningful upgrades, and clean long-term progression.</p>
+              </div>
+
+              <div class="chat-bubble chat-bubble--assistant">
+                <div class="chat-bubble-head">Discussion participants</div>
+                <div class="chip-row chip-row--inside">
+                  <span class="chip">Gameplay specialist</span>
+                  <span class="chip">Code implementation specialist</span>
+                  <span class="chip">Game engine specialist</span>
+                  <span class="chip">System balance specialist</span>
+                </div>
+                <p>Gameplay can propose lane structure, code can call out implementation complexity, engine can warn about rendering/performance constraints, and balance can question upgrade scaling.</p>
+              </div>
+            </div>
+
+            <div class="composer-box">
+              <div class="soft composer-note">Enter sends · Shift+Enter adds a new line</div>
+              <textarea class="textarea composer-textarea" id="composerInput" placeholder="Write here. In Multi mode the same prompt goes to every selected model. In Discussion mode chosen specialists join where relevant."></textarea>
+              <div class="composer-actions">
+                <span class="soft" id="composerStatus">Ready</span>
+                <button class="button button--primary" id="sendBtn" type="button">Send</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Export + focus</h2>
+          </div>
+          <span class="status-chip status-chip--warn">Thread support</span>
+        </div>
+
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Export</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Project title</span>
+                <input class="input" id="exportTitle" placeholder="Name the project..." />
+              </label>
+
+              <div class="inline-field">
+                <span class="soft">Project type</span>
+                <div class="chip-row" id="projectTypeTags">
+                  <button class="button tag-button tag-button--active" type="button" data-tag="App">App</button>
+                  <button class="button tag-button" type="button" data-tag="Web">Web</button>
+                  <button class="button tag-button" type="button" data-tag="Game">Game</button>
+                  <button class="button tag-button" type="button" data-tag="Writing">Writing</button>
+                  <button class="button tag-button" type="button" data-tag="Research">Research</button>
+                  <button class="button tag-button" type="button" data-tag="System">System</button>
+                </div>
+              </div>
+
+              <label class="inline-field">
+                <span class="soft">Export note</span>
+                <textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
+              </label>
+
+              <button class="button button--primary" id="exportBtn" type="button">Export to Projects</button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Todo list</div>
+            <div class="todo-list" id="todoList"></div>
+
+            <div class="inline-field">
+              <span class="soft">Add thread todo</span>
+              <div class="todo-add-row">
+                <input class="input" id="todoInput" placeholder="Add a quick todo..." />
+                <button class="button" id="addTodoBtn" type="button">Add</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </aside>
+
+      <section class="panel calendar-panel">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Bottom zone</div>
+            <h2>Calendar</h2>
+            <p class="muted">Compact weekly calendar now. Can expand into a bigger month view later without changing Home’s structure.</p>
+          </div>
+          <span class="status-chip status-chip--good">Life organisation</span>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <div class="toast" id="toast" aria-live="polite"></div>
   <script>
-(function(){
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) {
-      const normalized = apiBase.replace(/\/+$/, '');
-      window.PM_API_BASE = normalized;
-      localStorage.setItem('PM_API_BASE', normalized);
-    } else {
-      const saved = localStorage.getItem('PM_API_BASE');
-      if (saved) window.PM_API_BASE = saved;
-    }
-  } catch (error) {}
-})();
-</script>
-  <script src="home/page.js"></script>
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get('apiBase');
+      if (apiBase) {
+        const normalized = apiBase.replace(/\\/+$/, '');
+        window.PM_API_BASE = normalized;
+        localStorage.setItem('PM_API_BASE', normalized);
+      } else {
+        const saved = localStorage.getItem('PM_API_BASE');
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
+  </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
