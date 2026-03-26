@@ -1,4 +1,4 @@
-const PM_HOME_KEY = "PM_HOME_V1";
+const PM_HOME_KEY = "PM_HOME_V2";
 const PM_API_BASE = window.PM_API_BASE || "";
 
 const defaultState = {
@@ -19,15 +19,15 @@ const defaultState = {
       messages: [
         {
           role: "system",
-          text: "Discussion only. Use chat to think, compare, challenge, and refine. Nothing here is treated as a task unless you deliberately promote it."
+          text: "Discussion only. Use chat to think, challenge, compare, and refine. Nothing here is treated as a task unless you deliberately promote it."
         },
         {
           role: "user",
-          text: "We need Home to feel like a daily driver, not a backend admin page."
+          text: "Home needs to feel like something I actually want to open every day."
         },
         {
           role: "assistant",
-          text: "Then Home must optimize for continuity, compact history, low-friction input, and simple export to Projects rather than deep runtime control."
+          text: "Then it has to prioritize continuity, compact history, low-friction chat control, and a support rail that helps without becoming a control-panel wall."
         }
       ]
     },
@@ -227,8 +227,8 @@ function filterChats(chats, search) {
 function chatButtonMarkup(chat, activeId) {
   return `
     <button class="history-item ${chat.id === activeId ? "history-item--active" : ""}" type="button" data-chat-id="${chat.id}">
-      <span class="history-title">${chat.title}</span>
-      <span class="history-meta">${chat.meta}</span>
+      <span class="history-title">${escapeHtml(chat.title)}</span>
+      <span class="history-meta">${escapeHtml(chat.meta)}</span>
     </button>
   `;
 }
@@ -279,13 +279,6 @@ function renderChatThread() {
   `).join("");
 }
 
-function escapeHtml(text) {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-}
-
 function renderControls() {
   const mode = qs("#chatMode");
   const activeModels = qs("#activeModels");
@@ -309,7 +302,7 @@ function renderTodo() {
   list.innerHTML = state.currentTodo.map(item => `
     <label class="todo-item" data-todo-id="${item.id}">
       <input type="checkbox" ${item.done ? "checked" : ""} />
-      <span>${item.text}</span>
+      <span>${escapeHtml(item.text)}</span>
     </label>
   `).join("");
 
@@ -324,6 +317,10 @@ function renderTodo() {
       saveState();
     });
   });
+}
+
+function renderDailyPanel() {
+  // Placeholder for future calendar wiring if needed
 }
 
 function createChat(title, section = "recent", meta = "Today · new") {
@@ -356,15 +353,13 @@ function bindButtons() {
   qs("#branchChatBtn")?.addEventListener("click", () => {
     const active = getActiveChat();
     if (!active) return;
-    const branched = {
-      ...deepClone(active),
-      id: `chat-${crypto.randomUUID().slice(0, 8)}`,
-      title: `${active.title} (Branch)`,
-      meta: "Today · branched",
-      section: "projectFolder",
-      pinned: false,
-      projectFolder: true
-    };
+    const branched = deepClone(active);
+    branched.id = `chat-${crypto.randomUUID().slice(0, 8)}`;
+    branched.title = `${active.title} (Branch)`;
+    branched.meta = "Today · branched";
+    branched.section = "projectFolder";
+    branched.pinned = false;
+    branched.projectFolder = true;
     state.chats.unshift(branched);
     state.activeChatId = branched.id;
     saveState();
@@ -404,6 +399,7 @@ function bindButtons() {
   });
 
   qs("#sendBtn")?.addEventListener("click", handleSend);
+
   qs("#starterBtn")?.addEventListener("click", () => {
     const composer = qs("#composerInput");
     if (composer) {
@@ -479,11 +475,19 @@ function handleSend() {
   renderHistory();
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function renderAll() {
   renderHistory();
   renderChatThread();
   renderControls();
   renderTodo();
+  renderDailyPanel();
 }
 
 function init() {
