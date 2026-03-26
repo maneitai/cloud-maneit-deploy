@@ -1,4 +1,3 @@
-
 const PM_HOME_KEY = "PM_HOME_V1";
 const PM_API_BASE = window.PM_API_BASE || "";
 
@@ -32,71 +31,18 @@ const defaultState = {
     ]
   },
   todos: [
-    {
-      id: "todo_1",
-      title: "Lock tower categories",
-      detail: "Basic, cannon, frost, fire, poison, anti-air.",
-      done: false
-    },
-    {
-      id: "todo_2",
-      title: "Clarify mode behavior",
-      detail: "Single, Multi, and Discussion now have different purposes.",
-      done: true
-    },
-    {
-      id: "todo_3",
-      title: "Decide export timing",
-      detail: "Only export once the core concept is stable enough for Projects.",
-      done: false
-    }
+    { id: "todo_1", title: "Lock tower categories", detail: "Basic, cannon, frost, fire, poison, anti-air.", done: false },
+    { id: "todo_2", title: "Clarify mode behavior", detail: "Single, Multi, and Discussion now have different purposes.", done: true },
+    { id: "todo_3", title: "Decide export timing", detail: "Only export once the core concept is stable enough for Projects.", done: false }
   ],
   calendar: [
-    {
-      day: "Mon",
-      date: "24",
-      items: [
-        { title: "Portal layout review", tone: "default" },
-        { title: "Writing block", tone: "good" }
-      ]
-    },
-    {
-      day: "Tue",
-      date: "25",
-      items: [
-        { title: "Admin / email", tone: "warn" },
-        { title: "Game planning", tone: "default" }
-      ]
-    },
-    {
-      day: "Wed",
-      date: "26",
-      today: true,
-      items: [
-        { title: "Home page lock-in", tone: "good" },
-        { title: "Projects next", tone: "default" }
-      ]
-    },
-    {
-      day: "Thu",
-      date: "27",
-      items: [{ title: "Pipeline cleanup", tone: "default" }]
-    },
-    {
-      day: "Fri",
-      date: "28",
-      items: [{ title: "Creative writing", tone: "default" }]
-    },
-    {
-      day: "Sat",
-      date: "29",
-      items: [{ title: "Reset / planning", tone: "warn" }]
-    },
-    {
-      day: "Sun",
-      date: "30",
-      items: [{ title: "Open creative block", tone: "good" }]
-    }
+    { day: "Mon", date: "24", items: [{ title: "Portal layout review", tone: "default" }, { title: "Writing block", tone: "good" }] },
+    { day: "Tue", date: "25", items: [{ title: "Admin / email", tone: "warn" }, { title: "Game planning", tone: "default" }] },
+    { day: "Wed", date: "26", today: true, items: [{ title: "Home page lock-in", tone: "good" }, { title: "Projects next", tone: "default" }] },
+    { day: "Thu", date: "27", items: [{ title: "Pipeline cleanup", tone: "default" }] },
+    { day: "Fri", date: "28", items: [{ title: "Creative writing", tone: "default" }] },
+    { day: "Sat", date: "29", items: [{ title: "Reset / planning", tone: "warn" }] },
+    { day: "Sun", date: "30", items: [{ title: "Open creative block", tone: "good" }] }
   ]
 };
 
@@ -116,6 +62,15 @@ function clone(value) {
 
 function safeId(prefix) {
   return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function loadState() {
@@ -149,10 +104,8 @@ function saveState() {
 function showToast(message, tone = "good") {
   const toast = qs("#toast");
   if (!toast) return;
-
   toast.textContent = message;
   toast.className = "toast " + tone + " is-visible";
-
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => {
     toast.classList.remove("is-visible");
@@ -160,16 +113,12 @@ function showToast(message, tone = "good") {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) {
-    return { ok: false, mock: true };
-  }
+  if (!PM_API_BASE) return { ok: false, mock: true };
 
   try {
     const response = await fetch(PM_API_BASE + path, {
       method,
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: payload ? JSON.stringify(payload) : undefined
     });
 
@@ -178,16 +127,9 @@ async function callApi(path, method = "GET", payload = null) {
       ? await response.json()
       : await response.text();
 
-    return {
-      ok: response.ok,
-      status: response.status,
-      body
-    };
+    return { ok: response.ok, status: response.status, body };
   } catch (error) {
-    return {
-      ok: false,
-      error: String(error)
-    };
+    return { ok: false, error: String(error) };
   }
 }
 
@@ -196,24 +138,18 @@ function renderHistorySection(targetId, items, isFolder = false) {
   if (!root) return;
 
   const searchValue = (qs("#chatSearch")?.value || "").trim().toLowerCase();
+  const filtered = items.filter((item) => !searchValue || item.title.toLowerCase().includes(searchValue));
 
-  const filtered = items.filter((item) => {
-    if (!searchValue) return true;
-    return item.title.toLowerCase().includes(searchValue);
-  });
-
-  root.innerHTML = filtered
-    .map((item) => {
-      const activeClass = item.id === state.selectedChatId ? " history-link--active" : "";
-      const folderClass = isFolder ? " history-link--folder" : "";
-      return `
-        <a class="history-link${activeClass}${folderClass}" href="#" data-chat-id="${escapeHtml(item.id)}">
-          <span class="history-link__dot"></span>
-          <span class="history-link__title">${escapeHtml(item.title)}</span>
-        </a>
-      `;
-    })
-    .join("");
+  root.innerHTML = filtered.map((item) => {
+    const activeClass = item.id === state.selectedChatId ? " history-link--active" : "";
+    const folderClass = isFolder ? " history-link--folder" : "";
+    return `
+      <a class="history-link${activeClass}${folderClass}" href="#" data-chat-id="${escapeHtml(item.id)}">
+        <span class="history-link__dot"></span>
+        <span class="history-link__title">${escapeHtml(item.title)}</span>
+      </a>
+    `;
+  }).join("");
 
   qsa(".history-link", root).forEach((link) => {
     link.addEventListener("click", (event) => {
@@ -265,19 +201,15 @@ function renderTodos() {
   const root = qs("#todoList");
   if (!root) return;
 
-  root.innerHTML = state.todos
-    .map((todo) => {
-      return `
-        <label class="todo-item">
-          <input type="checkbox" data-todo-id="${escapeHtml(todo.id)}" ${todo.done ? "checked" : ""} />
-          <div class="todo-item__body">
-            <strong>${escapeHtml(todo.title)}</strong>
-            <span>${escapeHtml(todo.detail || "")}</span>
-          </div>
-        </label>
-      `;
-    })
-    .join("");
+  root.innerHTML = state.todos.map((todo) => `
+    <label class="todo-item">
+      <input type="checkbox" data-todo-id="${escapeHtml(todo.id)}" ${todo.done ? "checked" : ""} />
+      <div class="todo-item__body">
+        <strong>${escapeHtml(todo.title)}</strong>
+        <span>${escapeHtml(todo.detail || "")}</span>
+      </div>
+    </label>
+  `).join("");
 
   qsa('input[type="checkbox"][data-todo-id]', root).forEach((input) => {
     input.addEventListener("change", () => {
@@ -294,40 +226,36 @@ function renderCalendar() {
   const root = qs("#calendarGrid");
   if (!root) return;
 
-  root.innerHTML = state.calendar
-    .map((day) => {
-      const dayClass = day.today ? "calendar-day calendar-day--today" : "calendar-day";
+  root.innerHTML = state.calendar.map((day) => {
+    const dayClass = day.today ? "calendar-day calendar-day--today" : "calendar-day";
 
-      const itemsHtml = day.items
-        .map((item) => {
-          let toneClass = "";
-          if (item.tone === "good") toneClass = " calendar-entry--good";
-          if (item.tone === "warn") toneClass = " calendar-entry--warn";
+    const itemsHtml = day.items.map((item) => {
+      let toneClass = "";
+      if (item.tone === "good") toneClass = " calendar-entry--good";
+      if (item.tone === "warn") toneClass = " calendar-entry--warn";
 
-          let subLabel = "Planned";
-          if (item.tone === "good") subLabel = "Focus block";
-          if (item.tone === "warn") subLabel = "Attention";
-
-          return `
-            <div class="calendar-entry${toneClass}">
-              <strong>${escapeHtml(item.title)}</strong>
-              <span>${escapeHtml(subLabel)}</span>
-            </div>
-          `;
-        })
-        .join("");
+      let subLabel = "Planned";
+      if (item.tone === "good") subLabel = "Focus block";
+      if (item.tone === "warn") subLabel = "Attention";
 
       return `
-        <article class="${dayClass}">
-          <div class="calendar-day__head">
-            <strong>${escapeHtml(day.day)}</strong>
-            <span class="soft">${escapeHtml(day.date)}</span>
-          </div>
-          ${itemsHtml}
-        </article>
+        <div class="calendar-entry${toneClass}">
+          <strong>${escapeHtml(item.title)}</strong>
+          <span>${escapeHtml(subLabel)}</span>
+        </div>
       `;
-    })
-    .join("");
+    }).join("");
+
+    return `
+      <article class="${dayClass}">
+        <div class="calendar-day__head">
+          <strong>${escapeHtml(day.day)}</strong>
+          <span class="soft">${escapeHtml(day.date)}</span>
+        </div>
+        ${itemsHtml}
+      </article>
+    `;
+  }).join("");
 }
 
 function hydrateFields() {
@@ -452,11 +380,7 @@ function bindSendButton() {
       prompt: text
     });
 
-    if (result.ok) {
-      showToast("Message sent", "good");
-    } else {
-      showToast("Saved locally. API hook ready.", "warn");
-    }
+    showToast(result.ok ? "Message sent" : "Saved locally. API hook ready.", result.ok ? "good" : "warn");
 
     if (input) input.value = "";
   });
@@ -472,22 +396,8 @@ function bindExportButton() {
     };
 
     const result = await callApi("/api/home/export-to-projects", "POST", payload);
-
-    if (result.ok) {
-      showToast("Export requested", "good");
-    } else {
-      showToast("Export hook ready. No live API yet.", "warn");
-    }
+    showToast(result.ok ? "Export requested" : "Export hook ready. No live API yet.", result.ok ? "good" : "warn");
   });
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
 }
 
 function init() {
