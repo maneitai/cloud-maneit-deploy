@@ -4,19 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Home</title>
-  <meta name="description" content="Operator hub for multi-model reasoning, discussion, structured export, and production handoff." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%0A%20%20%20%20%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%0A%20%20%20%20%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%0A%20%20%20%20%3C/svg%3E" />
+  <meta name="description" content="Daily-driver conversation surface for discussion, continuity, export to Projects, and lightweight daily organization." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
   <div class="page-shell">
-    <header class="page-header page-header--compact">
+    <header class="page-header">
       <div class="brand">
         <div class="brand-mark">PM</div>
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Home</h1>
-          <p>Heavy operator workspace for open discussion, comparison, structure, and promotion. History stays strong, chat stays central, control stays compact.</p>
+          <p>Daily-driver conversation surface for discussion, continuity, quick capture and promotion to Projects when work is ready.</p>
         </div>
       </div>
 
@@ -35,295 +35,308 @@
       </nav>
 
       <div class="header-actions">
-        <span class="chip">History first</span>
-        <span class="chip">Open discussion</span>
-        <span class="chip">Compact control rail</span>
+        <span class="chip">Daily driver</span>
+        <span class="chip">Discussion first</span>
+        <span class="chip">Export → Projects</span>
       </div>
     </header>
 
-    <section class="page-grid page-grid--home">
-      <aside class="panel history-panel">
-        <div class="panel-top panel-top--compact">
+    <section class="home-layout">
+      <aside class="panel panel-left">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Left lane</div>
             <h2>Chats</h2>
-            <p>Open, resume, and branch conversations without losing context.</p>
           </div>
-          <div class="button-row button-row--compact">
-            <button class="button button--ghost" id="newThreadBtn" type="button">New</button>
-            <button class="button" id="branchThreadBtn" type="button">Branch</button>
-          </div>
-        </div>
-
-        <label class="inline-field search-wrap">
-          <span class="soft">Search history</span>
-          <input class="search" id="threadSearch" placeholder="Search title, summary, excerpt, or id..." />
-        </label>
-
-        <section class="history-block">
-          <div class="section-head section-head--compact">
-            <div>
-              <div class="eyebrow">Pinned chats</div>
-              <h3>Keep close</h3>
-            </div>
-            <span class="count-pill" id="pinnedCount">0</span>
-          </div>
-          <div id="pinnedThreadList" class="thread-list"></div>
-        </section>
-
-        <section class="history-block history-block--grow">
-          <div class="section-head section-head--compact">
-            <div>
-              <div class="eyebrow">History</div>
-              <h3>Continue earlier work</h3>
-            </div>
-            <span class="count-pill" id="recentCount">0</span>
-          </div>
-          <div id="recentThreadList" class="thread-list thread-list--grow"></div>
-        </section>
-      </aside>
-
-      <main class="panel chat-panel">
-        <div class="chat-topbar chat-topbar--compact">
-          <div>
-            <div class="eyebrow">Middle lane</div>
-            <h2 id="sessionTitle">Conversation workspace</h2>
-            <p id="sessionSubtitle">Home is the operator surface for open discussion, comparison, structure, and promotion.</p>
-          </div>
-          <div class="button-row button-row--compact">
-            <button class="button button--ghost" id="seedPromptBtn" type="button">Starter</button>
-            <button class="button" id="clearChatBtn" type="button">Refresh</button>
+          <div class="button-row">
+            <button class="button button--small button--primary" id="newChatBtn" type="button">New</button>
+            <button class="button button--small" id="branchChatBtn" type="button">Branch</button>
           </div>
         </div>
 
-        <div class="chat-statusbar">
-          <span class="inline-pill" id="modeLabel">Open discussion</span>
-          <span class="inline-pill"><strong id="selectedModelCount">0</strong> models selected</span>
-          <span class="inline-pill">Discussion stays a discussion until you deliberately promote it.</span>
-        </div>
-
-        <section id="chatStream" class="chat-stream" aria-live="polite"></section>
-
-        <section class="composer-shell">
-          <div class="composer-note">
-            <strong>Discussion only.</strong>
-            <span>Use chat to think, challenge, compare, and refine. Nothing here is treated as a task unless you deliberately promote it.</span>
-          </div>
-
-          <label class="inline-field composer-field">
-            <span class="soft">Message</span>
-            <textarea class="textarea composer-textarea" id="promptInput" placeholder="Discuss openly. Ask questions, challenge assumptions, compare model perspectives, and refine direction together."></textarea>
+        <div class="stack stack--sm">
+          <label class="inline-field">
+            <span class="soft">Search history</span>
+            <input class="input" id="historySearch" placeholder="Search title, summary, excerpt..." />
           </label>
 
-          <div class="composer-actions">
-            <div class="composer-hint">Enter sends · Shift+Enter adds a new line</div>
-            <div class="button-row">
-              <button class="button button--primary" id="sendPromptBtn" type="button">Send</button>
+          <article class="history-block">
+            <div class="history-label-row">
+              <div class="eyebrow">Pinned chats</div>
+              <span class="counter" id="pinnedCount">2</span>
             </div>
+            <div class="history-list" id="pinnedHistoryList">
+              <button class="history-item history-item--active" type="button" data-chat-id="chat-1">
+                <span class="history-title">PM frontend shell final</span>
+                <span class="history-meta">Pinned · Today</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="chat-2">
+                <span class="history-title">Pipeline benchmark notes</span>
+                <span class="history-meta">Pinned · Yesterday</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="history-block">
+            <div class="history-label-row">
+              <div class="eyebrow">Project folder</div>
+              <span class="counter" id="projectFolderCount">3</span>
+            </div>
+            <p class="muted small-note">Ongoing threads not ready for export yet.</p>
+            <div class="history-list" id="projectFolderList">
+              <button class="history-item" type="button" data-chat-id="proj-1">
+                <span class="history-title">State page polish</span>
+                <span class="history-meta">Ongoing · not exported</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="proj-2">
+                <span class="history-title">Agent Factory final pass</span>
+                <span class="history-meta">Ongoing · not exported</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="proj-3">
+                <span class="history-title">Guldardal notes</span>
+                <span class="history-meta">Ongoing · private</span>
+              </button>
+            </div>
+          </article>
+
+          <article class="history-block">
+            <div class="history-label-row">
+              <div class="eyebrow">Recent history</div>
+              <span class="counter" id="recentCount">8</span>
+            </div>
+            <div class="history-list" id="recentHistoryList">
+              <button class="history-item" type="button" data-chat-id="chat-3">
+                <span class="history-title">Home daily driver structure</span>
+                <span class="history-meta">Today · 09:14</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="chat-4">
+                <span class="history-title">Settings cloud provider split</span>
+                <span class="history-meta">Today · 08:22</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="chat-5">
+                <span class="history-title">State quorum layout</span>
+                <span class="history-meta">Yesterday</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="chat-6">
+                <span class="history-title">Pipeline pass run notes</span>
+                <span class="history-meta">Yesterday</span>
+              </button>
+              <button class="history-item" type="button" data-chat-id="chat-7">
+                <span class="history-title">Creative writing model ideas</span>
+                <span class="history-meta">Yesterday</span>
+              </button>
+            </div>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="chat-control-bar">
+          <div class="control-group control-group--grow">
+            <label class="inline-field">
+              <span class="soft">Mode</span>
+              <select class="select" id="chatMode">
+                <option>Single</option>
+                <option>Parallel</option>
+                <option selected>Discussion</option>
+              </select>
+            </label>
+
+            <label class="inline-field">
+              <span class="soft">Active models</span>
+              <select class="select" id="activeModels">
+                <option>router-a only</option>
+                <option>router-a + router-b</option>
+                <option selected>discussion panel</option>
+                <option>custom set</option>
+              </select>
+            </label>
+
+            <label class="inline-field">
+              <span class="soft">Participants</span>
+              <select class="select" id="participants">
+                <option>1 model</option>
+                <option>2 models</option>
+                <option selected>3 models</option>
+                <option>custom</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="control-group">
+            <button class="button button--small" id="starterBtn" type="button">Starter</button>
+            <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+          </div>
+        </div>
+
+        <div class="session-strip">
+          <span class="chip">Open discussion</span>
+          <span class="chip" id="selectedModelChip">3 models selected</span>
+          <span class="chip">Discussion stays discussion until you deliberately promote it.</span>
+        </div>
+
+        <section class="chat-thread" id="chatThread">
+          <article class="message message--system">
+            <div class="message-role">System</div>
+            <div class="message-body">Discussion only. Use chat to think, compare, challenge, and refine. Nothing here is treated as a task unless you deliberately promote it.</div>
+          </article>
+
+          <article class="message message--user">
+            <div class="message-role">You</div>
+            <div class="message-body">We need Home to feel like a daily driver, not a backend admin page.</div>
+          </article>
+
+          <article class="message message--assistant">
+            <div class="message-role">PM</div>
+            <div class="message-body">Then Home must optimize for continuity, compact history, low-friction input, and simple export to Projects rather than deep runtime control.</div>
+          </article>
+        </section>
+
+        <section class="composer-shell">
+          <div class="composer-header">
+            <div>
+              <div class="eyebrow">Discussion only</div>
+              <strong>Use chat to think, compare, challenge and refine</strong>
+            </div>
+          </div>
+
+          <label class="inline-field">
+            <span class="soft">Message</span>
+            <textarea class="textarea composer-textarea" id="composerInput" placeholder="Discuss openly. Ask questions, challenge assumptions, compare model perspectives, and refine direction together."></textarea>
+          </label>
+
+          <div class="composer-footer">
+            <span class="composer-note">Enter sends · Shift+Enter adds a new line</span>
+            <button class="button button--primary" id="sendBtn" type="button">Send</button>
           </div>
         </section>
       </main>
 
-      <aside class="panel control-panel">
-        <div class="panel-top panel-top--compact panel-top--rail">
+      <aside class="panel panel-right">
+        <div class="section-title">
           <div>
             <div class="eyebrow">Right lane</div>
-            <h2>Control rail</h2>
-            <p>Keep setup, promotion, runtime, and model prep visible without letting the side rail dominate the page.</p>
+            <h2>Support</h2>
           </div>
+          <span class="status-chip status-chip--warn">Current session</span>
         </div>
 
-        <article class="rail-summary rail-summary--compact">
-          <div class="rail-summary__head rail-summary__head--stack">
-            <div>
-              <div class="eyebrow">Live thread</div>
-              <strong id="sessionChatId">chat-home</strong>
-            </div>
-            <span class="status-chip status-chip--warn" id="modeLabelDock">Open discussion</span>
-          </div>
-          <div class="rail-metrics rail-metrics--tight">
-            <div class="metric-pill"><span>Models</span><strong id="selectedModelCountBadge">0</strong></div>
-            <div class="metric-pill"><span>Lanes</span><strong id="activeLaneCount">0</strong></div>
-            <div class="metric-pill"><span>Loaded</span><strong id="poolLoadedCountMini">0</strong></div>
-            <div class="metric-pill"><span>Target</span><strong id="exportTargetSummary">PortalCreator</strong></div>
-          </div>
-          <p class="muted rail-summary__copy rail-summary__copy--tight" id="sessionFocusLine">Discussion stays a discussion until you promote it.</p>
-        </article>
-
-        <div class="rail-stack" id="homeRail">
-          <details class="rail-section" data-dock-view="setup" open>
-            <summary>
-              <div>
-                <div class="eyebrow">Setup</div>
-                <strong>Mode + model panel</strong>
-              </div>
-              <span class="rail-section__meta" id="setupSummary">Open discussion · 0 models</span>
-            </summary>
-            <div class="rail-section__body">
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Mode</div>
-                <div id="modeOptions" class="mode-list compact-list rail-mode-list block-gap">
-                  <label class="list-item list-item--active option-card">
-                    <input type="radio" name="mode" value="single" />
-                    <div>
-                      <strong>Direct reply</strong>
-                      <p class="muted">One selected model responds directly.</p>
-                    </div>
-                  </label>
-                  <label class="list-item option-card">
-                    <input type="radio" name="mode" value="parallel" />
-                    <div>
-                      <strong>Parallel compare</strong>
-                      <p class="muted">Multiple selected models answer the same message side by side.</p>
-                    </div>
-                  </label>
-                  <label class="list-item option-card">
-                    <input type="radio" name="mode" value="discussion" checked />
-                    <div>
-                      <strong>Open discussion</strong>
-                      <p class="muted">Lead lane answers while supporting models critique or extend.</p>
-                    </div>
-                  </label>
-                </div>
-              </article>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Selected models</div>
-                <div id="modelOptions" class="tag-row block-gap"></div>
-              </article>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Resolved panel</div>
-                <div id="selectedPanelList" class="stack stack--sm block-gap"></div>
-              </article>
-            </div>
-          </details>
-
-          <details class="rail-section" data-dock-view="export">
-            <summary>
-              <div>
-                <div class="eyebrow">Promote</div>
-                <strong>Send discussion forward</strong>
-              </div>
-              <span class="rail-section__meta" id="exportSummary">Portal → PortalCreator</span>
-            </summary>
-            <div class="rail-section__body">
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Export / promote</div>
+            <div class="field-grid">
               <label class="inline-field">
-                <span class="soft">Promotion title</span>
-                <input class="input" id="exportTitle" placeholder="Use the thread title or override it here" />
+                <span class="soft">Project class</span>
+                <select class="select" id="projectClassSelect">
+                  <option>System</option>
+                  <option>Portal</option>
+                  <option>App</option>
+                  <option>Pipeline</option>
+                  <option>Research</option>
+                  <option>Lore</option>
+                  <option>Game</option>
+                </select>
               </label>
 
-              <div class="field-grid field-grid--dock">
-                <label class="inline-field">
-                  <span class="soft">Project class</span>
-                  <select class="select" id="projectType">
-                    <option>Portal</option>
-                    <option>App</option>
-                    <option>Pipeline</option>
-                    <option>Agent</option>
-                    <option>Research</option>
-                    <option>Lore</option>
-                    <option>Game</option>
-                    <option>System</option>
-                  </select>
-                </label>
-                <label class="inline-field">
-                  <span class="soft">Target portal</span>
-                  <select class="select" id="projectPortal">
-                    <option>PortalCreator</option>
-                    <option>AppCreator</option>
-                    <option>Pipelines</option>
-                    <option>Agent Factory</option>
-                    <option>Research Core</option>
-                    <option>LoreCore</option>
-                    <option>Game Designer</option>
-                    <option>Projects</option>
-                    <option>State</option>
-                  </select>
-                </label>
-              </div>
-
               <label class="inline-field">
-                <span class="soft">Classification / handoff note</span>
-                <input class="input" id="exportNote" placeholder="Optional note for how this discussion should be organized downstream" />
+                <span class="soft">Promotion note</span>
+                <input class="input" id="promotionNote" value="Intent, scope, constraints, and next action." />
               </label>
 
-              <div class="button-row button-row--compact">
-                <button class="button button--primary" id="exportProjectBtn" type="button">Promote to Projects / portals</button>
+              <div class="button-grid">
+                <button class="button button--primary" id="sendToProjectsBtn" type="button">Send to Projects</button>
               </div>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Recent promotions</div>
-                <div id="exportList" class="stack stack--sm block-gap"></div>
-              </article>
             </div>
-          </details>
+          </article>
 
-          <details class="rail-section" data-dock-view="runtime">
-            <summary>
-              <div>
-                <div class="eyebrow">Runtime</div>
-                <strong>Live lanes + pool</strong>
-              </div>
-              <span class="rail-section__meta" id="runtimeSummary">0 lanes · 0 loaded</span>
-            </summary>
-            <div class="rail-section__body">
-              <div class="button-row button-row--compact">
-                <button class="button" id="syncPoolBtn" type="button">Sync pool</button>
-                <button class="button button--ghost" id="releaseLanesBtn" type="button">Release lanes</button>
-              </div>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Active lanes</div>
-                <div id="activeLaneList" class="stack stack--sm block-gap"></div>
-              </article>
-
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Pool status</div>
-                <div id="poolStatusList" class="stack stack--sm block-gap"></div>
-              </article>
+          <article class="card card--compact">
+            <div class="eyebrow">Current todo</div>
+            <div class="todo-list" id="currentTodoList">
+              <label class="todo-item">
+                <input type="checkbox" />
+                <span>Lock Home structure before coding</span>
+              </label>
+              <label class="todo-item">
+                <input type="checkbox" />
+                <span>Finish pipelines final version</span>
+              </label>
+              <label class="todo-item">
+                <input type="checkbox" />
+                <span>Export only when thread is truly ready</span>
+              </label>
             </div>
-          </details>
 
-          <details class="rail-section" data-dock-view="catalog">
-            <summary>
-              <div>
-                <div class="eyebrow">Catalog</div>
-                <strong>Add or prepare models</strong>
-              </div>
-              <span class="rail-section__meta" id="catalogSummary">0 prepared</span>
-            </summary>
-            <div class="rail-section__body">
-              <article class="subcard subcard--dense">
-                <div class="eyebrow">Model catalog</div>
-                <div id="modelCatalogList" class="stack stack--sm catalog-list"></div>
-              </article>
+            <div class="button-row">
+              <button class="button button--small" id="addTodoBtn" type="button">Add todo</button>
+              <button class="button button--small" id="clearDoneBtn" type="button">Clear done</button>
             </div>
-          </details>
+          </article>
         </div>
       </aside>
     </section>
 
-    <p class="footer-note">Home is the open discussion surface. Think here, compare here, and only promote material when it is ready to move into Projects or another portal.</p>
+    <section class="panel daily-panel">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Daily structure</div>
+          <h2>Calendar + organization</h2>
+        </div>
+        <span class="soft">Support the day without hijacking the chat</span>
+      </div>
+
+      <div class="daily-grid">
+        <article class="card">
+          <div class="eyebrow">Today</div>
+          <ul class="daily-list">
+            <li>Pipeline frontend finalization</li>
+            <li>Backend model-role benchmarking</li>
+            <li>Agent Factory alignment</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow">Calendar</div>
+          <div class="calendar-preview">
+            <div class="calendar-day is-active">Mon</div>
+            <div class="calendar-day">Tue</div>
+            <div class="calendar-day">Wed</div>
+            <div class="calendar-day">Thu</div>
+            <div class="calendar-day">Fri</div>
+            <div class="calendar-day">Sat</div>
+            <div class="calendar-day">Sun</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow">Follow-ups</div>
+          <ul class="daily-list">
+            <li>Move finished work to Projects</li>
+            <li>Benchmark JS-capable models</li>
+            <li>Lock State / Settings frontend</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <div class="toast" id="toast" aria-live="polite"></div>
   <script>
-(function(){
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) {
-      const normalized = apiBase.replace(/\/+$/, '');
-      window.PM_API_BASE = normalized;
-      localStorage.setItem('PM_API_BASE', normalized);
-    } else {
-      const saved = localStorage.getItem('PM_API_BASE');
-      if (saved) window.PM_API_BASE = saved;
-    }
-  } catch (error) {}
-})();
-</script>
-  <script src="page.js"></script>
+  (function(){
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get('apiBase');
+      if (apiBase) {
+        const normalized = apiBase.replace(/\\/+$/, '');
+        window.PM_API_BASE = normalized;
+        localStorage.setItem('PM_API_BASE', normalized);
+      } else {
+        const saved = localStorage.getItem('PM_API_BASE');
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
+  </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
