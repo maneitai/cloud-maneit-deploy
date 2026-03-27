@@ -283,7 +283,7 @@
       const params = new URLSearchParams(window.location.search);
       const apiBase = params.get("apiBase");
       if (apiBase) {
-        const normalized = apiBase.replace(/\\/+$/, "");
+        const normalized = apiBase.replace(/\/+$/, "");
         window.PM_API_BASE = normalized;
         localStorage.setItem("PM_API_BASE", normalized);
       } else {
