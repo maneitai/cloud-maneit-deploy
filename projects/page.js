@@ -1,5 +1,5 @@
 const PM_PROJECTS_KEY = "PM_PROJECTS_V1";
-const PM_API_BASE = window.PM_API_BASE || "";
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedProjectId: "proj-web-001",
@@ -22,7 +22,7 @@ const defaultState = {
       summary: "Unified frontend shell for Maneit pages with clear role separation, stable navigation, and reusable patterns across Home, Projects, Pipelines, Agent Factory, State and Settings.",
       tags: "frontend, shell, registry, navigation, UX",
       origin: "home/chat-1",
-      assets: "home/index.html\\nstate/index.html\\nsettings/index.html\\npipelines/index.html\\nagent-factory/index.html",
+      assets: "home/index.html\nstate/index.html\nsettings/index.html\npipelines/index.html\nagent-factory/index.html",
       notes: "Keep layout language consistent across all pages. Do not let creator pages become pipeline editors. Home stays daily-driver discussion surface. Projects remains the central handoff library.",
       pinned: true,
       checks: [true, true, true, false]
@@ -40,7 +40,7 @@ const defaultState = {
       summary: "Backend benchmark pack for planner, coder, verifier and JS-specific model role testing.",
       tags: "backend, runtime, benchmark, models",
       origin: "home/chat-2",
-      assets: "runtime logs\\nbenchmark notes\\npipeline reports",
+      assets: "runtime logs\nbenchmark notes\npipeline reports",
       notes: "Used to validate role-specialized model routing and quality.",
       pinned: true,
       checks: [true, true, true, true]
@@ -76,7 +76,7 @@ const defaultState = {
       summary: "Internal app for visualizing and editing role-to-model routing.",
       tags: "routing, dashboard, ops",
       origin: "projects/manual",
-      assets: "requirements draft\\nstate notes",
+      assets: "requirements draft\nstate notes",
       notes: "Needs compact, low-noise UI and explicit fallback visualization.",
       pinned: false,
       checks: [true, true, true, false]
@@ -94,7 +94,7 @@ const defaultState = {
       summary: "Redesign of State page with quorum-aware runtime control and clear active model census.",
       tags: "state, portal, quorum, runtime",
       origin: "home/chat-4",
-      assets: "state/index.html\\nstate/page.css\\nstate/page.js",
+      assets: "state/index.html\nstate/page.css\nstate/page.js",
       notes: "Runtime stays here, not in Settings or Pipelines.",
       pinned: false,
       checks: [true, true, true, true]
@@ -130,7 +130,7 @@ const defaultState = {
       summary: "Core systems concept notes for Guldardal Chronicles.",
       tags: "guldardal, game, systems, myth",
       origin: "home/proj-3",
-      assets: "story notes\\nworld rules",
+      assets: "story notes\nworld rules",
       notes: "Keep power bounded, costly and mythic.",
       pinned: false,
       checks: [false, false, false, false]
@@ -166,7 +166,7 @@ const defaultState = {
       summary: "Structured study of specialized models per role and task family.",
       tags: "research, models, specialization",
       origin: "home/chat-6",
-      assets: "benchmark outputs\\naudit notes",
+      assets: "benchmark outputs\naudit notes",
       notes: "Supports the architectural claim that specialized models are the viable path.",
       pinned: false,
       checks: [true, true, true, true]
@@ -245,7 +245,10 @@ function showToast(message, tone = "good") {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) return { ok: false, mock: true };
+  if (!PM_API_BASE) {
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+  }
+
   try {
     const res = await fetch(`${PM_API_BASE}${path}`, {
       method,
