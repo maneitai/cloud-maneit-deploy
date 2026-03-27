@@ -1,3 +1,5 @@
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+
 const modeSwitch = document.getElementById("modeSwitch");
 const modeCards = document.querySelectorAll("[data-mode-card]");
 const segmentedButtons = document.querySelectorAll(".segmented-btn");
@@ -12,7 +14,41 @@ const studioPanes = document.querySelectorAll(".studio-pane");
 
 let currentMode = "discussion";
 
+async function callApi(path, method = "GET", payload = null) {
+  if (!PM_API_BASE) {
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+  }
+
+  try {
+    const response = await fetch(`${PM_API_BASE}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: payload ? JSON.stringify(payload) : undefined
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json()
+      : await response.text();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      body
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: String(error)
+    };
+  }
+}
+
 function addActivity(text) {
+  if (!activityBox) return;
+
   const line = document.createElement("div");
   line.className = "activity-line";
   line.textContent = text;
@@ -51,7 +87,10 @@ function createBubble(roleClass, roleName, bodyText) {
 
   const time = document.createElement("span");
   time.className = "bubble-time";
-  time.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  time.textContent = new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit"
+  });
 
   meta.appendChild(role);
   meta.appendChild(time);
@@ -66,31 +105,69 @@ function createBubble(roleClass, roleName, bodyText) {
   return article;
 }
 
-function sendMessage() {
-  const value = composerInput.value.trim();
+function appendUserBubble(text) {
+  if (!chatThread) return;
+  const userBubble = createBubble("user", "You", text);
+  chatThread.appendChild(userBubble);
+  chatThread.scrollTop = chatThread.scrollHeight;
+}
+
+function appendAssistantBubble(text) {
+  if (!chatThread) return;
+  const assistantBubble = createBubble("assistant", "LoreCore", text);
+  chatThread.appendChild(assistantBubble);
+  chatThread.scrollTop = chatThread.scrollHeight;
+}
+
+function getFallbackReply() {
+  if (currentMode === "direct") {
+    return "Direct lane: I will answer with one focused creative move and keep the output narrow, clean, and immediately usable.";
+  }
+
+  if (currentMode === "parallel") {
+    return "Parallel lane: I would compare at least two strong alternatives here — one grounded in historical pressure and one driven more by dramatic character tension.";
+  }
+
+  return "Discussion lane: I would expand this through collaborative critique, world logic, scene pressure, and prose alternatives before saving anything.";
+}
+
+async function sendMessage() {
+  const value = composerInput?.value.trim() || "";
   if (!value) return;
 
-  const userBubble = createBubble("user", "You", value);
-  chatThread.appendChild(userBubble);
+  appendUserBubble(value);
+  if (composerInput) composerInput.value = "";
+  composerInput?.focus();
+
+  addActivity("Message sent to active creative thread.");
+
+  const result = await callApi("/api/lorecore/send", "POST", {
+    mode: currentMode,
+    prompt: value
+  });
 
   let replyText = "";
 
-  if (currentMode === "direct") {
-    replyText = "Direct lane: I will answer with one focused creative move and keep the output narrow, clean, and immediately usable.";
-  } else if (currentMode === "parallel") {
-    replyText = "Parallel lane: I would compare at least two strong alternatives here — one grounded in historical pressure and one driven more by dramatic character tension.";
+  if (result.ok) {
+    if (typeof result.body === "string") {
+      replyText = result.body;
+    } else if (result.body?.reply) {
+      replyText = result.body.reply;
+    } else if (result.body?.message) {
+      replyText = result.body.message;
+    } else if (result.body?.text) {
+      replyText = result.body.text;
+    } else {
+      replyText = "LoreCore responded, but the response format was not recognized by this page yet.";
+    }
+
+    addActivity("Reply received from backend.");
   } else {
-    replyText = "Discussion lane: I would expand this through collaborative critique, world logic, scene pressure, and prose alternatives before saving anything.";
+    replyText = getFallbackReply();
+    addActivity("Backend unavailable. Fallback reply shown.");
   }
 
-  const assistantBubble = createBubble("assistant", "LoreCore", replyText);
-  chatThread.appendChild(assistantBubble);
-
-  chatThread.scrollTop = chatThread.scrollHeight;
-  composerInput.value = "";
-  composerInput.focus();
-
-  addActivity("Message sent to active creative thread.");
+  appendAssistantBubble(replyText);
 }
 
 modeSwitch?.addEventListener("click", (event) => {
@@ -108,8 +185,8 @@ modeCards.forEach((card) => {
 sendMessageBtn?.addEventListener("click", sendMessage);
 
 clearComposerBtn?.addEventListener("click", () => {
-  composerInput.value = "";
-  composerInput.focus();
+  if (composerInput) composerInput.value = "";
+  composerInput?.focus();
   addActivity("Composer cleared.");
 });
 
