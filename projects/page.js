@@ -1,5 +1,5 @@
 const PM_PROJECTS_KEY = "PM_PROJECTS_V1";
-const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedProjectId: "proj-web-001",
