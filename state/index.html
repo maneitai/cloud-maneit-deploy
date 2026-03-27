@@ -183,6 +183,11 @@
       cursor: pointer;
     }
 
+    .button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
     .button--primary {
       background: linear-gradient(135deg, rgba(110,231,255,0.18), rgba(139,92,246,0.18));
       border-color: rgba(110,231,255,0.24);
@@ -393,6 +398,32 @@
       flex-wrap: wrap;
     }
 
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      background: rgba(11, 21, 32, 0.96);
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(8px);
+      transition: .18s ease;
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.good { border-color: rgba(52,211,153,0.3); }
+    .toast.warn { border-color: rgba(251,191,36,0.3); }
+    .toast.bad { border-color: rgba(251,113,133,0.3); }
+
     @media (max-width: 1700px) {
       .runtime-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     }
@@ -466,34 +497,28 @@
     <section class="hero-grid">
       <article class="panel">
         <div class="stat-label">Active Models</div>
-        <div class="stat-value">7</div>
-        <div class="chip-row">
-          <div class="chip good">GPU 3 active</div>
-          <div class="chip">CPU 4 active</div>
-          <div class="chip warn">2 cold standby</div>
-        </div>
+        <div class="stat-value">0</div>
+        <div class="chip-row"></div>
       </article>
       <article class="panel">
         <div class="stat-label">Quorum Roles</div>
-        <div class="stat-value">3-of-3</div>
+        <div class="stat-value">2-of-3</div>
         <div class="chip-row">
           <div class="chip good">No single-model approval</div>
         </div>
       </article>
       <article class="panel">
         <div class="stat-label">Testing Slice</div>
-        <div class="stat-value">Homepage JS</div>
+        <div class="stat-value">State</div>
         <div class="chip-row">
-          <div class="chip warn">2 roles active</div>
-          <div class="chip">Round robin off</div>
+          <div class="chip">Locked runtime</div>
         </div>
       </article>
       <article class="panel">
         <div class="stat-label">Last Pipeline Run</div>
-        <div class="stat-value">Pass</div>
+        <div class="stat-value">Unknown</div>
         <div class="chip-row">
-          <div class="chip good">Verify OK</div>
-          <div class="chip good">Audit OK</div>
+          <div class="chip">Awaiting refresh</div>
         </div>
       </article>
     </section>
@@ -520,7 +545,7 @@
                 <div class="role-name">Router</div>
                 <div class="role-sub">Core orchestration · quorum advisory</div>
               </div>
-              <div><select class="select"><option>router-a, router-b, router-c</option></select></div>
+              <div><select class="select"><option>router set</option></select></div>
               <div><select class="select"><option>router_operating_prompt</option></select></div>
               <div><select class="select"><option>60s</option></select></div>
               <div><select class="select"><option>strict_json_route</option></select></div>
@@ -532,7 +557,7 @@
                 <div class="role-name">Planner</div>
                 <div class="role-sub">Structured planning · independent planning trio</div>
               </div>
-              <div><select class="select"><option>planner-a, planner-b, planner-c</option></select></div>
+              <div><select class="select"><option>planner set</option></select></div>
               <div><select class="select"><option>planner_operating_prompt</option></select></div>
               <div><select class="select"><option>90s</option></select></div>
               <div><select class="select"><option>structured_markdown_plan</option></select></div>
@@ -544,7 +569,7 @@
                 <div class="role-name">Python Generator</div>
                 <div class="role-sub">Software engineering · code quorum</div>
               </div>
-              <div><select class="select"><option>python-a, python-b, python-c</option></select></div>
+              <div><select class="select"><option>python set</option></select></div>
               <div><select class="select"><option>python_reasoning_v1</option></select></div>
               <div><select class="select"><option>120s</option></select></div>
               <div><select class="select"><option>raw_python_file</option></select></div>
@@ -556,7 +581,7 @@
                 <div class="role-name">C++ Generator</div>
                 <div class="role-sub">Native systems · compile-first quorum</div>
               </div>
-              <div><select class="select"><option>cpp-a, cpp-b, cpp-c</option></select></div>
+              <div><select class="select"><option>cpp set</option></select></div>
               <div><select class="select"><option>cpp_reasoning_v1</option></select></div>
               <div><select class="select"><option>150s</option></select></div>
               <div><select class="select"><option>raw_cpp_module</option></select></div>
@@ -568,7 +593,7 @@
                 <div class="role-name">JS Generator</div>
                 <div class="role-sub">Frontend interaction · contract-first trio</div>
               </div>
-              <div><select class="select"><option>js-a, js-b, js-c</option></select></div>
+              <div><select class="select"><option>js set</option></select></div>
               <div><select class="select"><option>coder_operating_prompt</option></select></div>
               <div><select class="select"><option>75s</option></select></div>
               <div><select class="select"><option>raw_js_file</option></select></div>
@@ -580,7 +605,7 @@
                 <div class="role-name">Verifier</div>
                 <div class="role-sub">Strict validation · never single point of approval</div>
               </div>
-              <div><select class="select"><option>verify-a, verify-b, verify-c</option></select></div>
+              <div><select class="select"><option>verify set</option></select></div>
               <div><select class="select"><option>verifier_operating_prompt</option></select></div>
               <div><select class="select"><option>60s</option></select></div>
               <div><select class="select"><option>strict_json_verification</option></select></div>
@@ -592,7 +617,7 @@
                 <div class="role-name">Auditor</div>
                 <div class="role-sub">Final review · separate from verifier quorum</div>
               </div>
-              <div><select class="select"><option>audit-a, audit-b, audit-c</option></select></div>
+              <div><select class="select"><option>audit set</option></select></div>
               <div><select class="select"><option>audit_operating_prompt</option></select></div>
               <div><select class="select"><option>60s</option></select></div>
               <div><select class="select"><option>markdown_audit</option></select></div>
@@ -604,113 +629,9 @@
         <article class="panel">
           <div class="section-title">
             <h3>Model Runtime Control</h3>
-            <span>Start, stop, warm, unload and pin without scanning the whole page</span>
+            <span>Live model-pool runtime from PM backend</span>
           </div>
-          <div class="runtime-grid">
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">router-a</div>
-                  <div class="runtime-sub">pipe_router_gemma4b · GPU · active</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag router">Router Family</div>
-                <div class="tag">Pinned GPU</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small button--danger">Stop</button>
-                <button class="button button--small">Warm</button>
-                <button class="button button--small">Unload</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">router-b</div>
-                  <div class="runtime-sub">pipe_router_gemma4b · CPU · active</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag router">Router Family</div>
-                <div class="tag">Pin CPU</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small button--danger">Stop</button>
-                <button class="button button--small">Warm</button>
-                <button class="button button--small">Pin CPU</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">router-c</div>
-                  <div class="runtime-sub">pipe_router_gemma4b · cold standby</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag router">Router Family</div>
-                <div class="tag">Standby</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small button--primary">Start</button>
-                <button class="button button--small">Warm</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">planner-a</div>
-                  <div class="runtime-sub">pipe_planner_qwen3_8b · GPU · benchmark</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag planner">Planner Family</div>
-                <div class="tag">Benchmark</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small">Start</button>
-                <button class="button button--small button--danger">Disable</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">python-a</div>
-                  <div class="runtime-sub">pipe_python_coder_primary · CPU · cold</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag python">Python Family</div>
-                <div class="tag">Cold Standby</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small">Start</button>
-                <button class="button button--small">Pin CPU</button>
-              </div>
-            </div>
-
-            <div class="runtime-model">
-              <div class="runtime-top">
-                <div>
-                  <div class="runtime-name">cpp-a</div>
-                  <div class="runtime-sub">pipe_cpp_coder_primary · CPU · cold</div>
-                </div>
-              </div>
-              <div class="model-tags">
-                <div class="tag cpp">C++ Family</div>
-                <div class="tag">Cold Standby</div>
-              </div>
-              <div class="control-row">
-                <button class="button button--small">Start</button>
-                <button class="button button--small">Pin CPU</button>
-              </div>
-            </div>
-          </div>
+          <div class="runtime-grid"></div>
         </article>
       </div>
 
@@ -720,13 +641,7 @@
             <h3>Active Model Census</h3>
             <span>What is active right now</span>
           </div>
-          <div class="chip-row">
-            <div class="chip good">router-a active</div>
-            <div class="chip good">router-b active</div>
-            <div class="chip warn">planner-a benchmark</div>
-            <div class="chip">python-a cold</div>
-            <div class="chip">cpp-a cold</div>
-          </div>
+          <div class="chip-row"></div>
           <div class="footer-note">
             This panel is intentionally simple: you should be able to glance here and know what is active without skimming the whole control surface.
           </div>
@@ -739,8 +654,8 @@
           </div>
           <div class="chip-row">
             <div class="chip good">Locked Execution</div>
-            <div class="chip good">3-model quorum enabled</div>
-            <div class="chip">Round robin off</div>
+            <div class="chip good">2-of-3 verifier quorum</div>
+            <div class="chip">State refresh path</div>
           </div>
           <div class="footer-note">
             You do not test the whole endgame at once. You activate one slice at a time, but the system still keeps the full role architecture visible and ready.
@@ -766,15 +681,10 @@
         <article class="panel">
           <div class="section-title">
             <h3>Live Pipeline Trace</h3>
-            <span>What is happening right now</span>
+            <span>Runtime events + state actions</span>
           </div>
           <div class="live-log">
-            <div class="log-line">[STAGE] js_generate → js-a, js-b, js-c</div>
-            <div class="log-line">[VOTE] js-a pass · js-b pass · js-c diverged</div>
-            <div class="log-line">[PASS] local_verify_initial passed=True</div>
-            <div class="log-line">[PASS] verifier 2-of-3 agreement reached</div>
-            <div class="log-line">[PASS] audit 2-of-3 agreement reached</div>
-            <div class="log-line">[FINAL] final_pass=True</div>
+            <div class="log-line">[STATE] Initializing…</div>
           </div>
         </article>
 
@@ -813,5 +723,6 @@
       } catch (error) {}
     })();
   </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
