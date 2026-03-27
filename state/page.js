@@ -1,5 +1,5 @@
 const PM_STATE_KEY = "PM_STATE_V2";
-const PM_API_BASE = window.PM_API_BASE || "";
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   profileName: "Operator Baseline",
@@ -123,11 +123,11 @@ function familyLabelClass(family) {
 }
 
 function deriveCounts() {
-  const active = state.runtimeModels.filter(m => m.state === "active").length;
-  const cold = state.runtimeModels.filter(m => m.state === "cold").length;
-  const benchmark = state.runtimeModels.filter(m => m.state === "benchmark").length;
-  const gpu = state.runtimeModels.filter(m => m.placement === "GPU" && m.state === "active").length;
-  const cpu = state.runtimeModels.filter(m => m.placement === "CPU" && m.state === "active").length;
+  const active = state.runtimeModels.filter((m) => m.state === "active").length;
+  const cold = state.runtimeModels.filter((m) => m.state === "cold").length;
+  const benchmark = state.runtimeModels.filter((m) => m.state === "benchmark").length;
+  const gpu = state.runtimeModels.filter((m) => m.placement === "GPU" && m.state === "active").length;
+  const cpu = state.runtimeModels.filter((m) => m.placement === "CPU" && m.state === "active").length;
   return { active, cold, benchmark, gpu, cpu };
 }
 
@@ -165,7 +165,7 @@ function renderCensus() {
   const chipRow = qs(".chip-row", censusCard);
   if (!chipRow) return;
 
-  chipRow.innerHTML = state.runtimeModels.map(model => {
+  chipRow.innerHTML = state.runtimeModels.map((model) => {
     let tone = "";
     if (model.state === "active") tone = "good";
     if (model.state === "benchmark") tone = "warn";
@@ -178,10 +178,10 @@ function renderRuntimeGrid() {
   const runtimePanel = qsa(".main-layout .stack .panel")[1];
   if (!runtimePanel) return;
 
-  let runtimeGrid = qs(".runtime-grid", runtimePanel);
+  const runtimeGrid = qs(".runtime-grid", runtimePanel);
   if (!runtimeGrid) return;
 
-  runtimeGrid.innerHTML = state.runtimeModels.map(model => {
+  runtimeGrid.innerHTML = state.runtimeModels.map((model) => {
     const familyClass = familyLabelClass(model.family);
     return `
       <div class="runtime-model" data-model-id="${model.id}">
@@ -196,7 +196,9 @@ function renderRuntimeGrid() {
           <div class="tag">${model.pin}</div>
         </div>
         <div class="control-row">
-          ${model.state === "active" ? `<button class="button button--small button--danger" data-action="stop">Stop</button>` : `<button class="button button--small button--primary" data-action="start">Start</button>`}
+          ${model.state === "active"
+            ? `<button class="button button--small button--danger" data-action="stop">Stop</button>`
+            : `<button class="button button--small button--primary" data-action="start">Start</button>`}
           <button class="button button--small" data-action="warm">Warm</button>
           <button class="button button--small" data-action="unload">Unload</button>
           <button class="button button--small" data-action="pin-cpu">Pin CPU</button>
@@ -222,13 +224,13 @@ function renderLiveTrace(message) {
 
   const items = qsa(".log-line", log);
   if (items.length > 10) {
-    items.slice(10).forEach(item => item.remove());
+    items.slice(10).forEach((item) => item.remove());
   }
 }
 
 async function callApi(path, method = "GET", payload = null) {
   if (!PM_API_BASE) {
-    return { ok: false, mock: true };
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
   }
 
   try {
@@ -250,7 +252,7 @@ async function callApi(path, method = "GET", payload = null) {
 }
 
 function updateModel(modelId, updater) {
-  state.runtimeModels = state.runtimeModels.map(model =>
+  state.runtimeModels = state.runtimeModels.map((model) =>
     model.id === modelId ? updater({ ...model }) : model
   );
   saveState(state);
@@ -258,48 +260,48 @@ function updateModel(modelId, updater) {
 }
 
 function handleModelAction(modelId, action) {
-  const model = state.runtimeModels.find(item => item.id === modelId);
+  const model = state.runtimeModels.find((item) => item.id === modelId);
   if (!model) return;
 
   switch (action) {
     case "start":
-      updateModel(modelId, m => ({ ...m, state: "active" }));
+      updateModel(modelId, (m) => ({ ...m, state: "active" }));
       renderLiveTrace(`[MODEL] ${modelId} started`);
       showToast(`${modelId} started`, "good");
       void callApi("/api/state/models/start", "POST", { model_id: modelId, alias: model.alias });
       break;
     case "stop":
-      updateModel(modelId, m => ({ ...m, state: "cold" }));
+      updateModel(modelId, (m) => ({ ...m, state: "cold" }));
       renderLiveTrace(`[MODEL] ${modelId} stopped`);
       showToast(`${modelId} stopped`, "warn");
       void callApi("/api/state/models/stop", "POST", { model_id: modelId, alias: model.alias });
       break;
     case "warm":
-      updateModel(modelId, m => ({ ...m, state: "active" }));
+      updateModel(modelId, (m) => ({ ...m, state: "active" }));
       renderLiveTrace(`[MODEL] ${modelId} warmed`);
       showToast(`${modelId} warmed`, "good");
       void callApi("/api/state/models/warm", "POST", { model_id: modelId, alias: model.alias });
       break;
     case "unload":
-      updateModel(modelId, m => ({ ...m, state: "cold" }));
+      updateModel(modelId, (m) => ({ ...m, state: "cold" }));
       renderLiveTrace(`[MODEL] ${modelId} unloaded`);
       showToast(`${modelId} unloaded`, "warn");
       void callApi("/api/state/models/unload", "POST", { model_id: modelId, alias: model.alias });
       break;
     case "pin-cpu":
-      updateModel(modelId, m => ({ ...m, placement: "CPU", pin: "Pinned CPU" }));
+      updateModel(modelId, (m) => ({ ...m, placement: "CPU", pin: "Pinned CPU" }));
       renderLiveTrace(`[MODEL] ${modelId} pinned to CPU`);
       showToast(`${modelId} pinned to CPU`, "good");
       void callApi("/api/state/models/pin", "POST", { model_id: modelId, alias: model.alias, target: "CPU" });
       break;
     case "pin-gpu":
-      updateModel(modelId, m => ({ ...m, placement: "GPU", pin: "Pinned GPU" }));
+      updateModel(modelId, (m) => ({ ...m, placement: "GPU", pin: "Pinned GPU" }));
       renderLiveTrace(`[MODEL] ${modelId} pinned to GPU`);
       showToast(`${modelId} pinned to GPU`, "good");
       void callApi("/api/state/models/pin", "POST", { model_id: modelId, alias: model.alias, target: "GPU" });
       break;
     case "disable":
-      updateModel(modelId, m => ({ ...m, state: "disabled" }));
+      updateModel(modelId, (m) => ({ ...m, state: "disabled" }));
       renderLiveTrace(`[MODEL] ${modelId} disabled`);
       showToast(`${modelId} disabled`, "bad");
       void callApi("/api/state/models/disable", "POST", { model_id: modelId, alias: model.alias });
@@ -310,16 +312,16 @@ function handleModelAction(modelId, action) {
 }
 
 function bindRuntimeActions() {
-  qsa(".runtime-model").forEach(card => {
+  qsa(".runtime-model").forEach((card) => {
     const modelId = card.dataset.modelId;
-    qsa("[data-action]", card).forEach(button => {
+    qsa("[data-action]", card).forEach((button) => {
       button.addEventListener("click", () => handleModelAction(modelId, button.dataset.action));
     });
   });
 }
 
 function bindTopButtons() {
-  qsa(".button-row .button").forEach(button => {
+  qsa(".button-row .button").forEach((button) => {
     const label = button.textContent.trim().toLowerCase();
 
     button.addEventListener("click", async () => {
@@ -341,6 +343,7 @@ function bindTopButtons() {
       if (label.includes("run locked pipeline test")) {
         renderLiveTrace("[PIPELINE] locked pipeline test requested");
         showToast("Locked pipeline test requested", "warn");
+
         const result = await callApi("/api/state/run-locked-pipeline-test", "POST", {
           slice: state.testingSlice,
           mode: state.runMode
@@ -360,7 +363,7 @@ function bindTopButtons() {
 }
 
 function bindSelectPersistence() {
-  qsa(".role-row .select").forEach(select => {
+  qsa(".role-row .select").forEach((select) => {
     select.addEventListener("change", () => {
       saveState(state);
       renderLiveTrace(`[ROLE] updated ${select.value}`);
