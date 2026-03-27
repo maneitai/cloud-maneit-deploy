@@ -1,19 +1,17 @@
-const PM_PIPELINES_KEY = "PM_PIPELINES_V2";
+const PM_PIPELINES_KEY = "PM_PIPELINES_V3";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
+  selectedPipelineId: "",
   selectedNodeId: "node-input",
   portalPreviewVisible: true,
-  currentPipelineName: "Homepage Contract Pipeline",
+  currentPipelineName: "",
   spawnSelections: {
     roleClass: "Coder",
     subtype: "C++ Coder",
     profile: "DeepSeek"
   },
-  inspector: {
-    nodeTitle: "Brief Intake",
-    nodeDescription: "Input node selected. This is where work enters the graph."
-  },
+  pipelines: [],
   nodes: [
     {
       id: "node-input",
@@ -144,6 +142,8 @@ const defaultState = {
   ]
 };
 
+let state = loadState();
+
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -156,7 +156,8 @@ function loadState() {
     return {
       ...deepClone(defaultState),
       ...parsed,
-      nodes: parsed.nodes && Array.isArray(parsed.nodes) ? parsed.nodes : deepClone(defaultState.nodes)
+      pipelines: Array.isArray(parsed.pipelines) ? parsed.pipelines : [],
+      nodes: Array.isArray(parsed.nodes) ? parsed.nodes : deepClone(defaultState.nodes)
     };
   } catch {
     return deepClone(defaultState);
@@ -187,10 +188,6 @@ function showToast(message, tone = "good") {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) {
-    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
-  }
-
   try {
     const res = await fetch(`${PM_API_BASE}${path}`, {
       method,
@@ -232,6 +229,35 @@ function nodeTypeBadge(type) {
   }
 }
 
+function normalizePipeline(item) {
+  return {
+    id: item.public_id || item.pipeline_public_id || item.id || "",
+    title: item.title || item.name || "Untitled pipeline",
+    portal: item.portal || "",
+    summary: item.summary || ""
+  };
+}
+
+function renderPipelineSelector() {
+  const select = qs("#pipelineSelector");
+  if (!select) return;
+
+  select.innerHTML = state.pipelines.length
+    ? state.pipelines.map((pipeline) => `
+        <option value="${pipeline.id}" ${pipeline.id === state.selectedPipelineId ? "selected" : ""}>
+          ${pipeline.title}
+        </option>
+      `).join("")
+    : `<option value="">No backend pipelines found</option>`;
+
+  if (!state.selectedPipelineId && state.pipelines[0]) {
+    state.selectedPipelineId = state.pipelines[0].id;
+  }
+
+  const selected = state.pipelines.find((item) => item.id === state.selectedPipelineId);
+  state.currentPipelineName = selected?.title || "Local pipeline draft";
+}
+
 function renderNodes() {
   const canvas = qs("#pipelineCanvas");
   if (!canvas) return;
@@ -266,45 +292,35 @@ function updateInspector() {
   const title = qs("#selectedNodeTitle");
   if (title) title.textContent = node.title;
 
-  const desc = qs(".panel-right .card .muted");
+  const desc = qs("#selectedNodeDescription");
   if (desc) desc.textContent = node.description;
 
-  const selects = qsa(".panel-right .select");
-  if (selects.length >= 9) {
-    selects[0].value = node.roleProfile || "";
-    selects[1].value = node.reasoningLayer || "";
-    selects[2].value = node.outputContract || "";
-    selects[3].value = node.validationGate || "";
-    selects[4].value = node.primaryGroup || "";
-    selects[5].value = node.fallbackGroup || "";
-    selects[6].value = node.timeout || "";
-    selects[7].value = node.quorumRule || "";
-    selects[8].value = "inherit from Agent Factory";
-  }
-
-  const textarea = qs(".panel-right .textarea");
-  if (textarea) textarea.value = node.notes || "";
+  qs("#inspectorRoleProfile").value = node.roleProfile || "";
+  qs("#inspectorReasoningLayer").value = node.reasoningLayer || "";
+  qs("#inspectorOutputContract").value = node.outputContract || "";
+  qs("#inspectorValidationGate").value = node.validationGate || "";
+  qs("#inspectorPrimaryGroup").value = node.primaryGroup || "";
+  qs("#inspectorFallbackGroup").value = node.fallbackGroup || "";
+  qs("#inspectorTimeout").value = node.timeout || "";
+  qs("#inspectorQuorumRule").value = node.quorumRule || "";
+  qs("#inspectorOverrideReasoning").value = "inherit from Agent Factory";
+  qs("#inspectorNotes").value = node.notes || "";
 }
 
 function persistInspectorToNode() {
   const node = state.nodes.find(n => n.id === state.selectedNodeId);
   if (!node) return;
 
-  const selects = qsa(".panel-right .select");
-  const textarea = qs(".panel-right .textarea");
+  node.roleProfile = qs("#inspectorRoleProfile")?.value || node.roleProfile;
+  node.reasoningLayer = qs("#inspectorReasoningLayer")?.value || node.reasoningLayer;
+  node.outputContract = qs("#inspectorOutputContract")?.value || node.outputContract;
+  node.validationGate = qs("#inspectorValidationGate")?.value || node.validationGate;
+  node.primaryGroup = qs("#inspectorPrimaryGroup")?.value || node.primaryGroup;
+  node.fallbackGroup = qs("#inspectorFallbackGroup")?.value || node.fallbackGroup;
+  node.timeout = qs("#inspectorTimeout")?.value || node.timeout;
+  node.quorumRule = qs("#inspectorQuorumRule")?.value || node.quorumRule;
+  node.notes = qs("#inspectorNotes")?.value || "";
 
-  if (selects.length >= 9) {
-    node.roleProfile = selects[0].value;
-    node.reasoningLayer = selects[1].value;
-    node.outputContract = selects[2].value;
-    node.validationGate = selects[3].value;
-    node.primaryGroup = selects[4].value;
-    node.fallbackGroup = selects[5].value;
-    node.timeout = selects[6].value;
-    node.quorumRule = selects[7].value;
-  }
-
-  node.notes = textarea?.value || "";
   saveState();
 }
 
@@ -330,12 +346,21 @@ function bindNodeSelection() {
 }
 
 function bindInspector() {
-  qsa(".panel-right .select").forEach(select => {
-    select.addEventListener("change", persistInspectorToNode);
+  [
+    "#inspectorRoleProfile",
+    "#inspectorReasoningLayer",
+    "#inspectorOutputContract",
+    "#inspectorValidationGate",
+    "#inspectorPrimaryGroup",
+    "#inspectorFallbackGroup",
+    "#inspectorTimeout",
+    "#inspectorQuorumRule",
+    "#inspectorOverrideReasoning"
+  ].forEach((selector) => {
+    qs(selector)?.addEventListener("change", persistInspectorToNode);
   });
 
-  const textarea = qs(".panel-right .textarea");
-  textarea?.addEventListener("input", persistInspectorToNode);
+  qs("#inspectorNotes")?.addEventListener("input", persistInspectorToNode);
 }
 
 function nextNodeType(roleClass) {
@@ -392,7 +417,7 @@ function spawnNode() {
   state.selectedNodeId = node.id;
   saveState();
   renderAll();
-  showToast(`${node.title} spawned`, "good");
+  showToast(`${node.title} spawned locally`, "good");
 }
 
 function spawnBranch() {
@@ -419,7 +444,27 @@ function spawnBranch() {
   state.selectedNodeId = node.id;
   saveState();
   renderAll();
-  showToast("Branch node spawned", "good");
+  showToast("Branch node spawned locally", "good");
+}
+
+async function refreshPipelines() {
+  const result = await callApi("/api/pipelines", "GET");
+
+  if (!result.ok) {
+    showToast("Could not load pipelines", "warn");
+    return;
+  }
+
+  state.pipelines = Array.isArray(result.body?.items)
+    ? result.body.items.map(normalizePipeline)
+    : [];
+
+  if (!state.selectedPipelineId && state.pipelines[0]) {
+    state.selectedPipelineId = state.pipelines[0].id;
+  }
+
+  saveState();
+  renderPipelineSelector();
 }
 
 function bindTopButtons() {
@@ -433,20 +478,36 @@ function bindTopButtons() {
     showToast(`Portal preview ${state.portalPreviewVisible ? "shown" : "hidden"}`, "good");
   });
 
-  qs("#clonePipelineBtn")?.addEventListener("click", () => {
-    state.currentPipelineName = `${state.currentPipelineName} Copy`;
+  qs("#clonePipelineBtn")?.addEventListener("click", async () => {
+    if (!state.selectedPipelineId) {
+      showToast("No backend pipeline selected", "warn");
+      return;
+    }
+
+    const result = await callApi(`/api/pipelines/${encodeURIComponent(state.selectedPipelineId)}/clone`, "POST");
+
+    if (!result.ok) {
+      showToast("Pipeline clone failed", "warn");
+      return;
+    }
+
+    await refreshPipelines();
+    const newId = result.body?.public_id || result.body?.pipeline_public_id || result.body?.id;
+    if (newId) state.selectedPipelineId = newId;
     saveState();
+    renderPipelineSelector();
     showToast("Pipeline cloned", "good");
   });
 
   qs("#runSelectedPipelineBtn")?.addEventListener("click", async () => {
-    const result = await callApi("/api/pipelines/run", "POST", {
-      pipeline_name: state.currentPipelineName,
-      selected_node_id: state.selectedNodeId,
-      nodes: state.nodes
-    });
+    showToast("No pipeline run route exists in main.py yet. Pipelines is graph truth only right now.", "warn");
+  });
 
-    showToast(result.ok ? "Pipeline run requested" : "No live API yet. UI hook is ready.", result.ok ? "good" : "warn");
+  qs("#pipelineSelector")?.addEventListener("change", (event) => {
+    state.selectedPipelineId = event.target.value;
+    const selected = state.pipelines.find((item) => item.id === state.selectedPipelineId);
+    state.currentPipelineName = selected?.title || "Local pipeline draft";
+    saveState();
   });
 }
 
@@ -547,9 +608,8 @@ function makeNodesDraggable() {
   });
 }
 
-let state = loadState();
-
 function renderAll() {
+  renderPipelineSelector();
   renderNodes();
   bindNodeSelection();
   updateInspector();
@@ -557,10 +617,12 @@ function renderAll() {
   makeNodesDraggable();
 }
 
-function init() {
+async function init() {
   bindSpawnSelectors();
   bindTopButtons();
   bindInspector();
+  renderAll();
+  await refreshPipelines();
   renderAll();
 }
 
