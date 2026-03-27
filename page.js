@@ -1,8 +1,20 @@
-const PM_HOME_KEY = "PM_HOME_V1";
+const PM_HOME_KEY = "PM_HOME_V2";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
+const MODE_HELP = {
+  single: "<strong>Single:</strong> one selected model answers directly.",
+  multi: "<strong>Multi:</strong> the same prompt is sent to all selected models and each responds separately.",
+  discussion: "<strong>Discussion:</strong> selected specialists participate more like a group conversation when their expertise becomes relevant."
+};
+
+const MODE_STATUS = {
+  single: "Single mode ready",
+  multi: "Multi mode ready",
+  discussion: "Discussion mode ready"
+};
+
 const defaultState = {
-  selectedChatId: "frontend_backend_handoff",
+  selectedChatId: "chat_seed_001",
   mode: "single",
   singleModel: "Jeff main / GPT-style assistant",
   multiModelSet: "Gameplay + Engine + Coder",
@@ -10,24 +22,52 @@ const defaultState = {
   selectedProjectType: "App",
   chats: {
     pinned: [
-      { id: "frontend_backend_handoff", title: "Frontend Backend Handoff" },
-      { id: "ai_assistent_portal_design", title: "AI-assistent portal design" }
+      { id: "chat_seed_001", title: "Frontend Backend Handoff" },
+      { id: "chat_seed_002", title: "AI-assistent portal design" }
     ],
     projectFolder: [
-      { id: "game_designer_workflow", title: "Game designer workflow" },
-      { id: "web_portal_redesign", title: "Web portal redesign" },
-      { id: "ai_message_filtering", title: "AI message filtering system" }
+      { id: "chat_seed_003", title: "Game designer workflow" },
+      { id: "chat_seed_004", title: "Web portal redesign" },
+      { id: "chat_seed_005", title: "AI message filtering system" }
     ],
     history: [
-      { id: "chatgpt_handoff_request", title: "ChatGPT Handoff Request" },
-      { id: "pipeline_test_setup", title: "Pipeline test setup" },
-      { id: "webpage_redesign_workflow", title: "Webpage Redesign Workflow" },
-      { id: "pipeline_fleet_provisioning", title: "Pipeline Fleet Provisioning" },
-      { id: "vurdere_sponsing", title: "Vurdere sponsing av prosjekt" },
-      { id: "operativ_overlevering", title: "Operativ overlevering PM" },
-      { id: "home_page_redesign", title: "Home Page Redesign" },
-      { id: "programmer_for_windows", title: "Programmer for Windows" },
-      { id: "pm_backend_session", title: "PM Backend Session" }
+      { id: "chat_seed_006", title: "ChatGPT Handoff Request" },
+      { id: "chat_seed_007", title: "Pipeline test setup" },
+      { id: "chat_seed_008", title: "Webpage Redesign Workflow" },
+      { id: "chat_seed_009", title: "Pipeline Fleet Provisioning" },
+      { id: "chat_seed_010", title: "Vurdere sponsing av prosjekt" },
+      { id: "chat_seed_011", title: "Operativ overlevering PM" },
+      { id: "chat_seed_012", title: "Home Page Redesign" },
+      { id: "chat_seed_013", title: "Programmer for Windows" },
+      { id: "chat_seed_014", title: "PM Backend Session" }
+    ]
+  },
+  threads: {
+    chat_seed_001: [
+      {
+        id: "m_seed_a1",
+        role: "assistant",
+        head: "Home daily driver",
+        text: "This is the main chat area. Use it for daily work, ideation, planning, and long-running unfinished threads before export."
+      },
+      {
+        id: "m_seed_u1",
+        role: "user",
+        head: "User",
+        text: "I want to design a tower defense game with strong lane identity, meaningful upgrades, and clean long-term progression."
+      },
+      {
+        id: "m_seed_a2",
+        role: "assistant",
+        head: "Discussion participants",
+        chips: [
+          "Gameplay specialist",
+          "Code implementation specialist",
+          "Game engine specialist",
+          "System balance specialist"
+        ],
+        text: "Gameplay can propose lane structure, code can call out implementation complexity, engine can warn about rendering or performance constraints, and balance can question upgrade scaling."
+      }
     ]
   },
   todos: [
@@ -61,7 +101,7 @@ function clone(value) {
 }
 
 function safeId(prefix) {
-  return prefix + "_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function escapeHtml(value) {
@@ -89,10 +129,11 @@ function loadState() {
         projectFolder: Array.isArray(parsed?.chats?.projectFolder) ? parsed.chats.projectFolder : base.chats.projectFolder,
         history: Array.isArray(parsed?.chats?.history) ? parsed.chats.history : base.chats.history
       },
+      threads: typeof parsed?.threads === "object" && parsed.threads ? parsed.threads : base.threads,
       todos: Array.isArray(parsed?.todos) ? parsed.todos : base.todos,
       calendar: Array.isArray(parsed?.calendar) ? parsed.calendar : base.calendar
     };
-  } catch (error) {
+  } catch {
     return clone(defaultState);
   }
 }
@@ -104,8 +145,10 @@ function saveState() {
 function showToast(message, tone = "good") {
   const toast = qs("#toast");
   if (!toast) return;
+
   toast.textContent = message;
-  toast.className = "toast " + tone + " is-visible";
+  toast.className = `toast ${tone} is-visible`;
+
   clearTimeout(showToast._timer);
   showToast._timer = setTimeout(() => {
     toast.classList.remove("is-visible");
@@ -114,7 +157,7 @@ function showToast(message, tone = "good") {
 
 async function callApi(path, method = "GET", payload = null) {
   if (!PM_API_BASE) {
-    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+    return { ok: false, error: "Missing PM_API_BASE" };
   }
 
   try {
@@ -129,10 +172,43 @@ async function callApi(path, method = "GET", payload = null) {
       ? await response.json()
       : await response.text();
 
-    return { ok: response.ok, status: response.status, body };
+    return {
+      ok: response.ok,
+      status: response.status,
+      body
+    };
   } catch (error) {
-    return { ok: false, error: String(error) };
+    return {
+      ok: false,
+      error: String(error)
+    };
   }
+}
+
+function getCurrentThread() {
+  if (!state.threads[state.selectedChatId]) {
+    state.threads[state.selectedChatId] = [];
+  }
+  return state.threads[state.selectedChatId];
+}
+
+function getChatById(chatId) {
+  const all = [
+    ...state.chats.pinned,
+    ...state.chats.projectFolder,
+    ...state.chats.history
+  ];
+  return all.find((item) => item.id === chatId) || null;
+}
+
+function upsertChatIntoHistory(chat) {
+  const removeById = (list) => list.filter((item) => item.id !== chat.id);
+
+  state.chats.pinned = removeById(state.chats.pinned);
+  state.chats.projectFolder = removeById(state.chats.projectFolder);
+  state.chats.history = removeById(state.chats.history);
+
+  state.chats.history.unshift(chat);
 }
 
 function renderHistorySection(targetId, items, isFolder = false) {
@@ -158,9 +234,10 @@ function renderHistorySection(targetId, items, isFolder = false) {
       event.preventDefault();
       const chatId = link.getAttribute("data-chat-id");
       if (!chatId) return;
+
       state.selectedChatId = chatId;
       saveState();
-      renderHistory();
+      renderAll();
       showToast("Chat selected", "good");
     });
   });
@@ -183,20 +260,8 @@ function renderModeHelp() {
   const help = qs("#modeHelpText");
   const composerStatus = qs("#composerStatus");
 
-  const helpText = {
-    single: "<strong>Single:</strong> one selected model answers directly.",
-    multi: "<strong>Multi:</strong> the same prompt is sent to all selected models and each responds separately.",
-    discussion: "<strong>Discussion:</strong> selected specialists participate more like a group conversation when their expertise becomes relevant."
-  };
-
-  const statusText = {
-    single: "Single mode ready",
-    multi: "Multi mode ready",
-    discussion: "Discussion mode ready"
-  };
-
-  if (help) help.innerHTML = helpText[state.mode] || helpText.single;
-  if (composerStatus) composerStatus.textContent = statusText[state.mode] || statusText.single;
+  if (help) help.innerHTML = MODE_HELP[state.mode] || MODE_HELP.single;
+  if (composerStatus) composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
 }
 
 function renderTodos() {
@@ -218,6 +283,7 @@ function renderTodos() {
       const todoId = input.getAttribute("data-todo-id");
       const todo = state.todos.find((item) => item.id === todoId);
       if (!todo) return;
+
       todo.done = input.checked;
       saveState();
     });
@@ -260,6 +326,35 @@ function renderCalendar() {
   }).join("");
 }
 
+function renderThread() {
+  const root = qs("#chatThread");
+  if (!root) return;
+
+  const thread = getCurrentThread();
+
+  root.innerHTML = thread.map((message) => {
+    const roleClass = message.role === "user"
+      ? "chat-bubble chat-bubble--user"
+      : "chat-bubble chat-bubble--assistant";
+
+    const chipsHtml = Array.isArray(message.chips) && message.chips.length
+      ? `
+        <div class="chip-row chip-row--inside">
+          ${message.chips.map((chip) => `<span class="chip">${escapeHtml(chip)}</span>`).join("")}
+        </div>
+      `
+      : "";
+
+    return `
+      <div class="${roleClass}">
+        <div class="chat-bubble-head">${escapeHtml(message.head || (message.role === "user" ? "User" : "Assistant"))}</div>
+        ${chipsHtml}
+        <p>${escapeHtml(message.text || "")}</p>
+      </div>
+    `;
+  }).join("");
+}
+
 function hydrateFields() {
   const singleModel = qs("#singleModel");
   const multiModelSet = qs("#multiModelSet");
@@ -275,11 +370,33 @@ function hydrateFields() {
   });
 }
 
+function renderSelectedChatTitleIntoExport() {
+  const exportTitle = qs("#exportTitle");
+  if (!exportTitle) return;
+
+  if (!exportTitle.value.trim()) {
+    const current = getChatById(state.selectedChatId);
+    if (current) exportTitle.value = current.title;
+  }
+}
+
+function renderAll() {
+  hydrateFields();
+  renderHistory();
+  renderModeCards();
+  renderModeHelp();
+  renderTodos();
+  renderCalendar();
+  renderThread();
+  renderSelectedChatTitleIntoExport();
+}
+
 function bindModeCards() {
   qsa(".metric-card--mode").forEach((card) => {
     card.addEventListener("click", () => {
       const mode = card.getAttribute("data-mode");
       if (!mode) return;
+
       state.mode = mode;
       saveState();
       renderModeCards();
@@ -352,69 +469,174 @@ function bindTodoControls() {
 
 function bindChatButtons() {
   qs("#newChatBtn")?.addEventListener("click", () => {
-    showToast("New chat action ready", "good");
+    const id = safeId("chat");
+    const title = "New chat";
+
+    state.selectedChatId = id;
+    state.threads[id] = [];
+    upsertChatIntoHistory({ id, title });
+
+    saveState();
+    renderAll();
+    showToast("New chat created", "good");
   });
 
   qs("#branchChatBtn")?.addEventListener("click", () => {
-    showToast("Branch action ready", "good");
+    const current = getChatById(state.selectedChatId);
+    const sourceThread = clone(getCurrentThread());
+    const id = safeId("chat");
+    const title = current ? `${current.title} (branch)` : "Branched chat";
+
+    state.selectedChatId = id;
+    state.threads[id] = sourceThread;
+    upsertChatIntoHistory({ id, title });
+
+    saveState();
+    renderAll();
+    showToast("Branch created", "good");
   });
 
   qs("#pinChatBtn")?.addEventListener("click", () => {
-    showToast("Pin / unpin action ready", "good");
-  });
-}
-
-function bindSendButton() {
-  qs("#sendBtn")?.addEventListener("click", async () => {
-    const input = qs("#composerInput");
-    const text = (input?.value || "").trim();
-
-    if (!text) {
-      showToast("Write something first", "warn");
+    const current = getChatById(state.selectedChatId);
+    if (!current) {
+      showToast("No active chat to pin", "warn");
       return;
     }
 
-    const result = await callApi("/api/home/send", "POST", {
-      mode: state.mode,
-      singleModel: state.singleModel,
-      multiModelSet: state.multiModelSet,
-      discussionPreset: state.discussionPreset,
-      prompt: text
-    });
+    const existingPinnedIndex = state.chats.pinned.findIndex((item) => item.id === current.id);
 
-    showToast(
-      result.ok ? "Message sent" : "Saved locally. API hook ready.",
-      result.ok ? "good" : "warn"
-    );
+    if (existingPinnedIndex >= 0) {
+      state.chats.pinned.splice(existingPinnedIndex, 1);
+      upsertChatIntoHistory(current);
+      saveState();
+      renderAll();
+      showToast("Chat unpinned", "good");
+      return;
+    }
 
-    if (input) input.value = "";
+    state.chats.history = state.chats.history.filter((item) => item.id !== current.id);
+    state.chats.projectFolder = state.chats.projectFolder.filter((item) => item.id !== current.id);
+    state.chats.pinned.unshift(current);
+
+    saveState();
+    renderAll();
+    showToast("Chat pinned", "good");
+  });
+}
+
+function appendUserMessage(text) {
+  const thread = getCurrentThread();
+  thread.push({
+    id: safeId("msg"),
+    role: "user",
+    head: "User",
+    text
+  });
+}
+
+function appendSystemAssistantMessage(text, chips = []) {
+  const thread = getCurrentThread();
+  thread.push({
+    id: safeId("msg"),
+    role: "assistant",
+    head: "PM Home",
+    text,
+    chips
+  });
+}
+
+async function sendCurrentMessage() {
+  const input = qs("#composerInput");
+  const text = (input?.value || "").trim();
+
+  if (!text) {
+    showToast("Write something first", "warn");
+    return;
+  }
+
+  appendUserMessage(text);
+
+  const current = getChatById(state.selectedChatId);
+  if (current && (!current.title || current.title === "New chat")) {
+    current.title = text.slice(0, 48);
+  }
+
+  saveState();
+  renderThread();
+
+  if (input) input.value = "";
+
+  /*
+    IMPORTANT:
+    Home-specific routes were previously invented:
+    - /api/home/send
+    - /api/home/export-to-projects
+
+    They are intentionally removed here until real PM backend routes are mapped from main.py.
+    Do not invent replacement routes in this file.
+  */
+
+  appendSystemAssistantMessage(
+    "Message saved locally. Home send is intentionally not route-wired until the real PM backend chat endpoint is mapped from main.py.",
+    state.mode === "discussion"
+      ? ["Discussion mode"]
+      : state.mode === "multi"
+        ? ["Multi mode"]
+        : ["Single mode"]
+  );
+
+  saveState();
+  renderAll();
+  showToast("Saved locally. Awaiting real PM route mapping.", "warn");
+}
+
+function bindSendButton() {
+  qs("#sendBtn")?.addEventListener("click", sendCurrentMessage);
+
+  qs("#composerInput")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendCurrentMessage();
+    }
   });
 }
 
 function bindExportButton() {
   qs("#exportBtn")?.addEventListener("click", async () => {
-    const payload = {
-      title: qs("#exportTitle")?.value || "",
-      tag: state.selectedProjectType,
-      note: qs("#exportNote")?.value || "",
-      chatId: state.selectedChatId
-    };
+    const title = (qs("#exportTitle")?.value || "").trim();
+    const note = (qs("#exportNote")?.value || "").trim();
 
-    const result = await callApi("/api/home/export-to-projects", "POST", payload);
-    showToast(
-      result.ok ? "Export requested" : "Export hook ready. No live API yet.",
-      result.ok ? "good" : "warn"
-    );
+    if (!title) {
+      showToast("Add a project title first", "warn");
+      return;
+    }
+
+    /*
+      IMPORTANT:
+      The old export route was invented and removed:
+      - /api/home/export-to-projects
+
+      Export must only be wired once the real PM backend route and payload are confirmed from main.py.
+    */
+
+    showToast("Export blocked until real PM export route is mapped from main.py.", "warn");
+
+    const thread = getCurrentThread();
+    thread.push({
+      id: safeId("msg"),
+      role: "assistant",
+      head: "PM Home",
+      text: `Export prepared locally for "${title}" as ${state.selectedProjectType}. Route wiring is intentionally blocked until the real PM backend export endpoint is confirmed.`,
+      chips: ["Projects", state.selectedProjectType, note ? "Has note" : "No note"]
+    });
+
+    saveState();
+    renderThread();
   });
 }
 
 function init() {
-  hydrateFields();
-  renderHistory();
-  renderModeCards();
-  renderModeHelp();
-  renderTodos();
-  renderCalendar();
+  renderAll();
 
   bindModeCards();
   bindSelectors();
