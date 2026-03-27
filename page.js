@@ -1,4 +1,4 @@
-const PM_HOME_KEY = "PM_HOME_V2";
+const PM_HOME_KEY = "PM_HOME_V3";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const MODE_HELP = {
@@ -13,68 +13,29 @@ const MODE_STATUS = {
   discussion: "Discussion mode ready"
 };
 
+const PROJECT_TYPE_MAP = {
+  App: "app",
+  Web: "portal",
+  Game: "game",
+  Writing: "writing",
+  Research: "research",
+  System: "system"
+};
+
 const defaultState = {
-  selectedChatId: "chat_seed_001",
+  selectedChatId: "",
   mode: "single",
   singleModel: "Jeff main / GPT-style assistant",
   multiModelSet: "Gameplay + Engine + Coder",
   discussionPreset: "Game design discussion",
   selectedProjectType: "App",
   chats: {
-    pinned: [
-      { id: "chat_seed_001", title: "Frontend Backend Handoff" },
-      { id: "chat_seed_002", title: "AI-assistent portal design" }
-    ],
-    projectFolder: [
-      { id: "chat_seed_003", title: "Game designer workflow" },
-      { id: "chat_seed_004", title: "Web portal redesign" },
-      { id: "chat_seed_005", title: "AI message filtering system" }
-    ],
-    history: [
-      { id: "chat_seed_006", title: "ChatGPT Handoff Request" },
-      { id: "chat_seed_007", title: "Pipeline test setup" },
-      { id: "chat_seed_008", title: "Webpage Redesign Workflow" },
-      { id: "chat_seed_009", title: "Pipeline Fleet Provisioning" },
-      { id: "chat_seed_010", title: "Vurdere sponsing av prosjekt" },
-      { id: "chat_seed_011", title: "Operativ overlevering PM" },
-      { id: "chat_seed_012", title: "Home Page Redesign" },
-      { id: "chat_seed_013", title: "Programmer for Windows" },
-      { id: "chat_seed_014", title: "PM Backend Session" }
-    ]
+    pinned: [],
+    projectFolder: [],
+    history: []
   },
-  threads: {
-    chat_seed_001: [
-      {
-        id: "m_seed_a1",
-        role: "assistant",
-        head: "Home daily driver",
-        text: "This is the main chat area. Use it for daily work, ideation, planning, and long-running unfinished threads before export."
-      },
-      {
-        id: "m_seed_u1",
-        role: "user",
-        head: "User",
-        text: "I want to design a tower defense game with strong lane identity, meaningful upgrades, and clean long-term progression."
-      },
-      {
-        id: "m_seed_a2",
-        role: "assistant",
-        head: "Discussion participants",
-        chips: [
-          "Gameplay specialist",
-          "Code implementation specialist",
-          "Game engine specialist",
-          "System balance specialist"
-        ],
-        text: "Gameplay can propose lane structure, code can call out implementation complexity, engine can warn about rendering or performance constraints, and balance can question upgrade scaling."
-      }
-    ]
-  },
-  todos: [
-    { id: "todo_1", title: "Lock tower categories", detail: "Basic, cannon, frost, fire, poison, anti-air.", done: false },
-    { id: "todo_2", title: "Clarify mode behavior", detail: "Single, Multi, and Discussion now have different purposes.", done: true },
-    { id: "todo_3", title: "Decide export timing", detail: "Only export once the core concept is stable enough for Projects.", done: false }
-  ],
+  threads: {},
+  todos: [],
   calendar: [
     { day: "Mon", date: "24", items: [{ title: "Portal layout review", tone: "default" }, { title: "Writing block", tone: "good" }] },
     { day: "Tue", date: "25", items: [{ title: "Admin / email", tone: "warn" }, { title: "Game planning", tone: "default" }] },
@@ -83,10 +44,12 @@ const defaultState = {
     { day: "Fri", date: "28", items: [{ title: "Creative writing", tone: "default" }] },
     { day: "Sat", date: "29", items: [{ title: "Reset / planning", tone: "warn" }] },
     { day: "Sun", date: "30", items: [{ title: "Open creative block", tone: "good" }] }
-  ]
+  ],
+  bootstrapped: false
 };
 
 let state = loadState();
+let activeRequestCount = 0;
 
 function qs(selector, root = document) {
   return root.querySelector(selector);
@@ -105,7 +68,7 @@ function safeId(prefix) {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
@@ -142,6 +105,32 @@ function saveState() {
   localStorage.setItem(PM_HOME_KEY, JSON.stringify(state));
 }
 
+function setBusy(isBusy, label = "") {
+  activeRequestCount += isBusy ? 1 : -1;
+  if (activeRequestCount < 0) activeRequestCount = 0;
+
+  const status = qs("#composerStatus");
+  const sendBtn = qs("#sendBtn");
+  const exportBtn = qs("#exportBtn");
+  const newChatBtn = qs("#newChatBtn");
+  const branchChatBtn = qs("#branchChatBtn");
+  const addTodoBtn = qs("#addTodoBtn");
+
+  const busyNow = activeRequestCount > 0;
+
+  if (status) {
+    if (busyNow) {
+      status.textContent = label || "Working...";
+    } else {
+      status.textContent = MODE_STATUS[state.mode] || "Ready";
+    }
+  }
+
+  [sendBtn, exportBtn, newChatBtn, branchChatBtn, addTodoBtn].forEach((button) => {
+    if (button) button.disabled = busyNow;
+  });
+}
+
 function showToast(message, tone = "good") {
   const toast = qs("#toast");
   if (!toast) return;
@@ -156,10 +145,6 @@ function showToast(message, tone = "good") {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) {
-    return { ok: false, error: "Missing PM_API_BASE" };
-  }
-
   try {
     const response = await fetch(`${PM_API_BASE}${path}`, {
       method,
@@ -185,11 +170,38 @@ async function callApi(path, method = "GET", payload = null) {
   }
 }
 
+function normalizeSelectedModels() {
+  if (state.mode === "single") {
+    return [state.singleModel].filter(Boolean);
+  }
+  if (state.mode === "multi") {
+    return [state.multiModelSet].filter(Boolean);
+  }
+  return [state.discussionPreset].filter(Boolean);
+}
+
+function normalizeChatItem(item) {
+  return {
+    id: item.public_id || item.session_public_id || item.id || safeId("chat"),
+    title: item.title || item.summary || "Untitled chat",
+    summary: item.summary || "",
+    mode: item.mode || "single",
+    pinned: Boolean(item.pinned),
+    folder: item.folder || item.bucket || ""
+  };
+}
+
 function getCurrentThread() {
-  if (!state.threads[state.selectedChatId]) {
+  if (!state.selectedChatId) return [];
+  if (!Array.isArray(state.threads[state.selectedChatId])) {
     state.threads[state.selectedChatId] = [];
   }
   return state.threads[state.selectedChatId];
+}
+
+function setCurrentThread(items) {
+  if (!state.selectedChatId) return;
+  state.threads[state.selectedChatId] = Array.isArray(items) ? items : [];
 }
 
 function getChatById(chatId) {
@@ -201,14 +213,35 @@ function getChatById(chatId) {
   return all.find((item) => item.id === chatId) || null;
 }
 
-function upsertChatIntoHistory(chat) {
+function mergeChatIntoCollections(chat) {
   const removeById = (list) => list.filter((item) => item.id !== chat.id);
 
   state.chats.pinned = removeById(state.chats.pinned);
   state.chats.projectFolder = removeById(state.chats.projectFolder);
   state.chats.history = removeById(state.chats.history);
 
-  state.chats.history.unshift(chat);
+  if (chat.pinned) {
+    state.chats.pinned.unshift(chat);
+  } else if (chat.folder === "project" || chat.folder === "projects") {
+    state.chats.projectFolder.unshift(chat);
+  } else {
+    state.chats.history.unshift(chat);
+  }
+}
+
+function ensureSelectedChatExists() {
+  const all = [
+    ...state.chats.pinned,
+    ...state.chats.projectFolder,
+    ...state.chats.history
+  ];
+
+  if (!all.length) return;
+
+  const exists = all.some((item) => item.id === state.selectedChatId);
+  if (!exists) {
+    state.selectedChatId = all[0].id;
+  }
 }
 
 function renderHistorySection(targetId, items, isFolder = false) {
@@ -221,6 +254,7 @@ function renderHistorySection(targetId, items, isFolder = false) {
   root.innerHTML = filtered.map((item) => {
     const activeClass = item.id === state.selectedChatId ? " history-link--active" : "";
     const folderClass = isFolder ? " history-link--folder" : "";
+
     return `
       <a class="history-link${activeClass}${folderClass}" href="#" data-chat-id="${escapeHtml(item.id)}">
         <span class="history-link__dot"></span>
@@ -230,15 +264,15 @@ function renderHistorySection(targetId, items, isFolder = false) {
   }).join("");
 
   qsa(".history-link", root).forEach((link) => {
-    link.addEventListener("click", (event) => {
+    link.addEventListener("click", async (event) => {
       event.preventDefault();
       const chatId = link.getAttribute("data-chat-id");
-      if (!chatId) return;
+      if (!chatId || chatId === state.selectedChatId) return;
 
       state.selectedChatId = chatId;
       saveState();
       renderAll();
-      showToast("Chat selected", "good");
+      await refreshHomeSummary(chatId);
     });
   });
 }
@@ -261,7 +295,9 @@ function renderModeHelp() {
   const composerStatus = qs("#composerStatus");
 
   if (help) help.innerHTML = MODE_HELP[state.mode] || MODE_HELP.single;
-  if (composerStatus) composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
+  if (composerStatus && activeRequestCount === 0) {
+    composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
+  }
 }
 
 function renderTodos() {
@@ -283,7 +319,6 @@ function renderTodos() {
       const todoId = input.getAttribute("data-todo-id");
       const todo = state.todos.find((item) => item.id === todoId);
       if (!todo) return;
-
       todo.done = input.checked;
       saveState();
     });
@@ -297,7 +332,7 @@ function renderCalendar() {
   root.innerHTML = state.calendar.map((day) => {
     const dayClass = day.today ? "calendar-day calendar-day--today" : "calendar-day";
 
-    const itemsHtml = day.items.map((item) => {
+    const itemsHtml = (day.items || []).map((item) => {
       let toneClass = "";
       if (item.tone === "good") toneClass = " calendar-entry--good";
       if (item.tone === "warn") toneClass = " calendar-entry--warn";
@@ -332,6 +367,16 @@ function renderThread() {
 
   const thread = getCurrentThread();
 
+  if (!thread.length) {
+    root.innerHTML = `
+      <div class="chat-bubble chat-bubble--assistant">
+        <div class="chat-bubble-head">Home daily driver</div>
+        <p>Select an existing chat or create a new one to begin.</p>
+      </div>
+    `;
+    return;
+  }
+
   root.innerHTML = thread.map((message) => {
     const roleClass = message.role === "user"
       ? "chat-bubble chat-bubble--user"
@@ -353,6 +398,8 @@ function renderThread() {
       </div>
     `;
   }).join("");
+
+  root.scrollTop = root.scrollHeight;
 }
 
 function hydrateFields() {
@@ -376,11 +423,12 @@ function renderSelectedChatTitleIntoExport() {
 
   if (!exportTitle.value.trim()) {
     const current = getChatById(state.selectedChatId);
-    if (current) exportTitle.value = current.title;
+    if (current?.title) exportTitle.value = current.title;
   }
 }
 
 function renderAll() {
+  ensureSelectedChatExists();
   hydrateFields();
   renderHistory();
   renderModeCards();
@@ -396,7 +444,6 @@ function bindModeCards() {
     card.addEventListener("click", () => {
       const mode = card.getAttribute("data-mode");
       if (!mode) return;
-
       state.mode = mode;
       saveState();
       renderModeCards();
@@ -443,8 +490,8 @@ function bindProjectTags() {
   });
 }
 
-function bindTodoControls() {
-  qs("#addTodoBtn")?.addEventListener("click", () => {
+async function bindTodoControls() {
+  qs("#addTodoBtn")?.addEventListener("click", async () => {
     const input = qs("#todoInput");
     const value = (input?.value || "").trim();
 
@@ -453,78 +500,206 @@ function bindTodoControls() {
       return;
     }
 
-    state.todos.unshift({
-      id: safeId("todo"),
+    setBusy(true, "Creating task...");
+    const result = await callApi("/api/home/tasks", "POST", {
       title: value,
-      detail: "Added from the Home thread.",
+      status: "open",
+      note: "Added from Home thread"
+    });
+    setBusy(false);
+
+    if (!result.ok) {
+      showToast("Task create failed", "warn");
+      return;
+    }
+
+    state.todos.unshift({
+      id: result.body?.public_id || safeId("todo"),
+      title: value,
+      detail: "Added from Home thread",
       done: false
     });
 
     if (input) input.value = "";
     saveState();
     renderTodos();
-    showToast("Todo added", "good");
+    showToast("Task created", "good");
   });
+}
+
+function buildThreadFromSummary(summary) {
+  const possibleMessages =
+    summary?.messages ||
+    summary?.thread ||
+    summary?.chat?.messages ||
+    summary?.session?.messages ||
+    [];
+
+  if (!Array.isArray(possibleMessages)) return null;
+
+  return possibleMessages.map((message) => ({
+    id: message.public_id || message.id || safeId("msg"),
+    role: message.role || "assistant",
+    head: message.head || message.sender || (message.role === "user" ? "User" : "Assistant"),
+    text: message.text || message.content || message.message || "",
+    chips: Array.isArray(message.chips) ? message.chips : []
+  }));
+}
+
+function extractTodosFromSummary(summary) {
+  const items =
+    summary?.tasks ||
+    summary?.todos ||
+    summary?.home?.tasks ||
+    [];
+
+  if (!Array.isArray(items)) return null;
+
+  return items.map((item) => ({
+    id: item.public_id || item.id || safeId("todo"),
+    title: item.title || "Untitled task",
+    detail: item.note || item.detail || "",
+    done: item.status === "done" || item.done === true
+  }));
+}
+
+function applyHomeSummary(summary, sessionPublicId) {
+  const thread = buildThreadFromSummary(summary);
+  if (thread) {
+    state.threads[sessionPublicId] = thread;
+  }
+
+  const todos = extractTodosFromSummary(summary);
+  if (todos) {
+    state.todos = todos;
+  }
+
+  if (summary?.session?.mode && ["single", "multi", "discussion"].includes(summary.session.mode)) {
+    state.mode = summary.session.mode;
+  }
+
+  saveState();
+}
+
+async function refreshHomeSummary(sessionPublicId = state.selectedChatId) {
+  if (!sessionPublicId) return;
+
+  setBusy(true, "Loading chat...");
+  const result = await callApi(`/api/home/summary?session_public_id=${encodeURIComponent(sessionPublicId)}`, "GET");
+  setBusy(false);
+
+  if (!result.ok) {
+    showToast("Could not load Home summary", "warn");
+    return;
+  }
+
+  applyHomeSummary(result.body, sessionPublicId);
+  renderAll();
+}
+
+async function refreshChatSessions() {
+  const result = await callApi("/api/chat-sessions?surface=home", "GET");
+  if (!result.ok) {
+    showToast("Could not load chat sessions", "warn");
+    return;
+  }
+
+  const items = Array.isArray(result.body?.items) ? result.body.items.map(normalizeChatItem) : [];
+
+  state.chats = { pinned: [], projectFolder: [], history: [] };
+  items.forEach(mergeChatIntoCollections);
+
+  if (!state.selectedChatId && items[0]) {
+    state.selectedChatId = items[0].id;
+  }
+
+  saveState();
+  renderAll();
+}
+
+async function createChatSession({ title, cloneFromPublicId = null }) {
+  const payload = {
+    surface: "home",
+    title,
+    summary: "",
+    mode: state.mode,
+    selected_models: normalizeSelectedModels(),
+    clone_from_public_id: cloneFromPublicId
+  };
+
+  const result = await callApi("/api/chat-sessions", "POST", payload);
+  if (!result.ok) {
+    throw new Error("Could not create chat session");
+  }
+
+  const body = result.body || {};
+  const publicId = body.public_id || body.session_public_id || body.id;
+  if (!publicId) {
+    throw new Error("Missing session_public_id from backend");
+  }
+
+  const chat = normalizeChatItem({
+    ...body,
+    public_id: publicId,
+    title: body.title || title
+  });
+
+  mergeChatIntoCollections(chat);
+  state.selectedChatId = publicId;
+
+  if (!Array.isArray(state.threads[publicId])) {
+    state.threads[publicId] = [];
+  }
+
+  saveState();
+  renderAll();
+  return publicId;
 }
 
 function bindChatButtons() {
-  qs("#newChatBtn")?.addEventListener("click", () => {
-    const id = safeId("chat");
-    const title = "New chat";
-
-    state.selectedChatId = id;
-    state.threads[id] = [];
-    upsertChatIntoHistory({ id, title });
-
-    saveState();
-    renderAll();
-    showToast("New chat created", "good");
+  qs("#newChatBtn")?.addEventListener("click", async () => {
+    try {
+      setBusy(true, "Creating chat...");
+      const publicId = await createChatSession({ title: "New chat" });
+      setBusy(false);
+      showToast("New chat created", "good");
+      await refreshHomeSummary(publicId);
+    } catch {
+      setBusy(false);
+      showToast("New chat failed", "warn");
+    }
   });
 
-  qs("#branchChatBtn")?.addEventListener("click", () => {
+  qs("#branchChatBtn")?.addEventListener("click", async () => {
+    if (!state.selectedChatId) {
+      showToast("No active chat to branch", "warn");
+      return;
+    }
+
     const current = getChatById(state.selectedChatId);
-    const sourceThread = clone(getCurrentThread());
-    const id = safeId("chat");
-    const title = current ? `${current.title} (branch)` : "Branched chat";
+    const title = current?.title ? `${current.title} (branch)` : "Branched chat";
 
-    state.selectedChatId = id;
-    state.threads[id] = sourceThread;
-    upsertChatIntoHistory({ id, title });
-
-    saveState();
-    renderAll();
-    showToast("Branch created", "good");
+    try {
+      setBusy(true, "Branching chat...");
+      const publicId = await createChatSession({
+        title,
+        cloneFromPublicId: state.selectedChatId
+      });
+      setBusy(false);
+      showToast("Branch created", "good");
+      await refreshHomeSummary(publicId);
+    } catch {
+      setBusy(false);
+      showToast("Branch failed", "warn");
+    }
   });
 
   qs("#pinChatBtn")?.addEventListener("click", () => {
-    const current = getChatById(state.selectedChatId);
-    if (!current) {
-      showToast("No active chat to pin", "warn");
-      return;
-    }
-
-    const existingPinnedIndex = state.chats.pinned.findIndex((item) => item.id === current.id);
-
-    if (existingPinnedIndex >= 0) {
-      state.chats.pinned.splice(existingPinnedIndex, 1);
-      upsertChatIntoHistory(current);
-      saveState();
-      renderAll();
-      showToast("Chat unpinned", "good");
-      return;
-    }
-
-    state.chats.history = state.chats.history.filter((item) => item.id !== current.id);
-    state.chats.projectFolder = state.chats.projectFolder.filter((item) => item.id !== current.id);
-    state.chats.pinned.unshift(current);
-
-    saveState();
-    renderAll();
-    showToast("Chat pinned", "good");
+    showToast("No pin/unpin backend route exists in main.py for Home sessions.", "warn");
   });
 }
 
-function appendUserMessage(text) {
+function appendLocalUserMessage(text) {
   const thread = getCurrentThread();
   thread.push({
     id: safeId("msg"),
@@ -534,7 +709,7 @@ function appendUserMessage(text) {
   });
 }
 
-function appendSystemAssistantMessage(text, chips = []) {
+function appendLocalAssistantMessage(text, chips = []) {
   const thread = getCurrentThread();
   thread.push({
     id: safeId("msg"),
@@ -554,7 +729,38 @@ async function sendCurrentMessage() {
     return;
   }
 
-  appendUserMessage(text);
+  if (!state.selectedChatId) {
+    showToast("No active chat session", "warn");
+    return;
+  }
+
+  appendLocalUserMessage(text);
+  saveState();
+  renderThread();
+
+  if (input) input.value = "";
+
+  setBusy(true, "Sending message...");
+  const result = await callApi(
+    `/api/home/sessions/${encodeURIComponent(state.selectedChatId)}/messages`,
+    "POST",
+    {
+      prompt: text,
+      mode: state.mode,
+      selected_models: normalizeSelectedModels()
+    }
+  );
+  setBusy(false);
+
+  if (!result.ok) {
+    appendLocalAssistantMessage("Message failed to send to backend.", ["Backend error"]);
+    saveState();
+    renderThread();
+    showToast("Send failed", "warn");
+    return;
+  }
+
+  applyHomeSummary(result.body, state.selectedChatId);
 
   const current = getChatById(state.selectedChatId);
   if (current && (!current.title || current.title === "New chat")) {
@@ -562,32 +768,8 @@ async function sendCurrentMessage() {
   }
 
   saveState();
-  renderThread();
-
-  if (input) input.value = "";
-
-  /*
-    IMPORTANT:
-    Home-specific routes were previously invented:
-    - /api/home/send
-    - /api/home/export-to-projects
-
-    They are intentionally removed here until real PM backend routes are mapped from main.py.
-    Do not invent replacement routes in this file.
-  */
-
-  appendSystemAssistantMessage(
-    "Message saved locally. Home send is intentionally not route-wired until the real PM backend chat endpoint is mapped from main.py.",
-    state.mode === "discussion"
-      ? ["Discussion mode"]
-      : state.mode === "multi"
-        ? ["Multi mode"]
-        : ["Single mode"]
-  );
-
-  saveState();
   renderAll();
-  showToast("Saved locally. Awaiting real PM route mapping.", "warn");
+  showToast("Message sent", "good");
 }
 
 function bindSendButton() {
@@ -611,28 +793,50 @@ function bindExportButton() {
       return;
     }
 
-    /*
-      IMPORTANT:
-      The old export route was invented and removed:
-      - /api/home/export-to-projects
+    if (!state.selectedChatId) {
+      showToast("No active chat session", "warn");
+      return;
+    }
 
-      Export must only be wired once the real PM backend route and payload are confirmed from main.py.
-    */
+    const payload = {
+      title,
+      production_type: PROJECT_TYPE_MAP[state.selectedProjectType] || "app",
+      target_portal: "projects",
+      quick_capture: note,
+      session_public_id: state.selectedChatId,
+      mode: state.mode
+    };
 
-    showToast("Export blocked until real PM export route is mapped from main.py.", "warn");
+    setBusy(true, "Exporting...");
+    const result = await callApi("/api/home/exports", "POST", payload);
+    setBusy(false);
 
-    const thread = getCurrentThread();
-    thread.push({
-      id: safeId("msg"),
-      role: "assistant",
-      head: "PM Home",
-      text: `Export prepared locally for "${title}" as ${state.selectedProjectType}. Route wiring is intentionally blocked until the real PM backend export endpoint is confirmed.`,
-      chips: ["Projects", state.selectedProjectType, note ? "Has note" : "No note"]
-    });
+    if (!result.ok) {
+      showToast("Export failed", "warn");
+      return;
+    }
 
-    saveState();
-    renderThread();
+    showToast("Export created", "good");
   });
+}
+
+async function bootstrapHome() {
+  if (state.bootstrapped) {
+    renderAll();
+    return;
+  }
+
+  setBusy(true, "Loading Home...");
+  await refreshChatSessions();
+
+  if (state.selectedChatId) {
+    await refreshHomeSummary(state.selectedChatId);
+  }
+
+  state.bootstrapped = true;
+  saveState();
+  setBusy(false);
+  renderAll();
 }
 
 function init() {
@@ -645,6 +849,8 @@ function init() {
   bindChatButtons();
   bindSendButton();
   bindExportButton();
+
+  bootstrapHome();
 }
 
 document.addEventListener("DOMContentLoaded", init);
