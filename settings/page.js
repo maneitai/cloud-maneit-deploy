@@ -1,5 +1,5 @@
 const PM_SETTINGS_KEY = "PM_SETTINGS_PROVIDERS_V1";
-const PM_API_BASE = window.PM_API_BASE || "";
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   providerMode: "Hybrid",
@@ -99,9 +99,9 @@ function renderHeroCards() {
   const cloudEligibleRoles = qs("#statCloudEligibleRoles");
 
   if (providerMode) providerMode.textContent = state.providerMode;
-  if (configuredKeys) configuredKeys.textContent = String(state.secrets.filter(s => s.configured).length);
-  if (enabledProviders) enabledProviders.textContent = String(state.providers.filter(p => p.policy !== "Disabled").length);
-  if (cloudEligibleRoles) cloudEligibleRoles.textContent = String(state.policies.filter(p => /Cloud|OpenAI|Anthropic|Grok/i.test(p.primary)).length);
+  if (configuredKeys) configuredKeys.textContent = String(state.secrets.filter((s) => s.configured).length);
+  if (enabledProviders) enabledProviders.textContent = String(state.providers.filter((p) => p.policy !== "Disabled").length);
+  if (cloudEligibleRoles) cloudEligibleRoles.textContent = String(state.policies.filter((p) => /Cloud|OpenAI|Anthropic|Grok/i.test(p.primary)).length);
 }
 
 function renderProviderRegistry() {
@@ -114,7 +114,7 @@ function renderProviderRegistry() {
       <div>Default Policy</div>
       <div>Action</div>
     </div>
-    ${state.providers.map(provider => `
+    ${state.providers.map((provider) => `
       <div class="provider-row" data-provider-id="${provider.id}">
         <div>
           <div class="provider-name">${provider.name}</div>
@@ -123,7 +123,7 @@ function renderProviderRegistry() {
         <div><input class="input" data-field="baseUrl" value="${provider.baseUrl}" /></div>
         <div>
           <select class="select" data-field="policy">
-            ${["Allowed", "Heavy roles only", "Fallback only", "Disabled"].map(option => `<option ${provider.policy === option ? "selected" : ""}>${option}</option>`).join("")}
+            ${["Allowed", "Heavy roles only", "Fallback only", "Disabled"].map((option) => `<option ${provider.policy === option ? "selected" : ""}>${option}</option>`).join("")}
           </select>
         </div>
         <div class="control-row">
@@ -137,7 +137,7 @@ function renderProviderRegistry() {
 function renderSecrets() {
   const container = qs("#secretsGrid");
   if (!container) return;
-  container.innerHTML = state.secrets.map(secret => `
+  container.innerHTML = state.secrets.map((secret) => `
     <div class="secret-row" data-secret-id="${secret.id}">
       <div>
         <div class="provider-name">${secret.label}</div>
@@ -198,7 +198,7 @@ function renderAliases() {
       <div><input class="input" data-field="backedBy" value="${item.backedBy}" /></div>
       <div>
         <select class="select" data-field="status">
-          ${["Enabled", "Fallback only", "Disabled"].map(option => `<option ${item.status === option ? "selected" : ""}>${option}</option>`).join("")}
+          ${["Enabled", "Fallback only", "Disabled"].map((option) => `<option ${item.status === option ? "selected" : ""}>${option}</option>`).join("")}
         </select>
       </div>
       <div class="control-row">
@@ -211,7 +211,7 @@ function renderAliases() {
 function renderProviderCensus() {
   const container = qs("#providerCensus");
   if (!container) return;
-  container.innerHTML = state.providers.map(provider => {
+  container.innerHTML = state.providers.map((provider) => {
     const tone = providerTone(provider);
     const label = provider.connected ? "connected" : (provider.keyConfigured ? "configured" : "missing");
     return `<div class="chip ${tone}">${provider.name} ${label}</div>`;
@@ -221,7 +221,7 @@ function renderProviderCensus() {
 function renderTrace() {
   const container = qs("#providerTrace");
   if (!container) return;
-  container.innerHTML = state.trace.map(line => `<div class="log-line">${line}</div>`).join("");
+  container.innerHTML = state.trace.map((line) => `<div class="log-line">${line}</div>`).join("");
 }
 
 function renderCloudRuntime() {
@@ -243,7 +243,7 @@ function renderCloudRuntime() {
         <div><input class="input" data-field="backedBy" value="${item.backedBy}" /></div>
         <div>
           <select class="select" data-field="status">
-            ${["Enabled", "Fallback only", "Disabled"].map(option => `<option ${item.status === option ? "selected" : ""}>${option}</option>`).join("")}
+            ${["Enabled", "Fallback only", "Disabled"].map((option) => `<option ${item.status === option ? "selected" : ""}>${option}</option>`).join("")}
           </select>
         </div>
         <div class="control-row">
@@ -275,7 +275,10 @@ function updateTrace(line) {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) return { ok: false, mock: true };
+  if (!PM_API_BASE) {
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+  }
+
   try {
     const res = await fetch(`${PM_API_BASE}${path}`, {
       method,
@@ -291,46 +294,57 @@ async function callApi(path, method = "GET", payload = null) {
 }
 
 function bindEvents() {
-  qsa("#providerRegistry .provider-row[data-provider-id]").forEach(row => {
+  qsa("#providerRegistry .provider-row[data-provider-id]").forEach((row) => {
     const providerId = row.dataset.providerId;
-    row.addEventListener("change", event => {
+
+    row.addEventListener("change", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
       const field = target.dataset.field;
       if (!field) return;
-      state.providers = state.providers.map(provider =>
+
+      state.providers = state.providers.map((provider) =>
         provider.id === providerId ? { ...provider, [field]: target.value } : provider
       );
       saveState(state);
     });
 
-    qsa("[data-action='ping']", row).forEach(button => {
+    qsa("[data-action='ping']", row).forEach((button) => {
       button.addEventListener("click", async () => {
-        const provider = state.providers.find(p => p.id === providerId);
+        const provider = state.providers.find((p) => p.id === providerId);
+        if (!provider) return;
+
         updateTrace(`[PROVIDER] ping requested -> ${provider.name}`);
         const result = await callApi("/api/settings/providers/ping", "POST", provider);
+
         if (result.ok) {
-          state.providers = state.providers.map(p => p.id === providerId ? { ...p, connected: true } : p);
+          state.providers = state.providers.map((p) => p.id === providerId ? { ...p, connected: true } : p);
           showToast(`${provider.name} ping ok`, "good");
           updateTrace(`[PROVIDER] ${provider.name.toLowerCase()} ping ok`);
         } else {
           showToast(`${provider.name} ping not live yet`, "warn");
           updateTrace(`[PROVIDER] ${provider.name.toLowerCase()} ping pending/mock`);
         }
+
         saveState(state);
         renderAll();
       });
     });
   });
 
-  qsa("#secretsGrid .secret-row[data-secret-id]").forEach(row => {
+  qsa("#secretsGrid .secret-row[data-secret-id]").forEach((row) => {
     const secretId = row.dataset.secretId;
-    qsa("[data-action='save-secret']", row).forEach(button => {
+
+    qsa("[data-action='save-secret']", row).forEach((button) => {
       button.addEventListener("click", () => {
         const input = qs("input[data-field='masked']", row);
-        state.secrets = state.secrets.map(secret =>
-          secret.id === secretId ? { ...secret, configured: Boolean(input?.value), masked: input?.value || "" } : secret
+
+        state.secrets = state.secrets.map((secret) =>
+          secret.id === secretId
+            ? { ...secret, configured: Boolean(input?.value), masked: input?.value || "" }
+            : secret
         );
+
         saveState(state);
         renderHeroCards();
         showToast("Secret saved (masked)", "good");
@@ -338,7 +352,7 @@ function bindEvents() {
       });
     });
 
-    qsa("[data-action='test-secret']", row).forEach(button => {
+    qsa("[data-action='test-secret']", row).forEach((button) => {
       button.addEventListener("click", async () => {
         updateTrace(`[SECRET] test requested -> ${secretId}`);
         const result = await callApi("/api/settings/secrets/test", "POST", { secret_id: secretId });
@@ -347,8 +361,8 @@ function bindEvents() {
     });
   });
 
-  qsa("#policyList [data-policy-index], #matchingList [data-match-index], #aliasList [data-alias-index], #cloudRuntimeList [data-cloud-index]").forEach(row => {
-    row.addEventListener("change", event => {
+  qsa("#policyList [data-policy-index], #matchingList [data-match-index], #aliasList [data-alias-index], #cloudRuntimeList [data-cloud-index]").forEach((row) => {
+    row.addEventListener("change", (event) => {
       const target = event.target;
       if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) return;
       const field = target.dataset.field;
@@ -372,7 +386,7 @@ function bindEvents() {
     });
   });
 
-  qsa("[data-action='test-alias'], [data-action='test-runtime-alias']").forEach(button => {
+  qsa("[data-action='test-alias'], [data-action='test-runtime-alias']").forEach((button) => {
     button.addEventListener("click", async () => {
       updateTrace("[ALIAS] test requested");
       const result = await callApi("/api/settings/aliases/test", "POST", { note: "ui-request" });
@@ -406,12 +420,3 @@ function bindEvents() {
 }
 
 document.addEventListener("DOMContentLoaded", renderAll);
-"""
-
-(out / "index.html").write_text(index_html, encoding="utf-8")
-(out / "page.css").write_text(page_css, encoding="utf-8")
-(out / "page.js").write_text(page_js, encoding="utf-8")
-
-print(str(out / "index.html"))
-print(str(out / "page.css"))
-print(str(out / "page.js"))
