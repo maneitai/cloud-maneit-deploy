@@ -1,5 +1,5 @@
 const PM_AGENT_FACTORY_KEY = "PM_AGENT_FACTORY_V2";
-const PM_API_BASE = window.PM_API_BASE || "";
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedAgentId: "cpp_generator_v1",
@@ -184,7 +184,9 @@ function showToast(message, tone = "good") {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) return { ok: false, mock: true };
+  if (!PM_API_BASE) {
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+  }
 
   try {
     const res = await fetch(`${PM_API_BASE}${path}`, {
