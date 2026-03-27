@@ -1,4 +1,4 @@
-const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const modeSwitch = document.getElementById("modeSwitch");
 const modeCards = document.querySelectorAll("[data-mode-card]");
