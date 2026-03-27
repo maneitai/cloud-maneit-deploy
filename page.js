@@ -1,5 +1,5 @@
 const PM_HOME_KEY = "PM_HOME_V1";
-const PM_API_BASE = window.PM_API_BASE || "";
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedChatId: "frontend_backend_handoff",
@@ -113,10 +113,12 @@ function showToast(message, tone = "good") {
 }
 
 async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) return { ok: false, mock: true };
+  if (!PM_API_BASE) {
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+  }
 
   try {
-    const response = await fetch(PM_API_BASE + path, {
+    const response = await fetch(`${PM_API_BASE}${path}`, {
       method,
       headers: { "Content-Type": "application/json" },
       body: payload ? JSON.stringify(payload) : undefined
@@ -380,7 +382,10 @@ function bindSendButton() {
       prompt: text
     });
 
-    showToast(result.ok ? "Message sent" : "Saved locally. API hook ready.", result.ok ? "good" : "warn");
+    showToast(
+      result.ok ? "Message sent" : "Saved locally. API hook ready.",
+      result.ok ? "good" : "warn"
+    );
 
     if (input) input.value = "";
   });
@@ -396,7 +401,10 @@ function bindExportButton() {
     };
 
     const result = await callApi("/api/home/export-to-projects", "POST", payload);
-    showToast(result.ok ? "Export requested" : "Export hook ready. No live API yet.", result.ok ? "good" : "warn");
+    showToast(
+      result.ok ? "Export requested" : "Export hook ready. No live API yet.",
+      result.ok ? "good" : "warn"
+    );
   });
 }
 
