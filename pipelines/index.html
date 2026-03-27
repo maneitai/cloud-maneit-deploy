@@ -61,6 +61,16 @@
 
         <div class="stack stack--md">
           <article class="card card--compact">
+            <div class="eyebrow">Selected pipeline</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Pipeline</span>
+                <select class="select" id="pipelineSelector"></select>
+              </label>
+            </div>
+          </article>
+
+          <article class="card card--compact">
             <div class="eyebrow">Spawn node</div>
             <div class="field-grid">
               <label class="inline-field">
@@ -187,76 +197,6 @@
           <div class="edge edge--3"></div>
           <div class="edge edge--4"></div>
           <div class="edge edge--5"></div>
-
-          <article class="pipeline-node pipeline-node--input is-selected" data-node-id="node-input">
-            <div class="node-head">
-              <span class="node-type node-type--input">Input</span>
-              <span class="node-badge">default</span>
-            </div>
-            <strong>Brief Intake</strong>
-            <p>Receives task brief and constraints.</p>
-            <div class="node-meta">No quorum · raw input</div>
-          </article>
-
-          <article class="pipeline-node pipeline-node--planner" data-node-id="node-planner">
-            <div class="node-head">
-              <span class="node-type node-type--planner">Planner</span>
-              <span class="node-badge">2-of-3</span>
-            </div>
-            <strong>Structured Planner</strong>
-            <p>Builds constrained plan and handoff targets.</p>
-            <div class="node-meta">planner_structured_v1</div>
-          </article>
-
-          <article class="pipeline-node pipeline-node--coder" data-node-id="node-coder">
-            <div class="node-head">
-              <span class="node-type node-type--coder">Coder</span>
-              <span class="node-badge">2-of-3</span>
-            </div>
-            <strong>C++ Coder</strong>
-            <p>Role profile from Agent Factory, overridable here.</p>
-            <div class="node-meta">DeepSeek · cpp_generator_v1</div>
-          </article>
-
-          <article class="pipeline-node pipeline-node--verifier" data-node-id="node-verifier">
-            <div class="node-head">
-              <span class="node-type node-type--verifier">Verifier</span>
-              <span class="node-badge">3-way</span>
-            </div>
-            <strong>Strict Verifier</strong>
-            <p>Contract, output, and compile verification.</p>
-            <div class="node-meta">strict_verifier_v1</div>
-          </article>
-
-          <article class="pipeline-node pipeline-node--auditor" data-node-id="node-auditor">
-            <div class="node-head">
-              <span class="node-type node-type--auditor">Auditor</span>
-              <span class="node-badge">2-of-3</span>
-            </div>
-            <strong>Audit Node</strong>
-            <p>Final review before promotion or export.</p>
-            <div class="node-meta">audit_operating_v1</div>
-          </article>
-
-          <article class="pipeline-node pipeline-node--branch" data-node-id="node-branch">
-            <div class="node-head">
-              <span class="node-type node-type--branch">Branch</span>
-              <span class="node-badge">route split</span>
-            </div>
-            <strong>Fallback Path</strong>
-            <p>Optional alternate route with explicit trigger.</p>
-            <div class="node-meta">branch_if_fail</div>
-          </article>
-
-          <article class="pipeline-node pipeline-node--projection" data-node-id="node-projection">
-            <div class="node-head">
-              <span class="node-type node-type--projection">Projection</span>
-              <span class="node-badge">portal</span>
-            </div>
-            <strong>Portal Projection</strong>
-            <p>Simplified downstream representation only.</p>
-            <div class="node-meta">Projects → AppCreator</div>
-          </article>
         </section>
 
         <section class="portal-preview">
@@ -278,8 +218,8 @@
         <div class="stack stack--md">
           <article class="card card--compact">
             <div class="eyebrow">Selected node</div>
-            <strong id="selectedNodeTitle">Brief Intake</strong>
-            <p class="muted">Input node selected. This is where work enters the graph.</p>
+            <strong id="selectedNodeTitle">No node selected</strong>
+            <p class="muted" id="selectedNodeDescription">Select a node to inspect pipeline overrides.</p>
           </article>
 
           <article class="card card--compact">
@@ -287,7 +227,7 @@
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Role profile</span>
-                <select class="select">
+                <select class="select" id="inspectorRoleProfile">
                   <option selected>brief_intake_v1</option>
                   <option>brief_intake_strict_v2</option>
                 </select>
@@ -295,7 +235,7 @@
 
               <label class="inline-field">
                 <span class="soft">Default reasoning layer</span>
-                <select class="select">
+                <select class="select" id="inspectorReasoningLayer">
                   <option selected>input_normalizer_v1</option>
                   <option>structured_router_v1</option>
                 </select>
@@ -303,7 +243,7 @@
 
               <label class="inline-field">
                 <span class="soft">Default output contract</span>
-                <select class="select">
+                <select class="select" id="inspectorOutputContract">
                   <option selected>raw_brief_payload</option>
                   <option>normalized_brief_json</option>
                 </select>
@@ -311,7 +251,7 @@
 
               <label class="inline-field">
                 <span class="soft">Default validation gate</span>
-                <select class="select">
+                <select class="select" id="inspectorValidationGate">
                   <option selected>brief_schema_gate</option>
                   <option>input_contract_gate</option>
                 </select>
@@ -324,7 +264,7 @@
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Primary model group</span>
-                <select class="select">
+                <select class="select" id="inspectorPrimaryGroup">
                   <option selected>router-a, router-b, router-c</option>
                   <option>planner-a, planner-b, planner-c</option>
                   <option>js-a, js-b, js-c</option>
@@ -333,7 +273,7 @@
 
               <label class="inline-field">
                 <span class="soft">Fallback group</span>
-                <select class="select">
+                <select class="select" id="inspectorFallbackGroup">
                   <option selected>none</option>
                   <option>router fallback group</option>
                   <option>cloud heavy fallback</option>
@@ -342,7 +282,7 @@
 
               <label class="inline-field">
                 <span class="soft">Timeout</span>
-                <select class="select">
+                <select class="select" id="inspectorTimeout">
                   <option selected>60s</option>
                   <option>90s</option>
                   <option>120s</option>
@@ -351,7 +291,7 @@
 
               <label class="inline-field">
                 <span class="soft">Quorum rule</span>
-                <select class="select">
+                <select class="select" id="inspectorQuorumRule">
                   <option selected>single pass</option>
                   <option>2-of-3</option>
                   <option>3-of-3</option>
@@ -360,7 +300,7 @@
 
               <label class="inline-field">
                 <span class="soft">Override reasoning layer</span>
-                <select class="select">
+                <select class="select" id="inspectorOverrideReasoning">
                   <option selected>inherit from Agent Factory</option>
                   <option>coder_reasoning_v2</option>
                   <option>strict_verifier_v2</option>
@@ -371,7 +311,7 @@
 
           <article class="card card--compact">
             <div class="eyebrow">Node notes</div>
-            <textarea class="textarea" placeholder="Operator note, experiment note, or reason for override..."></textarea>
+            <textarea class="textarea" id="inspectorNotes" placeholder="Operator note, experiment note, or reason for override..."></textarea>
           </article>
         </div>
       </aside>
@@ -386,7 +326,7 @@
       const params = new URLSearchParams(window.location.search);
       const apiBase = params.get('apiBase');
       if (apiBase) {
-        const normalized = apiBase.replace(/\\/+$/, '');
+        const normalized = apiBase.replace(/\/+$/, '');
         window.PM_API_BASE = normalized;
         localStorage.setItem('PM_API_BASE', normalized);
       } else {
