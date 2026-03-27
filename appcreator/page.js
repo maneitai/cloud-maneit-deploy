@@ -1,4 +1,6 @@
 (function () {
+  const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+
   const form = document.getElementById("appCreatorForm");
   const runStageBtn = document.getElementById("runStageBtn");
   const saveWorkspaceBtn = document.getElementById("saveWorkspaceBtn");
@@ -19,6 +21,29 @@
   const executionStatus = document.getElementById("executionStatus");
   const executionSummary = document.getElementById("executionSummary");
 
+  async function callApi(path, method = "GET", payload = null) {
+    if (!PM_API_BASE) {
+      return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+    }
+
+    try {
+      const response = await fetch(`${PM_API_BASE}${path}`, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: payload ? JSON.stringify(payload) : undefined
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      const body = contentType.includes("application/json")
+        ? await response.json()
+        : await response.text();
+
+      return { ok: response.ok, status: response.status, body };
+    } catch (error) {
+      return { ok: false, error: String(error) };
+    }
+  }
+
   function bindSegmentGroup(groupId, hiddenInputId) {
     const group = document.getElementById(groupId);
     const hidden = document.getElementById(hiddenInputId);
@@ -37,20 +62,20 @@
   }
 
   function updateSummary() {
-    summaryProject.textContent = linkedProject.value || "—";
-    summaryWorkItem.textContent = linkedWorkItem.value || "—";
-    summaryPipeline.textContent = pipelineSnapshot.value || "—";
-    summaryStage.textContent = stageFocus.value || "—";
-    summaryMode.textContent = executionMode.value || "—";
+    if (summaryProject) summaryProject.textContent = linkedProject?.value || "—";
+    if (summaryWorkItem) summaryWorkItem.textContent = linkedWorkItem?.value || "—";
+    if (summaryPipeline) summaryPipeline.textContent = pipelineSnapshot?.value || "—";
+    if (summaryStage) summaryStage.textContent = stageFocus?.value || "—";
+    if (summaryMode) summaryMode.textContent = executionMode?.value || "—";
   }
 
   function renderLog(type, actionLabel) {
-    const title = document.getElementById("jobTitle").value.trim() || "Untitled app build pass";
-    const project = linkedProject.value;
-    const workItem = linkedWorkItem.value;
-    const pipeline = pipelineSnapshot.value;
-    const stage = stageFocus.value;
-    const mode = executionMode.value;
+    const title = document.getElementById("jobTitle")?.value.trim() || "Untitled app build pass";
+    const project = linkedProject?.value || "—";
+    const workItem = linkedWorkItem?.value || "—";
+    const pipeline = pipelineSnapshot?.value || "—";
+    const stage = stageFocus?.value || "—";
+    const mode = executionMode?.value || "—";
 
     const stateClass =
       type === "saved" ? "saved" :
@@ -62,33 +87,35 @@
       type === "refresh" ? "Jobs refreshed" :
       "Stage run started";
 
-    activityLog.innerHTML = `
-      <div class="receipt-state ${stateClass}">
-        <strong>${stateText}</strong><br /><br />
-        <strong>Title:</strong> ${escapeHtml(title)}<br />
-        <strong>Action:</strong> ${escapeHtml(actionLabel)}<br />
-        <strong>Project:</strong> ${escapeHtml(project)}<br />
-        <strong>Work item:</strong> ${escapeHtml(workItem)}<br />
-        <strong>Pipeline:</strong> ${escapeHtml(pipeline)}<br />
-        <strong>Stage:</strong> ${escapeHtml(stage)}<br />
-        <strong>Mode:</strong> ${escapeHtml(mode)}
-      </div>
-    `;
+    if (activityLog) {
+      activityLog.innerHTML = `
+        <div class="receipt-state ${stateClass}">
+          <strong>${stateText}</strong><br /><br />
+          <strong>Title:</strong> ${escapeHtml(title)}<br />
+          <strong>Action:</strong> ${escapeHtml(actionLabel)}<br />
+          <strong>Project:</strong> ${escapeHtml(project)}<br />
+          <strong>Work item:</strong> ${escapeHtml(workItem)}<br />
+          <strong>Pipeline:</strong> ${escapeHtml(pipeline)}<br />
+          <strong>Stage:</strong> ${escapeHtml(stage)}<br />
+          <strong>Mode:</strong> ${escapeHtml(mode)}
+        </div>
+      `;
+    }
 
     if (type === "saved") {
-      executionStatus.textContent = "Notes updated";
-      executionSummary.textContent = "Workspace notes were saved without starting a production stage.";
+      if (executionStatus) executionStatus.textContent = "Notes updated";
+      if (executionSummary) executionSummary.textContent = "Workspace notes were saved without starting a production stage.";
       return;
     }
 
     if (type === "refresh") {
-      executionStatus.textContent = "Queue refreshed";
-      executionSummary.textContent = "Production job state was refreshed for the current application workspace.";
+      if (executionStatus) executionStatus.textContent = "Queue refreshed";
+      if (executionSummary) executionSummary.textContent = "Production job state was refreshed for the current application workspace.";
       return;
     }
 
-    executionStatus.textContent = "Running";
-    executionSummary.textContent = `Started ${actionLabel.toLowerCase()} for ${project} using ${pipeline}.`;
+    if (executionStatus) executionStatus.textContent = "Running";
+    if (executionSummary) executionSummary.textContent = `Started ${actionLabel.toLowerCase()} for ${project} using ${pipeline}.`;
   }
 
   function escapeHtml(value) {
@@ -100,29 +127,47 @@
       .replaceAll("'", "&#039;");
   }
 
+  function buildPayload(actionLabel) {
+    return {
+      title: document.getElementById("jobTitle")?.value.trim() || "Untitled app build pass",
+      action: actionLabel,
+      linkedProject: linkedProject?.value || "",
+      linkedWorkItem: linkedWorkItem?.value || "",
+      pipelineSnapshot: pipelineSnapshot?.value || "",
+      stageFocus: stageFocus?.value || "",
+      executionMode: executionMode?.value || ""
+    };
+  }
+
   bindSegmentGroup("executionModeGroup", "executionMode");
 
-  form.addEventListener("input", updateSummary);
-  form.addEventListener("change", updateSummary);
+  form?.addEventListener("input", updateSummary);
+  form?.addEventListener("change", updateSummary);
 
-  runStageBtn.addEventListener("click", () => {
-    renderLog("success", "Run selected stage");
+  runStageBtn?.addEventListener("click", async () => {
+    const actionLabel = "Run selected stage";
+    const result = await callApi("/api/app-creator/run-stage", "POST", buildPayload(actionLabel));
+    renderLog(result.ok ? "success" : "saved", actionLabel);
   });
 
-  saveWorkspaceBtn.addEventListener("click", () => {
-    renderLog("saved", "Save workspace notes");
+  saveWorkspaceBtn?.addEventListener("click", async () => {
+    const actionLabel = "Save workspace notes";
+    const result = await callApi("/api/app-creator/save-workspace", "POST", buildPayload(actionLabel));
+    renderLog(result.ok ? "saved" : "saved", actionLabel);
   });
 
   document.querySelectorAll(".action-tile").forEach((button) => {
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const action = button.dataset.action || button.textContent.trim();
 
       if (action === "Refresh jobs") {
-        renderLog("refresh", action);
+        const result = await callApi("/api/app-creator/refresh-jobs", "POST", buildPayload(action));
+        renderLog(result.ok ? "refresh" : "refresh", action);
         return;
       }
 
-      renderLog("success", action);
+      const result = await callApi("/api/app-creator/action", "POST", buildPayload(action));
+      renderLog(result.ok ? "success" : "success", action);
     });
   });
 
