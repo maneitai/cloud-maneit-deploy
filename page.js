@@ -1,4 +1,4 @@
-const PM_HOME_KEY = "PM_HOME_V5";
+const PM_HOME_KEY = "PM_HOME_V6";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const MODE_HELP = {
@@ -123,11 +123,7 @@ function setBusy(isBusy, label = "") {
   const busyNow = activeRequestCount > 0;
 
   if (status) {
-    if (busyNow) {
-      status.textContent = label || "Working...";
-    } else {
-      status.textContent = MODE_STATUS[state.mode] || "Ready";
-    }
+    status.textContent = busyNow ? (label || "Working...") : (MODE_STATUS[state.mode] || "Ready");
   }
 
   [sendBtn, exportBtn, newChatBtn, branchChatBtn, addTodoBtn].forEach((button) => {
@@ -185,15 +181,13 @@ function extractActiveModels(modelResponse) {
       const stateVal = String(item.runtime_state || item.state || "").toLowerCase();
       return stateVal === "loaded" || stateVal === "warm" || stateVal === "active";
     })
-    .map((item) => normalizeModelLabel(item))
+    .map(normalizeModelLabel)
     .filter(Boolean);
 }
 
 function extractAvailableModels(modelResponse) {
   const items = Array.isArray(modelResponse?.items) ? modelResponse.items : [];
-  return items
-    .map((item) => normalizeModelLabel(item))
-    .filter(Boolean);
+  return items.map(normalizeModelLabel).filter(Boolean);
 }
 
 function normalizeSelectedModels() {
@@ -460,7 +454,6 @@ function hydrateModelSelectors() {
   const singleModel = qs("#singleModel");
   const multiModelSet = qs("#multiModelSet");
   const discussionPreset = qs("#discussionPreset");
-
   const models = Array.isArray(state.availableModels) ? state.availableModels : [];
 
   if (singleModel) {
@@ -482,7 +475,6 @@ function hydrateModelSelectors() {
     if (models.length >= 4) presetOptions.push(models.slice(1, 4).join(" | "));
     if (models.length >= 2) presetOptions.push(models.slice(0, 2).join(" | "));
   }
-
   const uniquePresets = [...new Set(presetOptions.filter(Boolean))];
 
   if (multiModelSet) {
@@ -504,7 +496,6 @@ function hydrateModelSelectors() {
     discussionOptions.push(models.slice(0, 3).join(" | "));
     if (models.length >= 2) discussionOptions.push(models.slice(0, 2).join(" | "));
   }
-
   const uniqueDiscussion = [...new Set(discussionOptions.filter(Boolean))];
 
   if (discussionPreset) {
@@ -641,14 +632,10 @@ function extractTodosFromSummary(summary) {
 
 function applyHomeSummary(summary, sessionPublicId) {
   const thread = buildThreadFromSummary(summary);
-  if (thread) {
-    state.threads[sessionPublicId] = thread;
-  }
+  if (thread) state.threads[sessionPublicId] = thread;
 
   const todos = extractTodosFromSummary(summary);
-  if (todos) {
-    state.todos = todos;
-  }
+  if (todos) state.todos = todos;
 
   if (summary?.session?.mode && ["single", "multi", "discussion"].includes(summary.session.mode)) {
     state.mode = summary.session.mode;
@@ -675,6 +662,7 @@ async function refreshHomeSummary(sessionPublicId = state.selectedChatId) {
 
 async function refreshModelPool() {
   const result = await callApi("/api/model-pool/models?sync=true", "GET");
+
   if (!result.ok) {
     state.activeModels = [];
     state.availableModels = [];
@@ -700,31 +688,6 @@ async function refreshModelPool() {
   saveState();
   hydrateModelSelectors();
   renderModeHelp();
-}
-
-async function refreshChatSessions() {
-  const result = await callApi("/api/chat-sessions?surface=home", "GET");
-  if (!result.ok) {
-    showToast("Could not load chat sessions", "warn");
-    return;
-  }
-
-  const items = Array.isArray(result.body?.items) ? result.body.items.map(normalizeChatItem) : [];
-
-  state.chats = { pinned: [], projectFolder: [], history: [] };
-  items.forEach(mergeChatIntoCollections);
-
-  if (!state.selectedChatId && items[0]) {
-    state.selectedChatId = items[0].id;
-  }
-
-  if (!items.length) {
-    const publicId = await createChatSession({ title: "Home chat" });
-    state.selectedChatId = publicId;
-  }
-
-  saveState();
-  renderAll();
 }
 
 async function createChatSession({ title, cloneFromPublicId = null }) {
@@ -756,7 +719,6 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
 
   mergeChatIntoCollections(chat);
   state.selectedChatId = publicId;
-
   if (!Array.isArray(state.threads[publicId])) {
     state.threads[publicId] = [];
   }
@@ -764,6 +726,39 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
   saveState();
   renderAll();
   return publicId;
+}
+
+async function refreshChatSessions() {
+  const result = await callApi("/api/chat-sessions?surface=home", "GET");
+  if (!result.ok) {
+    showToast("Could not load chat sessions", "warn");
+    return false;
+  }
+
+  const items = Array.isArray(result.body?.items) ? result.body.items.map(normalizeChatItem) : [];
+
+  state.chats = { pinned: [], projectFolder: [], history: [] };
+  items.forEach(mergeChatIntoCollections);
+
+  if (!state.selectedChatId && items[0]) {
+    state.selectedChatId = items[0].id;
+  }
+
+  if (!items.length) {
+    try {
+      const publicId = await createChatSession({ title: "Home chat" });
+      state.selectedChatId = publicId;
+    } catch {
+      showToast("Could not create initial Home chat", "warn");
+      saveState();
+      renderAll();
+      return false;
+    }
+  }
+
+  saveState();
+  renderAll();
+  return true;
 }
 
 function bindTodoControls() {
@@ -981,9 +976,9 @@ function bindExportButton() {
 async function bootstrapHome() {
   setBusy(true, "Loading Home...");
   await refreshModelPool();
-  await refreshChatSessions();
+  const sessionsOk = await refreshChatSessions();
 
-  if (state.selectedChatId) {
+  if (sessionsOk && state.selectedChatId) {
     await refreshHomeSummary(state.selectedChatId);
   }
 
@@ -1000,7 +995,6 @@ async function bootstrapHome() {
 
 function init() {
   renderAll();
-
   bindModeCards();
   bindSelectors();
   bindProjectTags();
@@ -1008,7 +1002,6 @@ function init() {
   bindChatButtons();
   bindSendButton();
   bindExportButton();
-
   bootstrapHome();
 }
 
