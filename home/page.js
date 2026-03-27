@@ -1,5 +1,5 @@
 const PM_HOME_KEY = "PM_HOME_V1";
-const PM_API_BASE = window.PM_API_BASE || "";
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedChatId: "frontend_backend_handoff",
@@ -160,11 +160,11 @@ function showToast(message, tone = "good") {
 
 async function callApi(path, method = "GET", payload = null) {
   if (!PM_API_BASE) {
-    return { ok: false, mock: true };
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
   }
 
   try {
-    const response = await fetch(PM_API_BASE + path, {
+    const response = await fetch(`${PM_API_BASE}${path}`, {
       method,
       headers: {
         "Content-Type": "application/json"
