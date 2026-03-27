@@ -1,5 +1,5 @@
 const PM_AGENT_FACTORY_KEY = "PM_AGENT_FACTORY_V2";
-const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedAgentId: "cpp_generator_v1",
