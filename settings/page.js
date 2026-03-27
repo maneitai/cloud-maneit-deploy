@@ -1,4 +1,4 @@
-const PM_SETTINGS_KEY = "PM_SETTINGS_PROVIDERS_V1";
+const PM_SETTINGS_KEY = "PM_SETTINGS_PROVIDERS_V2";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
@@ -40,12 +40,15 @@ const defaultState = {
     { alias: "pipe_heavy_writer_grok", backedBy: "grok-heavy-writer", status: "Disabled" }
   ],
   trace: [
-    "[PROVIDER] ollama-local ping ok",
-    "[PROVIDER] ollama-cloud key present",
-    "[SYNC] 3 cloud aliases mapped",
-    "[POLICY] heavy coder -> Ollama Cloud"
-  ]
+    "[SETTINGS] waiting for backend settings payload"
+  ],
+  modelCatalogItems: [],
+  runtimeProfiles: [],
+  servicePlan: null
 };
+
+let state = loadState();
+let activeRequestCount = 0;
 
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -61,11 +64,9 @@ function loadState() {
   }
 }
 
-function saveState(state) {
+function saveState() {
   localStorage.setItem(PM_SETTINGS_KEY, JSON.stringify(state));
 }
-
-let state = loadState();
 
 function qs(selector, root = document) {
   return root.querySelector(selector);
@@ -86,10 +87,50 @@ function showToast(message, tone = "good") {
   }, 2600);
 }
 
+function setBusy(isBusy) {
+  activeRequestCount += isBusy ? 1 : -1;
+  if (activeRequestCount < 0) activeRequestCount = 0;
+  const busy = activeRequestCount > 0;
+  qsa("button").forEach((button) => {
+    button.disabled = busy;
+  });
+}
+
 function providerTone(provider) {
   if (provider.connected) return "good";
   if (provider.keyConfigured) return "warn";
   return "";
+}
+
+function escapeHtml(text) {
+  return String(text ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function updateTrace(line) {
+  state.trace.unshift(line);
+  state.trace = state.trace.slice(0, 14);
+  saveState();
+  renderTrace();
+}
+
+async function callApi(path, method = "GET", payload = null) {
+  try {
+    const res = await fetch(`${PM_API_BASE}${path}`, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: payload ? JSON.stringify(payload) : undefined
+    });
+    const contentType = res.headers.get("content-type") || "";
+    const body = contentType.includes("application/json") ? await res.json() : await res.text();
+    return { ok: res.ok, status: res.status, body };
+  } catch (error) {
+    return { ok: false, error: String(error) };
+  }
 }
 
 function renderHeroCards() {
@@ -112,22 +153,22 @@ function renderProviderRegistry() {
       <div>Provider</div>
       <div>Base / Endpoint</div>
       <div>Default Policy</div>
-      <div>Action</div>
+      <div>Status</div>
     </div>
     ${state.providers.map((provider) => `
       <div class="provider-row" data-provider-id="${provider.id}">
         <div>
-          <div class="provider-name">${provider.name}</div>
-          <div class="provider-sub">${provider.description}</div>
+          <div class="provider-name">${escapeHtml(provider.name)}</div>
+          <div class="provider-sub">${escapeHtml(provider.description)}</div>
         </div>
-        <div><input class="input" data-field="baseUrl" value="${provider.baseUrl}" /></div>
+        <div><input class="input" data-field="baseUrl" value="${escapeHtml(provider.baseUrl)}" /></div>
         <div>
           <select class="select" data-field="policy">
             ${["Allowed", "Heavy roles only", "Fallback only", "Disabled"].map((option) => `<option ${provider.policy === option ? "selected" : ""}>${option}</option>`).join("")}
           </select>
         </div>
-        <div class="control-row">
-          <button class="button button--small" data-action="ping">Ping</button>
+        <div class="chip-row">
+          <div class="chip ${providerTone(provider)}">${provider.connected ? "connected" : (provider.keyConfigured ? "configured" : "missing")}</div>
         </div>
       </div>
     `).join("")}
@@ -140,13 +181,12 @@ function renderSecrets() {
   container.innerHTML = state.secrets.map((secret) => `
     <div class="secret-row" data-secret-id="${secret.id}">
       <div>
-        <div class="provider-name">${secret.label}</div>
-        <div class="provider-sub">${secret.provider}</div>
+        <div class="provider-name">${escapeHtml(secret.label)}</div>
+        <div class="provider-sub">${escapeHtml(secret.provider)}</div>
       </div>
       <div class="control-row">
-        <input class="input" type="password" value="${secret.masked}" data-field="masked" />
-        <button class="button button--small" data-action="save-secret">Save</button>
-        <button class="button button--small" data-action="test-secret">Test</button>
+        <input class="input" type="password" value="${escapeHtml(secret.masked)}" data-field="masked" />
+        <button class="button button--small" data-action="mark-secret">Store masked</button>
       </div>
     </div>
   `).join("");
@@ -164,10 +204,10 @@ function renderPolicies() {
     </div>
     ${state.policies.map((item, idx) => `
       <div class="policy-row" data-policy-index="${idx}">
-        <div><strong>${item.roleClass}</strong></div>
-        <div><input class="input" data-field="primary" value="${item.primary}" /></div>
-        <div><input class="input" data-field="fallback" value="${item.fallback}" /></div>
-        <div><input class="input" data-field="note" value="${item.note}" /></div>
+        <div><strong>${escapeHtml(item.roleClass)}</strong></div>
+        <div><input class="input" data-field="primary" value="${escapeHtml(item.primary)}" /></div>
+        <div><input class="input" data-field="fallback" value="${escapeHtml(item.fallback)}" /></div>
+        <div><input class="input" data-field="note" value="${escapeHtml(item.note)}" /></div>
       </div>
     `).join("")}
   `;
@@ -178,10 +218,10 @@ function renderMatching() {
   if (!container) return;
   container.innerHTML = state.matches.map((item, idx) => `
     <div class="policy-row" data-match-index="${idx}">
-      <div><strong>${item.roleFamily}</strong></div>
-      <div><input class="input" data-field="layer" value="${item.layer}" /></div>
-      <div><input class="input" data-field="providers" value="${item.providers}" /></div>
-      <div><input class="input" data-field="note" value="${item.note}" /></div>
+      <div><strong>${escapeHtml(item.roleFamily)}</strong></div>
+      <div><input class="input" data-field="layer" value="${escapeHtml(item.layer)}" /></div>
+      <div><input class="input" data-field="providers" value="${escapeHtml(item.providers)}" /></div>
+      <div><input class="input" data-field="note" value="${escapeHtml(item.note)}" /></div>
     </div>
   `).join("");
 }
@@ -192,17 +232,17 @@ function renderAliases() {
   container.innerHTML = state.aliases.map((item, idx) => `
     <div class="alias-row" data-alias-index="${idx}">
       <div>
-        <div class="runtime-name">${item.alias}</div>
+        <div class="runtime-name">${escapeHtml(item.alias)}</div>
         <div class="runtime-sub">Cloud / enterprise alias</div>
       </div>
-      <div><input class="input" data-field="backedBy" value="${item.backedBy}" /></div>
+      <div><input class="input" data-field="backedBy" value="${escapeHtml(item.backedBy)}" /></div>
       <div>
         <select class="select" data-field="status">
           ${["Enabled", "Fallback only", "Disabled"].map((option) => `<option ${item.status === option ? "selected" : ""}>${option}</option>`).join("")}
         </select>
       </div>
       <div class="control-row">
-        <button class="button button--small" data-action="test-alias">Test</button>
+        <button class="button button--small" data-action="ensure-runtime-profile">Ensure profile</button>
       </div>
     </div>
   `).join("");
@@ -214,19 +254,24 @@ function renderProviderCensus() {
   container.innerHTML = state.providers.map((provider) => {
     const tone = providerTone(provider);
     const label = provider.connected ? "connected" : (provider.keyConfigured ? "configured" : "missing");
-    return `<div class="chip ${tone}">${provider.name} ${label}</div>`;
+    return `<div class="chip ${tone}">${escapeHtml(provider.name)} ${escapeHtml(label)}</div>`;
   }).join("");
 }
 
 function renderTrace() {
   const container = qs("#providerTrace");
   if (!container) return;
-  container.innerHTML = state.trace.map((line) => `<div class="log-line">${line}</div>`).join("");
+  container.innerHTML = state.trace.map((line) => `<div class="log-line">${escapeHtml(line)}</div>`).join("");
 }
 
 function renderCloudRuntime() {
   const container = qs("#cloudRuntimeList");
   if (!container) return;
+
+  const servicePlanNote = state.servicePlan
+    ? `<div class="footer-note">Service plan refreshed from backend.</div>`
+    : `<div class="footer-note">No service plan built yet.</div>`;
+
   container.innerHTML = `
     <div class="runtime-row header">
       <div>Cloud Alias</div>
@@ -237,20 +282,21 @@ function renderCloudRuntime() {
     ${state.aliases.map((item, idx) => `
       <div class="runtime-row" data-cloud-index="${idx}">
         <div>
-          <div class="runtime-name">${item.alias}</div>
+          <div class="runtime-name">${escapeHtml(item.alias)}</div>
           <div class="runtime-sub">Mapped cloud or enterprise alias</div>
         </div>
-        <div><input class="input" data-field="backedBy" value="${item.backedBy}" /></div>
+        <div><input class="input" data-field="backedBy" value="${escapeHtml(item.backedBy)}" /></div>
         <div>
           <select class="select" data-field="status">
             ${["Enabled", "Fallback only", "Disabled"].map((option) => `<option ${item.status === option ? "selected" : ""}>${option}</option>`).join("")}
           </select>
         </div>
         <div class="control-row">
-          <button class="button button--small" data-action="test-runtime-alias">Test</button>
+          <button class="button button--small" data-action="materialize-runtime-profile">Materialize</button>
         </div>
       </div>
     `).join("")}
+    ${servicePlanNote}
   `;
 }
 
@@ -267,30 +313,89 @@ function renderAll() {
   bindEvents();
 }
 
-function updateTrace(line) {
-  state.trace.unshift(line);
-  state.trace = state.trace.slice(0, 12);
-  saveState(state);
-  renderTrace();
+function collectSettingsPayload() {
+  return {
+    providerMode: state.providerMode,
+    providers: state.providers,
+    secrets: state.secrets,
+    policies: state.policies,
+    matches: state.matches,
+    aliases: state.aliases
+  };
 }
 
-async function callApi(path, method = "GET", payload = null) {
-  if (!PM_API_BASE) {
-    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+async function refreshSettings() {
+  setBusy(true);
+  const result = await callApi("/api/settings", "GET");
+  setBusy(false);
+
+  if (!result.ok) {
+    updateTrace("[SETTINGS] GET /api/settings failed, using local state");
+    showToast("Could not load backend settings", "warn");
+    return;
   }
 
-  try {
-    const res = await fetch(`${PM_API_BASE}${path}`, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: payload ? JSON.stringify(payload) : undefined
-    });
-    const contentType = res.headers.get("content-type") || "";
-    const body = contentType.includes("application/json") ? await res.json() : await res.text();
-    return { ok: res.ok, status: res.status, body };
-  } catch (error) {
-    return { ok: false, error: String(error) };
+  const body = result.body || {};
+  if (typeof body === "object" && body) {
+    state = {
+      ...state,
+      ...body
+    };
+    saveState();
+    renderAll();
+    updateTrace("[SETTINGS] loaded from backend");
   }
+}
+
+async function refreshModelCatalog() {
+  setBusy(true);
+  const result = await callApi("/api/model-catalog?sync=true", "GET");
+  setBusy(false);
+
+  if (!result.ok) {
+    updateTrace("[CATALOG] inventory refresh failed");
+    showToast("Inventory refresh failed", "warn");
+    return;
+  }
+
+  state.modelCatalogItems = Array.isArray(result.body?.items) ? result.body.items : [];
+  saveState();
+  updateTrace(`[CATALOG] inventory loaded (${state.modelCatalogItems.length})`);
+  showToast("Inventory refreshed", "good");
+}
+
+async function refreshRuntimeProfiles() {
+  setBusy(true);
+  const result = await callApi("/api/model-catalog/runtime-profiles?sync=true", "GET");
+  setBusy(false);
+
+  if (!result.ok) {
+    updateTrace("[RUNTIME] runtime profile refresh failed");
+    showToast("Runtime profile refresh failed", "warn");
+    return;
+  }
+
+  state.runtimeProfiles = Array.isArray(result.body?.items) ? result.body.items : [];
+  saveState();
+  updateTrace(`[RUNTIME] profiles loaded (${state.runtimeProfiles.length})`);
+  showToast("Runtime profiles refreshed", "good");
+}
+
+async function saveSettingsToBackend() {
+  setBusy(true);
+  const result = await callApi("/api/settings", "PUT", {
+    values: collectSettingsPayload()
+  });
+  setBusy(false);
+
+  if (!result.ok) {
+    updateTrace("[SETTINGS] backend save failed");
+    showToast("Settings save failed", "warn");
+    return;
+  }
+
+  updateTrace("[SETTINGS] backend save ok");
+  showToast("Provider profile saved", "good");
 }
 
 function bindEvents() {
@@ -306,36 +411,16 @@ function bindEvents() {
       state.providers = state.providers.map((provider) =>
         provider.id === providerId ? { ...provider, [field]: target.value } : provider
       );
-      saveState(state);
-    });
-
-    qsa("[data-action='ping']", row).forEach((button) => {
-      button.addEventListener("click", async () => {
-        const provider = state.providers.find((p) => p.id === providerId);
-        if (!provider) return;
-
-        updateTrace(`[PROVIDER] ping requested -> ${provider.name}`);
-        const result = await callApi("/api/settings/providers/ping", "POST", provider);
-
-        if (result.ok) {
-          state.providers = state.providers.map((p) => p.id === providerId ? { ...p, connected: true } : p);
-          showToast(`${provider.name} ping ok`, "good");
-          updateTrace(`[PROVIDER] ${provider.name.toLowerCase()} ping ok`);
-        } else {
-          showToast(`${provider.name} ping not live yet`, "warn");
-          updateTrace(`[PROVIDER] ${provider.name.toLowerCase()} ping pending/mock`);
-        }
-
-        saveState(state);
-        renderAll();
-      });
+      saveState();
+      renderHeroCards();
+      renderProviderCensus();
     });
   });
 
   qsa("#secretsGrid .secret-row[data-secret-id]").forEach((row) => {
     const secretId = row.dataset.secretId;
 
-    qsa("[data-action='save-secret']", row).forEach((button) => {
+    qsa("[data-action='mark-secret']", row).forEach((button) => {
       button.addEventListener("click", () => {
         const input = qs("input[data-field='masked']", row);
 
@@ -345,18 +430,10 @@ function bindEvents() {
             : secret
         );
 
-        saveState(state);
+        saveState();
         renderHeroCards();
-        showToast("Secret saved (masked)", "good");
+        showToast("Secret stored locally and ready for backend save", "good");
         updateTrace(`[SECRET] ${secretId} updated`);
-      });
-    });
-
-    qsa("[data-action='test-secret']", row).forEach((button) => {
-      button.addEventListener("click", async () => {
-        updateTrace(`[SECRET] test requested -> ${secretId}`);
-        const result = await callApi("/api/settings/secrets/test", "POST", { secret_id: secretId });
-        showToast(result.ok ? "Secret test ok" : "Secret test pending/mock", result.ok ? "good" : "warn");
       });
     });
   });
@@ -382,41 +459,107 @@ function bindEvents() {
         state.aliases[idx][field] = target.value;
       }
 
-      saveState(state);
+      saveState();
     });
   });
 
-  qsa("[data-action='test-alias'], [data-action='test-runtime-alias']").forEach((button) => {
-    button.addEventListener("click", async () => {
-      updateTrace("[ALIAS] test requested");
-      const result = await callApi("/api/settings/aliases/test", "POST", { note: "ui-request" });
-      showToast(result.ok ? "Alias test ok" : "Alias test pending/mock", result.ok ? "good" : "warn");
+  qsa("[data-action='ensure-runtime-profile']").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      const row = event.target.closest("[data-alias-index]");
+      if (!row) return;
+      const idx = Number(row.dataset.aliasIndex);
+      const alias = state.aliases[idx]?.alias;
+      if (!alias) return;
+
+      setBusy(true);
+      const result = await callApi("/api/model-catalog/runtime-profiles/ensure", "POST", {
+        aliases: [alias],
+        overwrite: false,
+        include_runtime: true
+      });
+      setBusy(false);
+
+      if (!result.ok) {
+        updateTrace(`[RUNTIME] ensure failed -> ${alias}`);
+        showToast("Ensure runtime profile failed", "warn");
+        return;
+      }
+
+      updateTrace(`[RUNTIME] ensure ok -> ${alias}`);
+      showToast("Runtime profile ensured", "good");
+      await refreshRuntimeProfiles();
     });
   });
 
-  qs("#saveProfileBtn")?.addEventListener("click", () => {
-    saveState(state);
-    updateTrace("[SETTINGS] provider profile saved");
-    showToast("Provider profile saved", "good");
+  qsa("[data-action='materialize-runtime-profile']").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      const row = event.target.closest("[data-cloud-index]");
+      if (!row) return;
+      const idx = Number(row.dataset.cloudIndex);
+      const alias = state.aliases[idx]?.alias;
+      if (!alias) return;
+
+      setBusy(true);
+      const result = await callApi("/api/model-catalog/runtime-profiles/materialize", "POST", {
+        aliases: [alias],
+        overwrite: false
+      });
+      setBusy(false);
+
+      if (!result.ok) {
+        updateTrace(`[RUNTIME] materialize failed -> ${alias}`);
+        showToast("Materialize runtime profile failed", "warn");
+        return;
+      }
+
+      updateTrace(`[RUNTIME] materialize ok -> ${alias}`);
+      showToast("Runtime profile materialized", "good");
+      await refreshRuntimeProfiles();
+    });
+  });
+
+  qs("#saveProfileBtn")?.addEventListener("click", async () => {
+    await saveSettingsToBackend();
   });
 
   qs("#testProvidersBtn")?.addEventListener("click", async () => {
-    updateTrace("[SETTINGS] provider health sweep requested");
-    const result = await callApi("/api/settings/providers/test-all", "POST", { providers: state.providers });
-    showToast(result.ok ? "Provider sweep started" : "No live API yet. UI hooks are ready.", result.ok ? "good" : "warn");
+    updateTrace("[CATALOG] inventory refresh requested");
+    await refreshModelCatalog();
   });
 
   qs("#reloadInventoryBtn")?.addEventListener("click", async () => {
-    updateTrace("[SETTINGS] inventory reload requested");
-    const result = await callApi("/api/settings/providers/reload-inventory", "POST", {});
-    showToast(result.ok ? "Inventory reload started" : "Inventory reload pending/mock", result.ok ? "good" : "warn");
+    updateTrace("[RUNTIME] runtime profile refresh requested");
+    await refreshRuntimeProfiles();
   });
 
   qs("#syncAliasesBtn")?.addEventListener("click", async () => {
-    updateTrace("[SETTINGS] cloud alias sync requested");
-    const result = await callApi("/api/settings/providers/sync-aliases", "POST", { aliases: state.aliases });
-    showToast(result.ok ? "Cloud alias sync started" : "Cloud alias sync pending/mock", result.ok ? "good" : "warn");
+    const aliases = state.aliases.map((item) => item.alias).filter(Boolean);
+    setBusy(true);
+    const result = await callApi("/api/model-catalog/service-plan", "POST", {
+      aliases
+    });
+    setBusy(false);
+
+    if (!result.ok) {
+      updateTrace("[PLAN] service plan build failed");
+      showToast("Service plan build failed", "warn");
+      return;
+    }
+
+    state.servicePlan = result.body;
+    saveState();
+    updateTrace("[PLAN] service plan built");
+    showToast("Service plan built", "good");
+    renderCloudRuntime();
   });
 }
 
-document.addEventListener("DOMContentLoaded", renderAll);
+async function init() {
+  renderAll();
+  updateTrace(`[SETTINGS] bound to ${PM_API_BASE}`);
+  await refreshSettings();
+  await refreshModelCatalog();
+  await refreshRuntimeProfiles();
+}
+
+document.addEventListener("DOMContentLoaded", init);
