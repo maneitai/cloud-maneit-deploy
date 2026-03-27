@@ -1,5 +1,5 @@
 (function () {
-  const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+  const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
   const form = document.getElementById("appCreatorForm");
   const runStageBtn = document.getElementById("runStageBtn");
