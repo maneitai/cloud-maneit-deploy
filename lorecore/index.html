@@ -3,518 +3,319 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM • LoreCore</title>
+  <title>PM — LoreCore</title>
+  <meta
+    name="description"
+    content="LoreCore is the story operating surface for books, worlds, characters, scenes, drafts, notes, and discussion."
+  />
+  <link
+    rel="icon"
+    href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='16'%20fill='%23111827'/%3E%3Cpath%20d='M18%2018h28v28H18z'%20fill='none'/%3E%3Cpath%20d='M22%2020h18c3.314%200%206%202.686%206%206v18H28c-3.314%200-6-2.686-6-6V20zm6%204h12v16H28c-1.105%200-2-.895-2-2V24z'%20fill='%23d1d5db'/%3E%3C/svg%3E"
+  />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
   <div class="page-shell">
-    <header class="pm-topbar">
-      <div class="brand-block">
+    <header class="page-header">
+      <div class="brand">
         <div class="brand-mark">PM</div>
-        <div class="brand-copy">
-          <div class="brand-title">LoreCore</div>
-          <div class="brand-subtitle">
-            Chat-first creative workspace with library, drafting, scenes, records, and manuscript production.
-          </div>
+        <div class="header-copy">
+          <div class="eyebrow">PM</div>
+          <h1>LoreCore</h1>
+          <p>
+            Story workspace for books, worlds, characters, scenes, drafts, notes, and discussion.
+            This page uses the real LoreCore backend routes only.
+          </p>
         </div>
       </div>
 
-      <nav class="pm-nav" aria-label="Primary">
-        <a href="../">Home</a>
-        <a href="../projects/">Projects</a>
-        <a href="../pipelines/">Pipelines</a>
-        <a href="../agent-factory/">Agent Factory</a>
-        <a href="../app-creator/">AppCreator</a>
-        <a href="../portal-creator/">PortalCreator</a>
-        <a href="../research-core/">Research Core</a>
-        <a class="active" href="./">LoreCore</a>
-        <a href="../game-designer/">Game Designer</a>
-        <a href="../state/">State</a>
-        <a href="../settings/">Settings</a>
+      <nav class="global-nav" aria-label="Primary">
+        <a class="nav-link" href="../">Home</a>
+        <a class="nav-link" href="../projects/">Projects</a>
+        <a class="nav-link" href="../pipelines/">Pipelines</a>
+        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="../appcreator/">AppCreator</a>
+        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+        <a class="nav-link" href="../research-core/">Research Core</a>
+        <a class="nav-link nav-link--active" href="../lorecore/">LoreCore</a>
+        <a class="nav-link" href="../game-designer/">Game Designer</a>
+        <a class="nav-link" href="../state/">State</a>
+        <a class="nav-link" href="../settings/">Settings</a>
       </nav>
 
-      <div class="topbar-pills">
-        <span class="top-pill">Chat-first</span>
-        <span class="top-pill">Creative writing OS</span>
-        <span class="top-pill">Pipeline + agents</span>
+      <div class="header-actions">
+        <span class="chip">Books</span>
+        <span class="chip">Worldbuilding</span>
+        <span class="chip">Discussion</span>
       </div>
     </header>
 
-    <main class="lorecore-shell">
-      <section class="surface-intro panel">
-        <div class="surface-label">Surface contract</div>
-        <div class="surface-title">Purpose, ownership, boundaries</div>
-        <div class="surface-note">
-          LoreCore is the hybrid exception: Home-style discussion first, library + project continuity in the same surface,
-          then creator-style drafting below. Exploration stays in chat until you save, stage, or export it.
-        </div>
-      </section>
+    <section class="surface-banner panel">
+      <div>
+        <div class="eyebrow">Surface contract</div>
+        <strong>LoreCore combines discussion, story entities, drafts, and export</strong>
+      </div>
+      <div class="banner-note">
+        Uses confirmed routes only: overview, discussion messages, exports, books, worlds, characters, scenes, drafts, notes, and book stage runs.
+      </div>
+    </section>
 
-      <section class="chat-selection-bar panel">
-        <div class="selection-group">
-          <div class="selection-label">Mode</div>
-          <div class="segmented" id="modeSwitch">
-            <button class="segmented-btn" data-mode="direct">Direct reply</button>
-            <button class="segmented-btn" data-mode="parallel">Parallel compare</button>
-            <button class="segmented-btn is-active" data-mode="discussion">Open discussion</button>
+    <section class="factory-layout">
+      <aside class="panel panel-left">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Story library</h2>
+          </div>
+          <span class="status-chip status-chip--good" id="overviewStatusChip">Loading overview</span>
+        </div>
+
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Discussion</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Session</span>
+                <select class="select" id="sessionSelect"></select>
+              </label>
+            </div>
+            <p class="muted" id="sessionMeta">
+              LoreCore discussion needs a session from <code>/api/lorecore/overview</code>. No session create route is confirmed in main.py.
+            </p>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Books</div>
+            <div class="agent-library-list" id="bookList"></div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Drafts</div>
+            <div class="agent-library-list" id="draftList"></div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Notes</div>
+            <div class="agent-library-list" id="noteList"></div>
+          </article>
+        </div>
+      </aside>
+
+      <main class="panel panel-center">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2>Story workspace</h2>
+            <p class="muted">
+              Main writing surface for active book context, live discussion, and entity creation.
+            </p>
+          </div>
+          <div class="button-row">
+            <button class="button" id="refreshOverviewBtn" type="button">Refresh</button>
+            <button class="button" id="exportLoreBtn" type="button">Export</button>
+            <button class="button button--primary" id="runStageBtn" type="button">Run stage</button>
           </div>
         </div>
 
-        <div class="selection-group">
-          <div class="selection-label">Creative set</div>
-          <button class="select-like" id="creativeSetButton" type="button">chat-lore-01</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Participants</div>
-          <button class="select-like" id="participantsButton" type="button">3 lanes active</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Current book</div>
-          <button class="select-like" id="bookButton" type="button">Galdurdal Chronicles</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Selected stage</div>
-          <button class="select-like" id="stageButton" type="button">Capture → Scene</button>
-        </div>
-
-        <div class="selection-actions">
-          <button class="ghost-btn" type="button">Save book</button>
-          <button class="ghost-btn" type="button">Starter</button>
-          <button class="primary-btn" type="button">Run selected stage</button>
-        </div>
-      </section>
-
-      <section class="main-grid">
-        <aside class="left-rail panel">
-          <div class="rail-section">
-            <div class="rail-topline">
-              <div>
-                <div class="rail-kicker">Left rail</div>
-                <h2>Library, books, threads</h2>
-              </div>
-              <button class="mini-chip" type="button">Lore library</button>
-            </div>
-
-            <label class="field-label" for="libraryView">Library view</label>
-            <select id="libraryView" class="field-input">
-              <option>Books + active chats</option>
-              <option>Scenes + drafts</option>
-              <option>Characters + notes</option>
-              <option>Worldbuilding vault</option>
-            </select>
-
-            <input class="field-input" type="text" placeholder="Search library, books, scenes, notes..." />
-
-            <button class="primary-outline-btn" type="button">Create book</button>
-          </div>
-
-          <div class="rail-section">
-            <div class="section-kicker">Books</div>
-            <div class="dense-list">
-              <button class="dense-item is-selected" type="button">
-                <span class="dense-title">Galdurdal Chronicles</span>
-                <span class="dense-meta">Dark age saga • active</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">Ash and Fjord</span>
-                <span class="dense-meta">Worldbuild vault • warm</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">North Sea Fracture</span>
-                <span class="dense-meta">Outline stack • paused</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="rail-section">
-            <div class="section-row">
-              <div>
-                <div class="section-kicker">Threads</div>
-                <div class="section-title-small">Creative chats</div>
-              </div>
-              <div class="row-actions">
-                <button class="small-btn" type="button">New</button>
-                <button class="small-btn" type="button">Branch</button>
-              </div>
-            </div>
-
-            <div class="dense-list compact">
-              <button class="dense-item is-selected" type="button">
-                <span class="dense-title">Wessex river trade routes</span>
-                <span class="dense-meta">Discussion • 22 messages</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">Ivar arrival opening chapter</span>
-                <span class="dense-meta">Parallel compare • 14 messages</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">East Anglia market city naming</span>
-                <span class="dense-meta">Direct reply • 7 messages</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="rail-section split-stack">
-            <div>
-              <div class="section-kicker">Library notes</div>
-              <div class="mini-stack">
-                <button class="mini-note" type="button">Recent notes</button>
-                <button class="mini-note" type="button">Character notes</button>
-                <button class="mini-note" type="button">World notes</button>
-              </div>
-            </div>
-
-            <div>
-              <div class="section-kicker">Draft snapshots</div>
-              <div class="mini-stack">
-                <button class="mini-note" type="button">Recent drafts</button>
-                <button class="mini-note" type="button">Saved scenes</button>
-                <button class="mini-note" type="button">Staged fragments</button>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section class="center-column">
-          <div class="chat-panel panel">
-            <div class="chat-header">
-              <div>
-                <div class="chat-kicker">Center surface</div>
-                <h1>LoreCore studio</h1>
-                <p>
-                  Creative discussion is the main workspace. Keep the chat open, then save or export only the material worth keeping.
-                </p>
-              </div>
-              <div class="chat-header-actions">
-                <button class="ghost-btn" type="button">Save scene</button>
-                <button class="ghost-btn" type="button">Save note</button>
-                <button class="ghost-btn" type="button">Export draft</button>
-              </div>
-            </div>
-
-            <div class="chat-thread" id="chatThread">
-              <article class="chat-bubble system">
-                <div class="bubble-meta">
-                  <span class="bubble-role">System</span>
-                  <span class="bubble-time">Now</span>
-                </div>
-                <div class="bubble-body">
-                  Creative discussion first. Use chat to explore scenes, prose, worldbuilding, critique, and alternatives. Nothing becomes library material until you save or export it.
-                </div>
-              </article>
-
-              <article class="chat-bubble user">
-                <div class="bubble-meta">
-                  <span class="bubble-role">You</span>
-                  <span class="bubble-time">11:12</span>
-                </div>
-                <div class="bubble-body">
-                  I need the opening movement for the early Viking age arc to feel grounded, tense, and historically useful — not fantasy sludge. Start by figuring out how trade, rivers, and political pressure should shape the first three chapters.
-                </div>
-              </article>
-
-              <article class="chat-bubble assistant">
-                <div class="bubble-meta">
-                  <span class="bubble-role">LoreCore</span>
-                  <span class="bubble-time">11:12</span>
-                </div>
-                <div class="bubble-body">
-                  Then the cleanest opening is not “big battle first.” Start with movement through a trade artery. Let river access, coastal exposure, and who controls passage determine where tension lives. Chapter one can establish economic dependence. Chapter two can introduce rumor, scouting, or pressure from outside power. Chapter three can make the first personal cost visible.
-                </div>
-              </article>
-
-              <article class="chat-bubble assistant alt">
-                <div class="bubble-meta">
-                  <span class="bubble-role">Compare lane</span>
-                  <span class="bubble-time">11:13</span>
-                </div>
-                <div class="bubble-body">
-                  Alternative: begin in a market town where people do not yet believe catastrophe is coming. The opening can show route logic, tolls, river traffic, and fragile peace before violence. That gives the invasion weight later.
-                </div>
-              </article>
-            </div>
-
-            <div class="chat-footer">
-              <div class="footer-row">
-                <div class="field-pair grow">
-                  <label class="field-label" for="exportLabel">Optional export label</label>
-                  <input id="exportLabel" class="field-input" type="text" placeholder="Optional title override for saved notes, scenes, or drafts" />
-                </div>
-
-                <div class="field-pair fixed">
-                  <label class="field-label" for="currentBookInput">Current book</label>
-                  <input id="currentBookInput" class="field-input" type="text" value="Galdurdal Chronicles" />
-                </div>
-              </div>
-
-              <div class="chat-guidance">
-                <strong>Creative discussion first.</strong>
-                <span>
-                  Use chat to explore scenes, prose, worldbuilding, critique, rewrites, and alternatives. Save to notes, stage, or export only when the material is worth keeping.
-                </span>
-              </div>
-
-              <div class="composer-wrap">
-                <label class="field-label" for="composerInput">Message</label>
-                <textarea
-                  id="composerInput"
-                  class="composer-input"
-                  placeholder="Ask for worldbuilding, character work, scene planning, prose, critique, rewrites, or a creative model discussion."
-                ></textarea>
-
-                <div class="composer-actions">
-                  <div class="composer-hint">Enter sends • Shift+Enter adds a new line</div>
-                  <div class="composer-buttons">
-                    <button class="ghost-btn" id="clearComposerBtn" type="button">Clear</button>
-                    <button class="primary-btn" id="sendMessageBtn" type="button">Send</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <section class="studio-panel panel">
-            <div class="studio-header">
-              <div>
-                <div class="studio-kicker">Creative workbench</div>
-                <h2>Book studio</h2>
-                <p>
-                  Manual editing stays available, but discussion remains the dominant way to produce and promote material.
-                </p>
-              </div>
-            </div>
-
-            <div class="studio-meta-grid">
-              <div class="field-pair">
-                <label class="field-label" for="bookTitle">Book title</label>
-                <input id="bookTitle" class="field-input" type="text" value="Galdurdal Chronicles" />
-              </div>
-
-              <div class="field-pair">
-                <label class="field-label" for="genreInput">Genre</label>
-                <input id="genreInput" class="field-input" type="text" value="Historical dark fantasy • Viking age • Political mythic realism" />
-              </div>
-
-              <div class="field-pair">
-                <label class="field-label" for="wordGoal">Word goal</label>
-                <input id="wordGoal" class="field-input" type="text" value="120000" />
-              </div>
-
-              <div class="field-pair wide">
-                <label class="field-label" for="premiseInput">Premise</label>
-                <textarea id="premiseInput" class="field-input field-textarea" placeholder="Capture the premise, tone, and story engine.">A hard-edged saga set across England and the North Sea world before, during, and after the great Viking invasions, with power, trade, kinship, faith, and fear shaping every move.</textarea>
-              </div>
-            </div>
-
-            <div class="studio-tabs" id="studioTabs">
-              <button class="studio-tab is-active" data-tab="manuscript" type="button">Manuscript</button>
-              <button class="studio-tab" data-tab="outline" type="button">Outline</button>
-              <button class="studio-tab" data-tab="world" type="button">World</button>
-              <button class="studio-tab" data-tab="characters" type="button">Characters</button>
-              <button class="studio-tab" data-tab="scenes" type="button">Scenes</button>
-            </div>
-
-            <div class="studio-panes">
-              <div class="studio-pane is-active" data-pane="manuscript">
-                <label class="field-label" for="manuscriptArea">Manuscript</label>
-                <textarea id="manuscriptArea" class="studio-editor" placeholder="Write or refine the manuscript here."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="outline">
-                <label class="field-label" for="outlineArea">Outline</label>
-                <textarea id="outlineArea" class="studio-editor" placeholder="Capture chapter structure, arc sequence, beats, and dependencies."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="world">
-                <label class="field-label" for="worldArea">Worldbuilding</label>
-                <textarea id="worldArea" class="studio-editor" placeholder="Trade routes, rivers, settlements, law, logistics, politics, and myth pressure."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="characters">
-                <label class="field-label" for="charactersArea">Characters</label>
-                <textarea id="charactersArea" class="studio-editor" placeholder="Character drivers, loyalties, wounds, ambitions, and contradictions."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="scenes">
-                <label class="field-label" for="scenesArea">Scenes</label>
-                <textarea id="scenesArea" class="studio-editor" placeholder="Scene seeds, alternatives, tension ladders, scene objectives, and rewrites."></textarea>
-              </div>
-            </div>
-          </section>
+        <section class="workspace-kpis">
+          <article class="metric-card">
+            <span class="soft">Active book</span>
+            <strong id="activeBookMetric">—</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Drafts</span>
+            <strong id="draftCountMetric">0</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Notes</span>
+            <strong id="noteCountMetric">0</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Session</span>
+            <strong id="activeSessionMetric">—</strong>
+          </article>
         </section>
 
-        <aside class="right-rail">
-          <div class="panel rail-card">
-            <div class="rail-card-top">
-              <div>
-                <div class="rail-kicker">Right rail</div>
-                <h2>Creative setup</h2>
-              </div>
-              <button class="accent-chip" type="button">Open discussion</button>
+        <div class="workspace-grid">
+          <article class="card">
+            <div class="eyebrow">Book workspace</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Book</span>
+                <select class="select" id="bookSelect"></select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Title</span>
+                <input class="input" id="bookTitle" placeholder="Book title" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Status / phase</span>
+                <input class="input" id="bookStatus" placeholder="outline / draft / revision / worldbuilding..." />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Description</span>
+                <textarea class="textarea" id="bookDescription" placeholder="Book summary, scope, tone, and intent"></textarea>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Run stage name</span>
+                <input class="input" id="bookRunStage" value="draft" placeholder="draft / outline / revise / polish" />
+              </label>
             </div>
 
-            <div class="setup-card">
-              <div class="setup-head">
-                <div>
-                  <div class="section-kicker">Creative thread</div>
-                  <div class="setup-title">chat-lore-01</div>
-                </div>
-                <button class="small-accent-btn" type="button">Open discussion</button>
-              </div>
-
-              <div class="metric-grid">
-                <div class="metric-box">
-                  <span class="metric-label">Models</span>
-                  <span class="metric-value">3</span>
-                </div>
-                <div class="metric-box">
-                  <span class="metric-label">Active lanes</span>
-                  <span class="metric-value">3</span>
-                </div>
-                <div class="metric-box">
-                  <span class="metric-label">Loaded</span>
-                  <span class="metric-value">3</span>
-                </div>
-                <div class="metric-box">
-                  <span class="metric-label">Stage</span>
-                  <span class="metric-value">Capture</span>
-                </div>
-              </div>
-
-              <p class="setup-copy">
-                Keep the chat exploratory. Save notes, scenes, or drafts only when they are worth keeping.
-              </p>
+            <div class="button-row">
+              <button class="button" id="newBookBtn" type="button">Create book</button>
+              <button class="button button--primary" id="saveBookBtn" type="button">Save book</button>
             </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Discussion</div>
+            <div class="button-row" style="margin-bottom:12px;">
+              <span class="chip">Story chat</span>
+              <span class="chip">Book-aware</span>
+              <span class="chip">No fake local thread</span>
+            </div>
+
+            <div class="preview-box" id="messageFeed" style="min-height: 280px; white-space: normal;">
+              <strong>No messages loaded</strong>
+              <span>Overview did not expose a usable session history yet, or history schema is not present in the returned payload.</span>
+            </div>
+
+            <div class="field-grid" style="margin-top: 12px;">
+              <label class="inline-field">
+                <span class="soft">Message</span>
+                <textarea class="textarea" id="messageInput" placeholder="Send a LoreCore discussion message for the active session"></textarea>
+              </label>
+            </div>
+
+            <div class="button-row">
+              <button class="button button--primary" id="sendMessageBtn" type="button">Send message</button>
+            </div>
+          </article>
+
+          <article class="card">
+            <div class="eyebrow">Create story entities</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">World name</span>
+                <input class="input" id="worldName" placeholder="World / setting name" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">World description</span>
+                <textarea class="textarea" id="worldDescription" placeholder="Setting scope, geography, timeline, culture"></textarea>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Character name</span>
+                <input class="input" id="characterName" placeholder="Character name" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Character description</span>
+                <textarea class="textarea" id="characterDescription" placeholder="Motivation, role, arc, personality"></textarea>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Scene title</span>
+                <input class="input" id="sceneTitle" placeholder="Scene title" />
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Scene description</span>
+                <textarea class="textarea" id="sceneDescription" placeholder="Scene purpose, conflict, beats, location"></textarea>
+              </label>
+            </div>
+
+            <div class="button-row">
+              <button class="button" id="createWorldBtn" type="button">Create world</button>
+              <button class="button" id="createCharacterBtn" type="button">Create character</button>
+              <button class="button" id="createSceneBtn" type="button">Create scene</button>
+            </div>
+          </article>
+        </div>
+      </main>
+
+      <aside class="panel panel-right">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Preview + support</h2>
           </div>
+          <span class="status-chip status-chip--warn" id="workspaceStatusChip">Waiting for data</span>
+        </div>
 
-          <div class="panel rail-card">
-            <div class="section-row">
-              <div>
-                <div class="section-kicker">Setup</div>
-                <div class="section-title-small">Mode + manual panel</div>
-              </div>
-              <button class="tiny-ghost" type="button">Open discussion • 3 models</button>
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Book preview</div>
+            <strong id="previewBookTitle">—</strong>
+            <p class="muted" id="previewBookDescription">Select a book to inspect its story context.</p>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Draft preview</div>
+            <div class="preview-box" id="draftPreviewBox">
+              <strong>No draft selected</strong>
+              <span>Select a draft from the left rail.</span>
             </div>
+          </article>
 
-            <div class="mode-stack">
-              <button class="mode-card" data-mode-card="direct" type="button">
-                <div class="mode-dot"></div>
-                <div class="mode-copy">
-                  <strong>Direct reply</strong>
-                  <span>One model works the creative move directly.</span>
-                </div>
-              </button>
-
-              <button class="mode-card" data-mode-card="parallel" type="button">
-                <div class="mode-dot"></div>
-                <div class="mode-copy">
-                  <strong>Parallel compare</strong>
-                  <span>Compare multiple creative directions side by side.</span>
-                </div>
-              </button>
-
-              <button class="mode-card is-selected" data-mode-card="discussion" type="button">
-                <div class="mode-dot"></div>
-                <div class="mode-copy">
-                  <strong>Open discussion</strong>
-                  <span>Lead answer with supporting models for critique or extension.</span>
-                </div>
-              </button>
+          <article class="card card--compact">
+            <div class="eyebrow">Note preview</div>
+            <div class="preview-box" id="notePreviewBox">
+              <strong>No note selected</strong>
+              <span>Select a note from the left rail.</span>
             </div>
+          </article>
 
-            <div class="subrail-section">
-              <div class="section-kicker">Manual participants</div>
-              <div class="tag-row">
-                <span class="tag-chip">Historian lane</span>
-                <span class="tag-chip">Critique lane</span>
-                <span class="tag-chip">Prose lane</span>
-              </div>
+          <article class="card card--compact">
+            <div class="eyebrow">Overview counts</div>
+            <div class="preview-box" id="overviewCountBox">
+              <strong>0 books · 0 drafts · 0 notes</strong>
+              <span>Waiting for LoreCore overview.</span>
             </div>
-          </div>
+          </article>
 
-          <div class="panel rail-card stack-gap">
-            <div class="rail-mini-row">
-              <div>
-                <div class="section-kicker">Outputs</div>
-                <div class="section-title-small">Save, stage, export group</div>
-              </div>
-              <button class="tiny-ghost" type="button">capture stage • exports</button>
-            </div>
+          <article class="card card--compact">
+            <div class="eyebrow">Backend truth</div>
+            <ul class="rule-list">
+              <li><code>GET /api/lorecore/overview</code> loads top-level LoreCore state.</li>
+              <li><code>POST /api/lorecore/sessions/{session_public_id}/messages</code> sends discussion messages.</li>
+              <li><code>POST /api/lorecore/exports</code> exports current LoreCore context.</li>
+              <li><code>POST /api/lorecore/books</code> and <code>PUT /api/lorecore/books/{book_public_id}</code> are real.</li>
+              <li><code>POST /api/lorecore/books/{book_public_id}/run-stage</code> is real.</li>
+              <li><code>GET /api/lorecore/drafts</code> and <code>GET /api/lorecore/notes</code> are real.</li>
+            </ul>
+          </article>
+        </div>
+      </aside>
+    </section>
 
-            <div class="output-actions">
-              <button class="primary-outline-btn" type="button">Save to notes</button>
-              <button class="primary-outline-btn" type="button">Stage as scene</button>
-              <button class="primary-btn" type="button">Export draft</button>
-            </div>
-          </div>
-
-          <div class="panel rail-card stack-gap">
-            <div class="rail-mini-row">
-              <div>
-                <div class="section-kicker">Current book</div>
-                <div class="section-title-small">Status + continuity</div>
-              </div>
-              <span class="tiny-status">active</span>
-            </div>
-
-            <div class="status-list">
-              <div class="status-item">
-                <span>Book</span>
-                <strong>Galdurdal Chronicles</strong>
-              </div>
-              <div class="status-item">
-                <span>Selected scene</span>
-                <strong>River town opening</strong>
-              </div>
-              <div class="status-item">
-                <span>Last save</span>
-                <strong>2 min ago</strong>
-              </div>
-              <div class="status-item">
-                <span>Current lane</span>
-                <strong>Open discussion</strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel rail-card stack-gap">
-            <div class="rail-mini-row">
-              <div>
-                <div class="section-kicker">Output rail</div>
-                <div class="section-title-small">Runs, outputs, activity</div>
-              </div>
-              <button class="mini-chip" type="button">live</button>
-            </div>
-
-            <div class="recent-output-list">
-              <button class="recent-output" type="button">
-                <span class="recent-output-title">Scene capture: river toll opening</span>
-                <span class="recent-output-meta">Saved as staged scene</span>
-              </button>
-              <button class="recent-output" type="button">
-                <span class="recent-output-title">World note: East Anglia river trade</span>
-                <span class="recent-output-meta">Saved to world notes</span>
-              </button>
-              <button class="recent-output" type="button">
-                <span class="recent-output-title">Draft fragment: market square tension</span>
-                <span class="recent-output-meta">Export ready</span>
-              </button>
-            </div>
-
-            <div class="activity-box" id="activityBox">
-              <div class="activity-line">LoreCore ready.</div>
-              <div class="activity-line">Discussion mode active.</div>
-              <div class="activity-line">Book continuity loaded.</div>
-            </div>
-          </div>
-        </aside>
-      </section>
-    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
 
-  <script src="page.js"></script>
+  <script>
+    (function () {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const apiBase = params.get("apiBase");
+        if (apiBase) {
+          const normalized = apiBase.replace(/\/+$/, "");
+          window.PM_API_BASE = normalized;
+          localStorage.setItem("PM_API_BASE", normalized);
+        } else {
+          const saved = localStorage.getItem("PM_API_BASE");
+          if (saved) {
+            window.PM_API_BASE = saved;
+          }
+        }
+      } catch (error) {}
+    })();
+  </script>
+  <script type="module" src="page.js"></script>
 </body>
 </html>
