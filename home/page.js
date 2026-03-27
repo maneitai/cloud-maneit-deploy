@@ -1,5 +1,5 @@
 const PM_HOME_KEY = "PM_HOME_V1";
-const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const defaultState = {
   selectedChatId: "frontend_backend_handoff",
