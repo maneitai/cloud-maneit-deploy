@@ -1,3 +1,5 @@
+const PM_API_BASE = (window.PM_API_BASE || "https://jeff-api.maneit.net").replace(/\/+$/, "");
+
 const studioTabs = document.getElementById("studioTabs");
 const studioTabButtons = document.querySelectorAll(".studio-tab");
 const studioPanes = document.querySelectorAll(".studio-pane");
@@ -26,7 +28,41 @@ const routeMap = {
   }
 };
 
+async function callApi(path, method = "GET", payload = null) {
+  if (!PM_API_BASE) {
+    return { ok: false, mock: true, error: "Missing PM_API_BASE" };
+  }
+
+  try {
+    const response = await fetch(`${PM_API_BASE}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: payload ? JSON.stringify(payload) : undefined
+    });
+
+    const contentType = response.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+      ? await response.json()
+      : await response.text();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      body
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: String(error)
+    };
+  }
+}
+
 function addActivity(text) {
+  if (!activityBox) return;
+
   const line = document.createElement("div");
   line.className = "activity-line";
   line.textContent = text;
@@ -38,7 +74,7 @@ function addActivity(text) {
   }
 }
 
-routeList?.addEventListener("click", (event) => {
+routeList?.addEventListener("click", async (event) => {
   const button = event.target.closest(".route-item");
   if (!button) return;
 
@@ -50,13 +86,19 @@ routeList?.addEventListener("click", (event) => {
     item.classList.toggle("is-active", item === button);
   });
 
-  selectedRouteLabel.textContent = route.path;
-  selectedRoutePurpose.textContent = route.purpose;
+  if (selectedRouteLabel) selectedRouteLabel.textContent = route.path;
+  if (selectedRoutePurpose) selectedRoutePurpose.textContent = route.purpose;
+
+  await callApi("/api/portal-builder/select-route", "POST", {
+    routeKey,
+    path: route.path,
+    purpose: route.purpose
+  });
 
   addActivity(`Route focus changed to ${route.path}.`);
 });
 
-studioTabs?.addEventListener("click", (event) => {
+studioTabs?.addEventListener("click", async (event) => {
   const button = event.target.closest(".studio-tab");
   if (!button) return;
 
@@ -68,6 +110,10 @@ studioTabs?.addEventListener("click", (event) => {
 
   studioPanes.forEach((pane) => {
     pane.classList.toggle("is-active", pane.dataset.pane === targetTab);
+  });
+
+  await callApi("/api/portal-builder/select-tab", "POST", {
+    tab: targetTab
   });
 
   addActivity(`Workbench tab changed to ${targetTab}.`);
