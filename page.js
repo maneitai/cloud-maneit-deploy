@@ -1,4 +1,4 @@
-const PM_HOME_KEY = "PM_HOME_V3";
+const PM_HOME_KEY = "PM_HOME_V5";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
 const MODE_HELP = {
@@ -25,9 +25,9 @@ const PROJECT_TYPE_MAP = {
 const defaultState = {
   selectedChatId: "",
   mode: "single",
-  singleModel: "Jeff main / GPT-style assistant",
-  multiModelSet: "Gameplay + Engine + Coder",
-  discussionPreset: "Game design discussion",
+  singleModel: "",
+  multiModelSet: "",
+  discussionPreset: "",
   selectedProjectType: "App",
   chats: {
     pinned: [],
@@ -45,6 +45,8 @@ const defaultState = {
     { day: "Sat", date: "29", items: [{ title: "Reset / planning", tone: "warn" }] },
     { day: "Sun", date: "30", items: [{ title: "Open creative block", tone: "good" }] }
   ],
+  activeModels: [],
+  availableModels: [],
   bootstrapped: false
 };
 
@@ -94,7 +96,9 @@ function loadState() {
       },
       threads: typeof parsed?.threads === "object" && parsed.threads ? parsed.threads : base.threads,
       todos: Array.isArray(parsed?.todos) ? parsed.todos : base.todos,
-      calendar: Array.isArray(parsed?.calendar) ? parsed.calendar : base.calendar
+      calendar: Array.isArray(parsed?.calendar) ? parsed.calendar : base.calendar,
+      activeModels: Array.isArray(parsed?.activeModels) ? parsed.activeModels : base.activeModels,
+      availableModels: Array.isArray(parsed?.availableModels) ? parsed.availableModels : base.availableModels
     };
   } catch {
     return clone(defaultState);
@@ -170,14 +174,42 @@ async function callApi(path, method = "GET", payload = null) {
   }
 }
 
+function normalizeModelLabel(item) {
+  return item.alias || item.name || item.title || item.model_public_id || item.id || "";
+}
+
+function extractActiveModels(modelResponse) {
+  const items = Array.isArray(modelResponse?.items) ? modelResponse.items : [];
+  return items
+    .filter((item) => {
+      const stateVal = String(item.runtime_state || item.state || "").toLowerCase();
+      return stateVal === "loaded" || stateVal === "warm" || stateVal === "active";
+    })
+    .map((item) => normalizeModelLabel(item))
+    .filter(Boolean);
+}
+
+function extractAvailableModels(modelResponse) {
+  const items = Array.isArray(modelResponse?.items) ? modelResponse.items : [];
+  return items
+    .map((item) => normalizeModelLabel(item))
+    .filter(Boolean);
+}
+
 function normalizeSelectedModels() {
   if (state.mode === "single") {
     return [state.singleModel].filter(Boolean);
   }
   if (state.mode === "multi") {
-    return [state.multiModelSet].filter(Boolean);
+    return String(state.multiModelSet || "")
+      .split("|")
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
-  return [state.discussionPreset].filter(Boolean);
+  return String(state.discussionPreset || "")
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function normalizeChatItem(item) {
@@ -197,11 +229,6 @@ function getCurrentThread() {
     state.threads[state.selectedChatId] = [];
   }
   return state.threads[state.selectedChatId];
-}
-
-function setCurrentThread(items) {
-  if (!state.selectedChatId) return;
-  state.threads[state.selectedChatId] = Array.isArray(items) ? items : [];
 }
 
 function getChatById(chatId) {
@@ -238,8 +265,7 @@ function ensureSelectedChatExists() {
 
   if (!all.length) return;
 
-  const exists = all.some((item) => item.id === state.selectedChatId);
-  if (!exists) {
+  if (!all.some((item) => item.id === state.selectedChatId)) {
     state.selectedChatId = all[0].id;
   }
 }
@@ -290,6 +316,32 @@ function renderModeCards() {
   });
 }
 
+function renderActiveModels() {
+  const controlsCard = qs(".home-controls-card");
+  if (!controlsCard) return;
+
+  let box = qs("#activeModelsBox");
+  if (!box) {
+    box = document.createElement("div");
+    box.id = "activeModelsBox";
+    box.className = "mode-help";
+    box.style.marginTop = "12px";
+    controlsCard.appendChild(box);
+  }
+
+  if (!Array.isArray(state.activeModels) || !state.activeModels.length) {
+    box.innerHTML = "<strong>Active models:</strong> none reported by PM backend.";
+    return;
+  }
+
+  box.innerHTML = `
+    <strong>Active models:</strong>
+    <div class="chip-row chip-row--inside" style="margin-top:8px;">
+      ${state.activeModels.map((model) => `<span class="chip">${escapeHtml(model)}</span>`).join("")}
+    </div>
+  `;
+}
+
 function renderModeHelp() {
   const help = qs("#modeHelpText");
   const composerStatus = qs("#composerStatus");
@@ -298,6 +350,8 @@ function renderModeHelp() {
   if (composerStatus && activeRequestCount === 0) {
     composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
   }
+
+  renderActiveModels();
 }
 
 function renderTodos() {
@@ -402,14 +456,73 @@ function renderThread() {
   root.scrollTop = root.scrollHeight;
 }
 
-function hydrateFields() {
+function hydrateModelSelectors() {
   const singleModel = qs("#singleModel");
   const multiModelSet = qs("#multiModelSet");
   const discussionPreset = qs("#discussionPreset");
 
-  if (singleModel) singleModel.value = state.singleModel;
-  if (multiModelSet) multiModelSet.value = state.multiModelSet;
-  if (discussionPreset) discussionPreset.value = state.discussionPreset;
+  const models = Array.isArray(state.availableModels) ? state.availableModels : [];
+
+  if (singleModel) {
+    singleModel.innerHTML = models.length
+      ? models.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
+      : `<option value="">No models available</option>`;
+
+    if (state.singleModel && models.includes(state.singleModel)) {
+      singleModel.value = state.singleModel;
+    } else if (models[0]) {
+      state.singleModel = models[0];
+      singleModel.value = models[0];
+    }
+  }
+
+  const presetOptions = [];
+  if (models.length) {
+    presetOptions.push(models.slice(0, 3).join(" | "));
+    if (models.length >= 4) presetOptions.push(models.slice(1, 4).join(" | "));
+    if (models.length >= 2) presetOptions.push(models.slice(0, 2).join(" | "));
+  }
+
+  const uniquePresets = [...new Set(presetOptions.filter(Boolean))];
+
+  if (multiModelSet) {
+    multiModelSet.innerHTML = uniquePresets.length
+      ? uniquePresets.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
+      : `<option value="">No model groups available</option>`;
+
+    if (state.multiModelSet && uniquePresets.includes(state.multiModelSet)) {
+      multiModelSet.value = state.multiModelSet;
+    } else if (uniquePresets[0]) {
+      state.multiModelSet = uniquePresets[0];
+      multiModelSet.value = uniquePresets[0];
+    }
+  }
+
+  const discussionOptions = [];
+  if (models.length) {
+    discussionOptions.push(models.slice(0, 4).join(" | "));
+    discussionOptions.push(models.slice(0, 3).join(" | "));
+    if (models.length >= 2) discussionOptions.push(models.slice(0, 2).join(" | "));
+  }
+
+  const uniqueDiscussion = [...new Set(discussionOptions.filter(Boolean))];
+
+  if (discussionPreset) {
+    discussionPreset.innerHTML = uniqueDiscussion.length
+      ? uniqueDiscussion.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("")
+      : `<option value="">No discussion groups available</option>`;
+
+    if (state.discussionPreset && uniqueDiscussion.includes(state.discussionPreset)) {
+      discussionPreset.value = state.discussionPreset;
+    } else if (uniqueDiscussion[0]) {
+      state.discussionPreset = uniqueDiscussion[0];
+      discussionPreset.value = uniqueDiscussion[0];
+    }
+  }
+}
+
+function hydrateFields() {
+  hydrateModelSelectors();
 
   qsa("#projectTypeTags .tag-button").forEach((button) => {
     const tag = button.getAttribute("data-tag");
@@ -490,43 +603,6 @@ function bindProjectTags() {
   });
 }
 
-async function bindTodoControls() {
-  qs("#addTodoBtn")?.addEventListener("click", async () => {
-    const input = qs("#todoInput");
-    const value = (input?.value || "").trim();
-
-    if (!value) {
-      showToast("Write a todo first", "warn");
-      return;
-    }
-
-    setBusy(true, "Creating task...");
-    const result = await callApi("/api/home/tasks", "POST", {
-      title: value,
-      status: "open",
-      note: "Added from Home thread"
-    });
-    setBusy(false);
-
-    if (!result.ok) {
-      showToast("Task create failed", "warn");
-      return;
-    }
-
-    state.todos.unshift({
-      id: result.body?.public_id || safeId("todo"),
-      title: value,
-      detail: "Added from Home thread",
-      done: false
-    });
-
-    if (input) input.value = "";
-    saveState();
-    renderTodos();
-    showToast("Task created", "good");
-  });
-}
-
 function buildThreadFromSummary(summary) {
   const possibleMessages =
     summary?.messages ||
@@ -597,6 +673,35 @@ async function refreshHomeSummary(sessionPublicId = state.selectedChatId) {
   renderAll();
 }
 
+async function refreshModelPool() {
+  const result = await callApi("/api/model-pool/models?sync=true", "GET");
+  if (!result.ok) {
+    state.activeModels = [];
+    state.availableModels = [];
+    saveState();
+    renderModeHelp();
+    hydrateModelSelectors();
+    return;
+  }
+
+  state.activeModels = extractActiveModels(result.body);
+  state.availableModels = extractAvailableModels(result.body);
+
+  if (!state.singleModel && state.availableModels[0]) {
+    state.singleModel = state.availableModels[0];
+  }
+  if (!state.multiModelSet && state.availableModels[0]) {
+    state.multiModelSet = state.availableModels.slice(0, 3).join(" | ") || state.availableModels[0];
+  }
+  if (!state.discussionPreset && state.availableModels[0]) {
+    state.discussionPreset = state.availableModels.slice(0, 4).join(" | ") || state.availableModels[0];
+  }
+
+  saveState();
+  hydrateModelSelectors();
+  renderModeHelp();
+}
+
 async function refreshChatSessions() {
   const result = await callApi("/api/chat-sessions?surface=home", "GET");
   if (!result.ok) {
@@ -611,6 +716,11 @@ async function refreshChatSessions() {
 
   if (!state.selectedChatId && items[0]) {
     state.selectedChatId = items[0].id;
+  }
+
+  if (!items.length) {
+    const publicId = await createChatSession({ title: "Home chat" });
+    state.selectedChatId = publicId;
   }
 
   saveState();
@@ -656,6 +766,43 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
   return publicId;
 }
 
+function bindTodoControls() {
+  qs("#addTodoBtn")?.addEventListener("click", async () => {
+    const input = qs("#todoInput");
+    const value = (input?.value || "").trim();
+
+    if (!value) {
+      showToast("Write a todo first", "warn");
+      return;
+    }
+
+    setBusy(true, "Creating task...");
+    const result = await callApi("/api/home/tasks", "POST", {
+      title: value,
+      status: "open",
+      note: "Added from Home thread"
+    });
+    setBusy(false);
+
+    if (!result.ok) {
+      showToast("Task create failed", "warn");
+      return;
+    }
+
+    state.todos.unshift({
+      id: result.body?.public_id || safeId("todo"),
+      title: value,
+      detail: "Added from Home thread",
+      done: false
+    });
+
+    if (input) input.value = "";
+    saveState();
+    renderTodos();
+    showToast("Task created", "good");
+  });
+}
+
 function bindChatButtons() {
   qs("#newChatBtn")?.addEventListener("click", async () => {
     try {
@@ -664,6 +811,7 @@ function bindChatButtons() {
       setBusy(false);
       showToast("New chat created", "good");
       await refreshHomeSummary(publicId);
+      await refreshModelPool();
     } catch {
       setBusy(false);
       showToast("New chat failed", "warn");
@@ -688,6 +836,7 @@ function bindChatButtons() {
       setBusy(false);
       showToast("Branch created", "good");
       await refreshHomeSummary(publicId);
+      await refreshModelPool();
     } catch {
       setBusy(false);
       showToast("Branch failed", "warn");
@@ -760,15 +909,24 @@ async function sendCurrentMessage() {
     return;
   }
 
-  applyHomeSummary(result.body, state.selectedChatId);
+  const body = result.body || {};
+  applyHomeSummary(body, state.selectedChatId);
 
   const current = getChatById(state.selectedChatId);
   if (current && (!current.title || current.title === "New chat")) {
     current.title = text.slice(0, 48);
   }
 
+  if (!buildThreadFromSummary(body)) {
+    appendLocalAssistantMessage(
+      body.reply || body.message || body.detail || "Backend responded, but no thread payload was returned.",
+      normalizeSelectedModels()
+    );
+  }
+
   saveState();
   renderAll();
+  await refreshModelPool();
   showToast("Message sent", "good");
 }
 
@@ -821,12 +979,8 @@ function bindExportButton() {
 }
 
 async function bootstrapHome() {
-  if (state.bootstrapped) {
-    renderAll();
-    return;
-  }
-
   setBusy(true, "Loading Home...");
+  await refreshModelPool();
   await refreshChatSessions();
 
   if (state.selectedChatId) {
@@ -837,6 +991,11 @@ async function bootstrapHome() {
   saveState();
   setBusy(false);
   renderAll();
+
+  const calendarTitle = document.querySelector(".calendar-panel .section-title p");
+  if (calendarTitle) {
+    calendarTitle.textContent = "Calendar is local-only right now. No Home calendar backend route exists in main.py yet.";
+  }
 }
 
 function init() {
