@@ -292,7 +292,7 @@ async function refreshOverview() {
 }
 
 async function refreshModels() {
-  const result = await callApi("/api/model-pool/models?sync=true", "GET");
+  const result = await callApi("/api/model-pool/models", "GET");
   if (!result.ok) {
     showToast("Could not load model pool", "warn");
     return;
