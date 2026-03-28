@@ -661,7 +661,7 @@ async function refreshHomeSummary(sessionPublicId = state.selectedChatId) {
 }
 
 async function refreshModelPool() {
-  const result = await callApi("/api/model-pool/models?sync=true", "GET");
+  const result = await callApi("/api/model-pool/models", "GET");
 
   if (!result.ok) {
     state.activeModels = [];
