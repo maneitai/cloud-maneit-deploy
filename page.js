@@ -661,7 +661,7 @@ async function refreshHomeSummary(sessionPublicId = state.selectedChatId) {
 }
 
 async function refreshModelPool() {
-  const result = await callApi("/api/model-pool/models", "GET");
+  const result = await callApi("/api/model-pool/models?sync=true", "GET");
 
   if (!result.ok) {
     state.activeModels = [];
@@ -975,7 +975,7 @@ function bindExportButton() {
 
 async function bootstrapHome() {
   setBusy(true, "Loading Home...");
-  await refreshModelPool();
+  refreshModelPool(); // non-blocking — models populate in background
   const sessionsOk = await refreshChatSessions();
 
   if (sessionsOk && state.selectedChatId) {
