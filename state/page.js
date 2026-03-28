@@ -291,8 +291,21 @@ async function refreshOverview() {
   saveState();
 }
 
+async function syncModels() {
+  const result = await callApi("/api/model-pool/models?sync=true", "GET");
+  if (!result.ok) {
+    showToast("Could not sync model pool", "warn");
+    return;
+  }
+  const items = Array.isArray(result.body?.items) ? result.body.items : [];
+  state.runtimeModels = items.map(normalizeRuntimeModel);
+  saveState();
+  renderAll();
+  showToast("Model pool synced", "good");
+}
+
 async function refreshModels() {
-  const result = await callApi("/api/model-pool/models", "GET");
+  const result = await callApi("/api/model-pool/models?sync=false", "GET");
   if (!result.ok) {
     showToast("Could not load model pool", "warn");
     return;
@@ -404,6 +417,11 @@ function bindTopButtons() {
         return;
       }
 
+      if (label.includes("sync") || label.includes("refresh pool")) {
+        await syncModels();
+        return;
+      }
+
       if (label.includes("run locked pipeline test")) {
         setBusy(true);
         const refreshResult = await callApi("/api/state/refresh", "POST");
@@ -451,9 +469,9 @@ async function init() {
   renderLiveTrace(`[API] bound to ${PM_API_BASE}`, false);
 
   await refreshOverview();
-  await refreshModels();
   await refreshRuntimeEvents();
   renderAll();
+  refreshModels(); // non-blocking — sync=false for fast load, use Sync button for live probe
 }
 
 document.addEventListener("DOMContentLoaded", init);
