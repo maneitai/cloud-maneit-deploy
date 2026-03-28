@@ -7,6 +7,52 @@
   <meta name="description" content="Daily-driver AI workspace with compact history, central chat, export, todo and calendar." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
+  <style>
+    .multi-select-wrapper { position: relative; }
+    .multi-select-trigger {
+      width: 100%;
+      text-align: left;
+      background: var(--bg-input, #1a1f2e);
+      border: 1px solid var(--border-soft, #2a3044);
+      color: var(--text-main, #e2e8f0);
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .multi-select-trigger:hover { border-color: var(--accent, #6366f1); }
+    .multi-select-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 200;
+      background: var(--bg-panel, #141824);
+      border: 1px solid var(--border-soft, #2a3044);
+      border-radius: 6px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .multi-select-dropdown.is-open { display: block; }
+    .multi-select-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: var(--text-main, #e2e8f0);
+    }
+    .multi-select-option:hover { background: var(--bg-hover, #1e2436); }
+    .multi-select-option input[type="checkbox"] { margin: 0; cursor: pointer; }
+    .multi-select-option label { cursor: pointer; flex: 1; }
+    .multi-select-empty { padding: 8px 10px; font-size: 0.82rem; color: var(--text-muted, #64748b); }
+  </style>
 </head>
 <body>
   <div class="page-shell">
@@ -135,33 +181,25 @@
               <label class="inline-field">
                 <span class="soft">Single mode / main model</span>
                 <select class="select" id="singleModel">
-                  <option>Jeff main / GPT-style assistant</option>
-                  <option>Qwen Planner</option>
-                  <option>DeepSeek Coder</option>
-                  <option>Creative Writer</option>
-                  <option>Research Assistant</option>
+                  <option value="">Loading models...</option>
                 </select>
               </label>
 
-              <label class="inline-field">
+              <div class="inline-field">
                 <span class="soft">Multi-model set</span>
-                <select class="select" id="multiModelSet">
-                  <option>Gameplay + Engine + Coder</option>
-                  <option>Writer + Researcher + Planner</option>
-                  <option>Frontend + Backend + Verifier</option>
-                  <option>Custom selected group</option>
-                </select>
-              </label>
+                <div class="multi-select-wrapper" id="multiModelWrapper">
+                  <button class="multi-select-trigger" id="multiModelTrigger" type="button">Select models...</button>
+                  <div class="multi-select-dropdown" id="multiModelDropdown"></div>
+                </div>
+              </div>
 
-              <label class="inline-field">
+              <div class="inline-field">
                 <span class="soft">Discussion specialists</span>
-                <select class="select" id="discussionPreset">
-                  <option>Game design discussion</option>
-                  <option>Web build discussion</option>
-                  <option>Writing room</option>
-                  <option>System planning room</option>
-                </select>
-              </label>
+                <div class="multi-select-wrapper" id="discussionWrapper">
+                  <button class="multi-select-trigger" id="discussionTrigger" type="button">Select specialists...</button>
+                  <div class="multi-select-dropdown" id="discussionDropdown"></div>
+                </div>
+              </div>
             </div>
 
             <div class="mode-help" id="modeHelpText">
@@ -174,23 +212,7 @@
             <div class="chat-thread" id="chatThread">
               <div class="chat-bubble chat-bubble--assistant">
                 <div class="chat-bubble-head">Home daily driver</div>
-                <p>This is the main chat area. Use it for daily work, ideation, planning, and long-running unfinished threads before export.</p>
-              </div>
-
-              <div class="chat-bubble chat-bubble--user">
-                <div class="chat-bubble-head">User</div>
-                <p>I want to design a tower defense game with strong lane identity, meaningful upgrades, and clean long-term progression.</p>
-              </div>
-
-              <div class="chat-bubble chat-bubble--assistant">
-                <div class="chat-bubble-head">Discussion participants</div>
-                <div class="chip-row chip-row--inside">
-                  <span class="chip">Gameplay specialist</span>
-                  <span class="chip">Code implementation specialist</span>
-                  <span class="chip">Game engine specialist</span>
-                  <span class="chip">System balance specialist</span>
-                </div>
-                <p>Gameplay can propose lane structure, code can call out implementation complexity, engine can warn about rendering or performance constraints, and balance can question upgrade scaling.</p>
+                <p>Select an existing chat or create a new one to begin.</p>
               </div>
             </div>
 
@@ -265,7 +287,7 @@
           <div>
             <div class="eyebrow">Bottom zone</div>
             <h2>Calendar</h2>
-            <p class="muted">Compact weekly calendar now. Can expand into a bigger month view later without changing Home’s structure.</p>
+            <p class="muted">Compact weekly calendar now. Can expand into a bigger month view later without changing Home's structure.</p>
           </div>
           <span class="status-chip status-chip--good">Life organisation</span>
         </div>
