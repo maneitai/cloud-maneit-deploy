@@ -204,9 +204,9 @@ async function refreshModelPool() {
   state.availableModels = models;
   state.activeModels = models.filter(m => m.active);
 
-  const active = state.activeModels;
   const all = state.availableModels;
-  if (!state.singleModel && active[0]) state.singleModel = active[0].value;
+  // Default selections — prefer active for single, use all for multi/discussion
+  if (!state.singleModel && all[0]) state.singleModel = all[0].value;
   if (!state.multiModels.length && all.length) state.multiModels = all.slice(0, 3).map(m => m.value);
   if (!state.discussionModels.length && all.length) state.discussionModels = all.slice(0, 4).map(m => m.value);
 
@@ -269,20 +269,22 @@ function bindDropdownToggle(triggerId, dropdownId) {
 
 function hydrateModelSelectors() {
   const allModels = Array.isArray(state.availableModels) ? state.availableModels : [];
-  const activeModels = allModels.filter(m => m.active);
 
-  // Single — active only, fall back to all if none active
+  // Single — ALL enabled models (active and available), sorted active-first
   const singleEl = qs("#singleModel");
   if (singleEl) {
-    const pool = activeModels.length ? activeModels : allModels;
-    singleEl.innerHTML = pool.length
-      ? pool.map(m => `<option value="${escapeHtml(m.value)}">${escapeHtml(m.label)}</option>`).join("")
-      : `<option value="">No active models</option>`;
-    if (state.singleModel && pool.some(m => m.value === state.singleModel)) {
+    const activeFirst = [
+      ...allModels.filter(m => m.active),
+      ...allModels.filter(m => !m.active)
+    ];
+    singleEl.innerHTML = activeFirst.length
+      ? activeFirst.map(m => `<option value="${escapeHtml(m.value)}">${escapeHtml(m.label)}${m.active ? " ●" : ""}</option>`).join("")
+      : `<option value="">No models available</option>`;
+    if (state.singleModel && activeFirst.some(m => m.value === state.singleModel)) {
       singleEl.value = state.singleModel;
-    } else if (pool[0]) {
-      state.singleModel = pool[0].value;
-      singleEl.value = pool[0].value;
+    } else if (activeFirst[0]) {
+      state.singleModel = activeFirst[0].value;
+      singleEl.value = activeFirst[0].value;
     }
   }
 
