@@ -349,7 +349,7 @@ async function refreshSettings() {
 
 async function refreshModelCatalog() {
   setBusy(true);
-  const result = await callApi("/api/model-catalog?sync=true", "GET");
+  const result = await callApi("/api/model-catalog", "GET");
   setBusy(false);
 
   if (!result.ok) {
@@ -366,7 +366,7 @@ async function refreshModelCatalog() {
 
 async function refreshRuntimeProfiles() {
   setBusy(true);
-  const result = await callApi("/api/model-catalog/runtime-profiles?sync=true", "GET");
+  const result = await callApi("/api/model-catalog/runtime-profiles", "GET");
   setBusy(false);
 
   if (!result.ok) {
