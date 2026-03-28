@@ -52,6 +52,31 @@
     .multi-select-option input[type="checkbox"] { margin: 0; cursor: pointer; }
     .multi-select-option label { cursor: pointer; flex: 1; }
     .multi-select-empty { padding: 8px 10px; font-size: 0.82rem; color: var(--text-muted, #64748b); }
+
+    /* ── 3-lane home layout ── */
+    .home-layout {
+      display: grid;
+      grid-template-columns: 220px 1fr 260px;
+      grid-template-rows: 1fr auto;
+      grid-template-areas:
+        "left  center right"
+        "cal   cal    cal";
+      gap: var(--gap, 16px);
+      align-items: start;
+    }
+    .panel-left    { grid-area: left; }
+    .panel-center  { grid-area: center; }
+    .panel-right   { grid-area: right; }
+    .calendar-panel { grid-area: cal; }
+
+    /* chat thread fills available height */
+    .home-chat-card { display: flex; flex-direction: column; }
+    .chat-thread {
+      flex: 1;
+      min-height: 340px;
+      max-height: 520px;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -62,7 +87,7 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Home</h1>
-          <p>Daily-driver chat surface with compact history, model modes, export to Projects, thread todo support and calendar organisation.</p>
+          <p>Daily-driver chat surface — history left, chat centre, export and todos right, calendar bottom.</p>
         </div>
       </div>
 
@@ -87,22 +112,16 @@
       </div>
     </header>
 
-    <section class="surface-banner panel">
-      <div>
-        <div class="eyebrow">Surface contract</div>
-        <strong>Home is the daily-driver return surface</strong>
-      </div>
-      <div class="banner-note">Think here, compare here, keep unfinished work alive here, and only export to Projects when the work is mature enough to move forward.</div>
-    </section>
-
     <section class="home-layout">
+
+      <!-- ── LEFT — chat history ── -->
       <aside class="panel panel-left">
         <div class="section-title">
           <div>
             <div class="eyebrow">Left rail</div>
             <h2>Chats</h2>
           </div>
-          <span class="status-chip status-chip--good">Compact history</span>
+          <span class="status-chip status-chip--good">History</span>
         </div>
 
         <div class="stack stack--md">
@@ -116,8 +135,7 @@
 
           <article class="card card--compact">
             <div class="section-title section-title--tight">
-              <div><div class="eyebrow">Pinned chats</div></div>
-              <span class="status-chip">2</span>
+              <div><div class="eyebrow">Pinned</div></div>
             </div>
             <div class="chat-history-list" id="pinnedChatsList"></div>
           </article>
@@ -125,7 +143,6 @@
           <article class="card card--compact">
             <div class="section-title section-title--tight">
               <div><div class="eyebrow">Project folder</div></div>
-              <span class="status-chip status-chip--good">3</span>
             </div>
             <div class="chat-history-list" id="projectFolderList"></div>
           </article>
@@ -133,19 +150,19 @@
           <article class="card card--compact">
             <div class="section-title section-title--tight">
               <div><div class="eyebrow">History</div></div>
-              <span class="status-chip">128+</span>
             </div>
             <div class="chat-history-list" id="chatHistoryList"></div>
           </article>
         </div>
       </aside>
 
+      <!-- ── CENTER — chat ── -->
       <main class="panel panel-center">
         <div class="section-title">
           <div>
             <div class="eyebrow">Center surface</div>
             <h2>Home chat</h2>
-            <p class="muted">Main conversation area. Single is one model. Multi sends the same prompt to all selected models. Discussion lets selected specialists contribute when relevant.</p>
+            <p class="muted">Single · Multi · Discussion</p>
           </div>
           <div class="button-row">
             <button class="button" id="newChatBtn" type="button">New chat</button>
@@ -173,73 +190,70 @@
           </article>
         </section>
 
-        <div class="home-grid">
-          <article class="card home-controls-card">
-            <div class="eyebrow">Chat controls</div>
+        <article class="card card--compact" style="margin-bottom: var(--gap, 12px);">
+          <div class="eyebrow">Model selection</div>
+          <div class="field-grid field-grid--triple">
+            <label class="inline-field">
+              <span class="soft">Single model</span>
+              <select class="select" id="singleModel">
+                <option value="">Loading models...</option>
+              </select>
+            </label>
 
-            <div class="field-grid field-grid--triple">
-              <label class="inline-field">
-                <span class="soft">Single mode / main model</span>
-                <select class="select" id="singleModel">
-                  <option value="">Loading models...</option>
-                </select>
-              </label>
-
-              <div class="inline-field">
-                <span class="soft">Multi-model set</span>
-                <div class="multi-select-wrapper" id="multiModelWrapper">
-                  <button class="multi-select-trigger" id="multiModelTrigger" type="button">Select models...</button>
-                  <div class="multi-select-dropdown" id="multiModelDropdown"></div>
-                </div>
-              </div>
-
-              <div class="inline-field">
-                <span class="soft">Discussion specialists</span>
-                <div class="multi-select-wrapper" id="discussionWrapper">
-                  <button class="multi-select-trigger" id="discussionTrigger" type="button">Select specialists...</button>
-                  <div class="multi-select-dropdown" id="discussionDropdown"></div>
-                </div>
+            <div class="inline-field">
+              <span class="soft">Multi-model set</span>
+              <div class="multi-select-wrapper">
+                <button class="multi-select-trigger" id="multiModelTrigger" type="button">Select models...</button>
+                <div class="multi-select-dropdown" id="multiModelDropdown"></div>
               </div>
             </div>
 
-            <div class="mode-help" id="modeHelpText">
-              <strong>Single:</strong> one selected model answers directly.
-            </div>
-          </article>
-
-          <article class="card home-chat-card">
-            <div class="eyebrow">Thread</div>
-            <div class="chat-thread" id="chatThread">
-              <div class="chat-bubble chat-bubble--assistant">
-                <div class="chat-bubble-head">Home daily driver</div>
-                <p>Select an existing chat or create a new one to begin.</p>
+            <div class="inline-field">
+              <span class="soft">Discussion specialists</span>
+              <div class="multi-select-wrapper">
+                <button class="multi-select-trigger" id="discussionTrigger" type="button">Select specialists...</button>
+                <div class="multi-select-dropdown" id="discussionDropdown"></div>
               </div>
             </div>
+          </div>
+          <div class="mode-help" id="modeHelpText">
+            <strong>Single:</strong> one selected model answers directly.
+          </div>
+        </article>
 
-            <div class="composer-box">
-              <div class="soft composer-note">Enter sends · Shift+Enter adds a new line</div>
-              <textarea class="textarea composer-textarea" id="composerInput" placeholder="Write here. In Multi mode the same prompt goes to every selected model. In Discussion mode chosen specialists join where relevant."></textarea>
-              <div class="composer-actions">
-                <span class="soft" id="composerStatus">Ready</span>
-                <button class="button button--primary" id="sendBtn" type="button">Send</button>
-              </div>
+        <article class="card home-chat-card">
+          <div class="eyebrow">Thread</div>
+          <div class="chat-thread" id="chatThread">
+            <div class="chat-bubble chat-bubble--assistant">
+              <div class="chat-bubble-head">Home daily driver</div>
+              <p>Select an existing chat or create a new one to begin.</p>
             </div>
-          </article>
-        </div>
+          </div>
+
+          <div class="composer-box">
+            <div class="soft composer-note">Enter sends · Shift+Enter new line</div>
+            <textarea class="textarea composer-textarea" id="composerInput" placeholder="Write here. Multi sends to all selected models. Discussion lets specialists join when relevant."></textarea>
+            <div class="composer-actions">
+              <span class="soft" id="composerStatus">Ready</span>
+              <button class="button button--primary" id="sendBtn" type="button">Send</button>
+            </div>
+          </div>
+        </article>
       </main>
 
+      <!-- ── RIGHT — export + todos ── -->
       <aside class="panel panel-right">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Export + focus</h2>
+            <h2>Export + Todos</h2>
           </div>
           <span class="status-chip status-chip--warn">Thread support</span>
         </div>
 
         <div class="stack stack--md">
           <article class="card card--compact">
-            <div class="eyebrow">Export</div>
+            <div class="eyebrow">Export to Projects</div>
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Project title</span>
@@ -270,9 +284,8 @@
           <article class="card card--compact">
             <div class="eyebrow">Todo list</div>
             <div class="todo-list" id="todoList"></div>
-
-            <div class="inline-field">
-              <span class="soft">Add thread todo</span>
+            <div class="inline-field" style="margin-top: 8px;">
+              <span class="soft">Add todo</span>
               <div class="todo-add-row">
                 <input class="input" id="todoInput" placeholder="Add a quick todo..." />
                 <button class="button" id="addTodoBtn" type="button">Add</button>
@@ -282,18 +295,18 @@
         </div>
       </aside>
 
+      <!-- ── BOTTOM — calendar full width ── -->
       <section class="panel calendar-panel">
         <div class="section-title">
           <div>
             <div class="eyebrow">Bottom zone</div>
             <h2>Calendar</h2>
-            <p class="muted">Compact weekly calendar now. Can expand into a bigger month view later without changing Home's structure.</p>
           </div>
-          <span class="status-chip status-chip--good">Life organisation</span>
+          <span class="status-chip status-chip--good">Weekly view</span>
         </div>
-
         <div class="calendar-grid" id="calendarGrid"></div>
       </section>
+
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
