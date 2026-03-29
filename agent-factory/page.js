@@ -130,10 +130,8 @@ Offload friction-heavy work from the human to the machine while preserving the h
 function assemblePrompt(agentType, role, layers, customization) {
   const selectedLayers = LAYER_ORDER.filter(l => layers.includes(l));
   let prompt = BASE_PREAMBLE + "\n\n";
-
   prompt += `AGENT TYPE: ${agentType.toUpperCase()}\n`;
   prompt += `ROLE: ${role.toUpperCase()}\n\n`;
-
   if (selectedLayers.length > 0) {
     prompt += "ACTIVE REASONING LAYERS\n";
     prompt += "=".repeat(40) + "\n\n";
@@ -141,13 +139,11 @@ function assemblePrompt(agentType, role, layers, customization) {
       prompt += `[LAYER ${layer}] ${KRL_LAYERS[layer]}\n\n`;
     }
   }
-
   if (customization && customization.trim()) {
     prompt += "CUSTOMIZATIONS\n";
     prompt += "=".repeat(40) + "\n";
     prompt += customization.trim() + "\n";
   }
-
   return prompt;
 }
 
@@ -188,6 +184,8 @@ async function api(path, opts = {}) {
 const state = {
   agents: [],
   selectedId: null,
+  multiMode: false,
+  selectedIds: new Set(),
   filters: { search: "", type: "all", role: "all" },
 };
 
@@ -195,7 +193,7 @@ function getSelected() {
   return state.agents.find(a => a.id === state.selectedId) || null;
 }
 
-// ── Normalize agent from backend ──────────────────────────────────────────────
+// ── Normalize ─────────────────────────────────────────────────────────────────
 function parseList(v) {
   if (Array.isArray(v)) return v;
   if (!v) return [];
@@ -203,11 +201,8 @@ function parseList(v) {
 }
 
 function normalize(raw, i = 0) {
-  // Always prefer public_id as the stable internal id.
-  // Backend returns "id": null for new-style agents — never use that as fallback.
   const publicId = raw?.public_id || "";
   const stableId = publicId || (raw?.id != null ? String(raw.id) : null) || `draft_${i}`;
-
   return {
     id: stableId,
     publicId,
@@ -270,6 +265,45 @@ function toPayload(agent) {
   };
 }
 
+// ── Multi-select ──────────────────────────────────────────────────────────────
+function enterMultiMode() {
+  state.multiMode = true;
+  state.selectedIds.clear();
+  qs("#multiToolbar").style.display = "flex";
+  qs("#selectModeBtn").textContent = "Cancel selection";
+  qs("#selectModeBtn").classList.add("button--active");
+  updateMultiToolbar();
+  renderLibrary();
+}
+
+function exitMultiMode() {
+  state.multiMode = false;
+  state.selectedIds.clear();
+  qs("#multiToolbar").style.display = "none";
+  qs("#selectModeBtn").textContent = "Select multiple";
+  qs("#selectModeBtn").classList.remove("button--active");
+  renderLibrary();
+}
+
+function updateMultiToolbar() {
+  const n = state.selectedIds.size;
+  qs("#multiCount").textContent = n === 0 ? "None selected" : `${n} selected`;
+  qs("#bulkDeleteBtn").disabled = n === 0;
+  qs("#bulkCloneBtn").disabled = n === 0;
+}
+
+function toggleSelectAll() {
+  const visible = filtered().map(a => a.id);
+  const allSelected = visible.every(id => state.selectedIds.has(id));
+  if (allSelected) {
+    visible.forEach(id => state.selectedIds.delete(id));
+  } else {
+    visible.forEach(id => state.selectedIds.add(id));
+  }
+  updateMultiToolbar();
+  renderLibrary();
+}
+
 // ── Render ────────────────────────────────────────────────────────────────────
 function filtered() {
   const s = state.filters.search.toLowerCase();
@@ -286,16 +320,48 @@ function renderLibrary() {
   const list = qs("#agentLibraryList");
   if (!list) return;
   const agents = filtered();
+
   if (!agents.length) {
     list.innerHTML = `<div class="library-card"><strong>No agents</strong><span>Create one or adjust filters.</span></div>`;
     return;
   }
-  list.innerHTML = agents.map(a => `
-    <button class="library-card ${a.id === state.selectedId ? "library-card--active" : ""}" type="button" data-id="${escHtml(a.id)}">
-      <strong>${escHtml(a.name)}</strong>
-      <span>${escHtml(a.agentType)} · ${escHtml(a.role)}${a.mockFlag ? " · mock" : ""}${a.source==="draft" ? " · draft" : ""}</span>
-    </button>
-  `).join("");
+
+  if (state.multiMode) {
+    const allSelected = agents.length > 0 && agents.every(a => state.selectedIds.has(a.id));
+    list.innerHTML = `
+      <div class="multi-select-header">
+        <label class="checkbox-row">
+          <input type="checkbox" id="selectAllCheck" ${allSelected ? "checked" : ""} />
+          <span>Select all visible (${agents.length})</span>
+        </label>
+      </div>
+      ${agents.map(a => `
+        <label class="library-card library-card--selectable ${state.selectedIds.has(a.id) ? "library-card--checked" : ""}">
+          <input type="checkbox" class="multi-check" data-id="${escHtml(a.id)}" ${state.selectedIds.has(a.id) ? "checked" : ""} />
+          <div class="library-card-body">
+            <strong>${escHtml(a.name)}</strong>
+            <span>${escHtml(a.agentType)} · ${escHtml(a.role)}${a.mockFlag ? " · mock" : ""}${a.source === "draft" ? " · draft" : ""}</span>
+          </div>
+        </label>
+      `).join("")}
+    `;
+    qs("#selectAllCheck")?.addEventListener("change", toggleSelectAll);
+    qsa(".multi-check").forEach(cb => {
+      cb.addEventListener("change", () => {
+        if (cb.checked) state.selectedIds.add(cb.dataset.id);
+        else state.selectedIds.delete(cb.dataset.id);
+        updateMultiToolbar();
+        renderLibrary();
+      });
+    });
+  } else {
+    list.innerHTML = agents.map(a => `
+      <button class="library-card ${a.id === state.selectedId ? "library-card--active" : ""}" type="button" data-id="${escHtml(a.id)}">
+        <strong>${escHtml(a.name)}</strong>
+        <span>${escHtml(a.agentType)} · ${escHtml(a.role)}${a.mockFlag ? " · mock" : ""}${a.source === "draft" ? " · draft" : ""}</span>
+      </button>
+    `).join("");
+  }
 }
 
 function renderWorkspace() {
@@ -320,13 +386,11 @@ function renderWorkspace() {
   qs("#agentCustomization").value = a.customization;
   qs("#agentTestPrompt").value = a.testPrompt;
 
-  // Chat fields
   qs("#surfaceHome").checked = a.surfaceHome;
   qs("#surfaceLorecore").checked = a.surfaceLorecore;
   qs("#chatMemoryScope").value = a.memoryScope;
   qs("#chatPanelRole").value = a.chatPanelRole;
 
-  // Pipeline fields
   qs("#agentOutputContract").value = a.outputContract;
   qs("#agentValidationGate").value = a.validationGate;
   qs("#agentQuorum").value = a.quorumDefault;
@@ -334,20 +398,11 @@ function renderWorkspace() {
   qs("#agentTimeout").value = a.timeoutSeconds;
   qs("#pipelineMemoryScope").value = a.memoryScope;
 
-  // Model family checkboxes
-  qsa("[id^='family']").forEach(cb => {
-    cb.checked = a.modelFamily.includes(cb.value);
-  });
+  qsa("[id^='family']").forEach(cb => { cb.checked = a.modelFamily.includes(cb.value); });
+  qsa(".krl-layer").forEach(cb => { cb.checked = a.reasoningLayers.includes(cb.value); });
 
-  // KRL layer checkboxes
-  qsa(".krl-layer").forEach(cb => {
-    cb.checked = a.reasoningLayers.includes(cb.value);
-  });
-
-  // Show/hide type-specific fields
   updateTypeFields(a.agentType);
 
-  // Preview
   qs("#previewName").textContent = a.name;
   qs("#previewDescription").textContent = a.description || "—";
   qs("#previewId").textContent = a.publicId || "draft";
@@ -357,7 +412,6 @@ function renderWorkspace() {
   const chip = qs("#workspaceStatusChip");
   chip.textContent = label; chip.className = `status-chip ${cls}`;
 
-  // Test result
   if (a.lastTestedAt) {
     qs("#testResultBox").innerHTML = `<strong>Tested ${escHtml(a.lastTestedAt.slice(0,16))}</strong><p class="muted">${escHtml(JSON.stringify(a.lastTestResult || {}).slice(0,200))}</p>`;
   } else {
@@ -377,8 +431,7 @@ function updatePromptPreview() {
   const role = qs("#agentRole")?.value || "Planner";
   const type = qs("#agentType")?.value || "pipeline";
   const custom = qs("#agentCustomization")?.value || "";
-  const preview = assemblePrompt(type, role, layers, custom);
-  qs("#promptPreview").textContent = preview;
+  qs("#promptPreview").textContent = assemblePrompt(type, role, layers, custom);
 }
 
 function renderAll() {
@@ -386,7 +439,7 @@ function renderAll() {
   renderWorkspace();
 }
 
-// ── Read form into agent object ───────────────────────────────────────────────
+// ── Read form ─────────────────────────────────────────────────────────────────
 function readForm(agent) {
   agent.name = qs("#agentName")?.value.trim() || "Untitled";
   agent.agentType = qs("#agentType")?.value || "pipeline";
@@ -410,7 +463,7 @@ function readForm(agent) {
   return agent;
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
+// ── Single agent actions ──────────────────────────────────────────────────────
 function newAgent() {
   const draft = {
     id: `draft_${crypto.randomUUID().slice(0,8)}`,
@@ -486,13 +539,9 @@ async function saveAgent() {
     r = await api("/api/agents", { method: "POST", body: payload });
   }
 
-  if (!r.ok) {
-    showToast(`Save failed: ${r.body?.detail || r.status}`, "warn");
-    return;
-  }
+  if (!r.ok) { showToast(`Save failed: ${r.body?.detail || r.status}`, "warn"); return; }
 
   const saved = normalize(r.body);
-  // Deduplicate by stable id (public_id based) — remove both the old draft id and any existing copy of the saved id
   state.agents = [saved, ...state.agents.filter(x => x.id !== a.id && x.id !== saved.id)];
   state.selectedId = saved.id;
   renderAll();
@@ -532,12 +581,7 @@ async function testAgent() {
   chip.textContent = "Testing..."; chip.className = "status-chip status-chip--warn";
 
   const r = await api(`/api/agents/${a.publicId}/test`, { method: "POST", body: { prompt: testPrompt } });
-
-  if (!r.ok) {
-    chip.textContent = "Test failed";
-    showToast(`Test failed: ${r.body?.detail || r.status}`, "warn");
-    return;
-  }
+  if (!r.ok) { chip.textContent = "Test failed"; showToast(`Test failed: ${r.body?.detail || r.status}`, "warn"); return; }
 
   a.lastTestResult = r.body.result;
   a.lastTestedAt = r.body.tested_at;
@@ -545,6 +589,87 @@ async function testAgent() {
   showToast("Test complete", "good");
 }
 
+// ── Bulk actions ──────────────────────────────────────────────────────────────
+async function bulkDelete() {
+  const ids = [...state.selectedIds];
+  if (!ids.length) return;
+
+  const targets = state.agents.filter(a => ids.includes(a.id));
+  const total = targets.length;
+  if (!confirm(`Delete ${total} agent${total !== 1 ? "s" : ""}? This cannot be undone.`)) return;
+
+  const draftTargets = targets.filter(a => a.source === "draft");
+  const backendTargets = targets.filter(a => a.publicId && a.source !== "draft");
+
+  // Remove drafts immediately
+  const draftIds = new Set(draftTargets.map(a => a.id));
+  state.agents = state.agents.filter(a => !draftIds.has(a.id));
+  let deleted = draftTargets.length;
+  let failed = 0;
+
+  // Delete backend agents sequentially
+  for (const a of backendTargets) {
+    const r = await api(`/api/agents/${a.publicId}`, { method: "DELETE" });
+    if (r.ok) {
+      state.agents = state.agents.filter(x => x.id !== a.id);
+      deleted++;
+    } else {
+      failed++;
+    }
+  }
+
+  state.selectedIds.clear();
+  if (state.selectedId && !state.agents.find(a => a.id === state.selectedId)) {
+    state.selectedId = state.agents[0]?.id || null;
+  }
+
+  exitMultiMode();
+  showToast(failed > 0 ? `Deleted ${deleted}, failed ${failed}` : `Deleted ${deleted} agent${deleted !== 1 ? "s" : ""}`, failed > 0 ? "warn" : "warn");
+  renderAll();
+}
+
+async function bulkClone() {
+  const ids = [...state.selectedIds];
+  if (!ids.length) return;
+
+  const targets = state.agents.filter(a => ids.includes(a.id));
+  let cloned = 0;
+  let localFallbacks = 0;
+  const newAgents = [];
+
+  for (const a of targets) {
+    if (a.publicId && a.source === "backend") {
+      const r = await api(`/api/agents/${a.publicId}/clone`, { method: "POST", body: { name: `${a.name} (clone)` } });
+      if (r.ok) {
+        newAgents.push(normalize(r.body));
+        cloned++;
+        continue;
+      }
+      localFallbacks++;
+    }
+    // Local clone (drafts or backend fallback)
+    const clone = JSON.parse(JSON.stringify(a));
+    clone.id = `draft_${crypto.randomUUID().slice(0,8)}`;
+    clone.publicId = "";
+    clone.name = `${a.name} (clone)`;
+    clone.source = "draft";
+    newAgents.push(clone);
+    cloned++;
+  }
+
+  state.agents.unshift(...newAgents);
+  state.selectedIds.clear();
+  exitMultiMode();
+  showToast(
+    localFallbacks > 0
+      ? `Cloned ${cloned} (${localFallbacks} as local draft)`
+      : `Cloned ${cloned} agent${cloned !== 1 ? "s" : ""}`,
+    localFallbacks > 0 ? "warn" : "good"
+  );
+  renderAll();
+}
+
+// ── Other ─────────────────────────────────────────────────────────────────────
 async function loadRecommendedTeam() {
   const portal = qs("#recommendedPortalType")?.value || "appcreator";
   const r = await api(`/api/agent-teams/recommended/${encodeURIComponent(portal)}`, { method: "POST" });
@@ -582,18 +707,24 @@ function bindEvents() {
   qs("#filterRole")?.addEventListener("change", e => { state.filters.role = e.target.value; renderLibrary(); });
 
   qs("#agentLibraryList")?.addEventListener("click", e => {
+    if (state.multiMode) return;
     const btn = e.target.closest("[data-id]");
     if (!btn) return;
     state.selectedId = btn.dataset.id;
     renderAll();
   });
 
+  qs("#selectModeBtn")?.addEventListener("click", () => {
+    state.multiMode ? exitMultiMode() : enterMultiMode();
+  });
+  qs("#bulkDeleteBtn")?.addEventListener("click", bulkDelete);
+  qs("#bulkCloneBtn")?.addEventListener("click", bulkClone);
+
   qs("#agentType")?.addEventListener("change", e => {
     updateTypeFields(e.target.value);
     updatePromptPreview();
   });
 
-  // Live prompt preview on any layer/role/customization change
   qsa(".krl-layer").forEach(cb => cb.addEventListener("change", () => {
     updatePromptPreview();
     const a = getSelected();
