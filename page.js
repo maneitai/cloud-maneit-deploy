@@ -47,7 +47,6 @@ const defaultState = {
 
 let state = loadState();
 let activeRequestCount = 0;
-// thread cache keyed by session public_id — populated from live-chat/history
 let threadCache = {};
 
 function qs(selector, root = document) { return root.querySelector(selector); }
@@ -64,32 +63,24 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-// Minimal markdown → HTML: bold, italic, inline code, code blocks, bullet lists
 function renderMarkdown(text) {
   if (!text) return "";
   let t = escapeHtml(text);
-  // code blocks
   t = t.replace(/```[\s\S]*?```/g, m => {
     const inner = m.slice(3, -3).replace(/^[a-z]*\n/, "");
     return `<pre><code>${inner}</code></pre>`;
   });
-  // inline code
   t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
-  // bold
   t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  // italic
   t = t.replace(/\*(.+?)\*/g, "<em>$1</em>");
-  // bullet lists — group consecutive * or - lines
   t = t.replace(/((?:^[ \t]*[\*\-] .+\n?)+)/gm, block => {
     const items = block.trim().split("\n").map(line => `<li>${line.replace(/^[ \t]*[\*\-] /, "")}</li>`).join("");
     return `<ul>${items}</ul>`;
   });
-  // numbered lists
   t = t.replace(/((?:^[ \t]*\d+\. .+\n?)+)/gm, block => {
     const items = block.trim().split("\n").map(line => `<li>${line.replace(/^[ \t]*\d+\. /, "")}</li>`).join("");
     return `<ol>${items}</ol>`;
   });
-  // line breaks
   t = t.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
   return `<p>${t}</p>`;
 }
@@ -162,11 +153,13 @@ async function callApi(path, method = "GET", payload = null) {
 // ─── Model pool ───────────────────────────────────────────────────────────────
 
 function modelValue(item) {
+  // Value sent to backend — always use alias (stable identifier)
   return String(item?.alias || item?.name || item?.display_name || item?.service_name || "").trim();
 }
 
 function modelDisplayLabel(item) {
-  return String(item?.alias || item?.name || item?.display_name || item?.service_name || "").trim();
+  // Display label — use name first (human readable), fall back to alias
+  return String(item?.name || item?.alias || item?.display_name || item?.service_name || "").trim();
 }
 
 function isActiveModel(item) {
@@ -205,7 +198,6 @@ async function refreshModelPool() {
   state.activeModels = models.filter(m => m.active);
 
   const all = state.availableModels;
-  // Default selections — prefer active for single, use all for multi/discussion
   if (!state.singleModel && all[0]) state.singleModel = all[0].value;
   if (!state.multiModels.length && all.length) state.multiModels = all.slice(0, 3).map(m => m.value);
   if (!state.discussionModels.length && all.length) state.discussionModels = all.slice(0, 4).map(m => m.value);
@@ -270,7 +262,6 @@ function bindDropdownToggle(triggerId, dropdownId) {
 function hydrateModelSelectors() {
   const allModels = Array.isArray(state.availableModels) ? state.availableModels : [];
 
-  // Single — ALL enabled models (active and available), sorted active-first
   const singleEl = qs("#singleModel");
   if (singleEl) {
     const activeFirst = [
@@ -288,7 +279,6 @@ function hydrateModelSelectors() {
     }
   }
 
-  // Multi
   const multiDropdown = qs("#multiModelDropdown");
   const multiTrigger = qs("#multiModelTrigger");
   if (multiDropdown && multiTrigger) {
@@ -300,7 +290,6 @@ function hydrateModelSelectors() {
     updateTriggerLabel(multiTrigger, state.multiModels, "Select models...");
   }
 
-  // Discussion
   const discussionDropdown = qs("#discussionDropdown");
   const discussionTrigger = qs("#discussionTrigger");
   if (discussionDropdown && discussionTrigger) {
@@ -360,7 +349,7 @@ function ensureSelectedChatExists() {
   }
 }
 
-// ─── Thread — load from live-chat/history ─────────────────────────────────────
+// ─── Thread ───────────────────────────────────────────────────────────────────
 
 async function loadThreadHistory(sessionPublicId) {
   if (!sessionPublicId) return;
@@ -797,7 +786,6 @@ async function sendCurrentMessage() {
   const selectedModels = normalizeSelectedModels();
   if (!selectedModels.length) { showToast("No models selected", "warn"); return; }
 
-  // Append user message to cache immediately for responsiveness
   if (!threadCache[state.selectedChatId]) threadCache[state.selectedChatId] = [];
   threadCache[state.selectedChatId].push({
     id: safeId("msg"),
@@ -828,10 +816,8 @@ async function sendCurrentMessage() {
     return;
   }
 
-  // Reload thread from backend to get authoritative state
   await loadThreadHistory(state.selectedChatId);
 
-  // Update chat title if still default
   const current = getChatById(state.selectedChatId);
   if (current && (!current.title || current.title === "New chat")) {
     current.title = text.slice(0, 48);
@@ -847,7 +833,7 @@ async function sendCurrentMessage() {
 
 async function bootstrapHome() {
   setBusy(true, "Loading...");
-  refreshModelPool(); // non-blocking
+  refreshModelPool();
   const sessionsOk = await refreshChatSessions();
   if (sessionsOk && state.selectedChatId) {
     await loadThreadHistory(state.selectedChatId);
