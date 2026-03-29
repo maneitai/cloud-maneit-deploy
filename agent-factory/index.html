@@ -99,7 +99,18 @@
           </article>
 
           <article class="card card--compact">
-            <div class="eyebrow">Saved agents</div>
+            <div class="section-title" style="margin-bottom:8px;">
+              <div class="eyebrow">Saved agents</div>
+              <button class="button button--small" id="selectModeBtn" type="button">Select multiple</button>
+            </div>
+
+            <!-- Multi-select toolbar — hidden until selection mode is active -->
+            <div id="multiToolbar" style="display:none;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+              <span id="multiCount" style="font-size:0.75rem;color:var(--text-muted,#9ca3af);">None selected</span>
+              <button class="button button--small button--danger" id="bulkDeleteBtn" type="button" disabled>Delete selected</button>
+              <button class="button button--small" id="bulkCloneBtn" type="button" disabled>Clone selected</button>
+            </div>
+
             <div id="agentLibraryList" class="agent-library-list" aria-live="polite">
               <div class="library-card"><strong>Loading...</strong></div>
             </div>
@@ -163,7 +174,6 @@
                 <span class="soft">Agent name</span>
                 <input class="input" id="agentName" placeholder="Lead Planner v1" />
               </label>
-
               <label class="inline-field">
                 <span class="soft">Agent type</span>
                 <select class="select" id="agentType">
@@ -172,7 +182,6 @@
                   <option value="factory">Factory agent — Spawning / automation</option>
                 </select>
               </label>
-
               <label class="inline-field">
                 <span class="soft">Role</span>
                 <select class="select" id="agentRole">
@@ -189,7 +198,6 @@
                   <option>Creative</option>
                 </select>
               </label>
-
               <label class="inline-field">
                 <span class="soft">Description</span>
                 <textarea class="textarea" id="agentDescription" rows="2" placeholder="What does this agent exist to do?"></textarea>
@@ -197,7 +205,7 @@
             </div>
           </article>
 
-          <!-- Chat agent fields — shown when type = chat -->
+          <!-- Chat agent fields -->
           <article class="card" id="chatFields">
             <div class="eyebrow">Chat agent — surfaces + memory</div>
             <div class="field-grid">
@@ -229,7 +237,7 @@
             </div>
           </article>
 
-          <!-- Pipeline agent fields — shown when type = pipeline -->
+          <!-- Pipeline agent fields -->
           <article class="card" id="pipelineFields" style="display:none;">
             <div class="eyebrow">Pipeline agent — stages + contracts</div>
             <div class="field-grid">
@@ -281,7 +289,7 @@
           <article class="card">
             <div class="eyebrow">Model family preference</div>
             <div class="field-grid">
-              <p class="muted" style="margin:0 0 8px;">Select which model families this agent is tuned for. Cross-family verification is enforced automatically — a Verifier will not be assigned the same family as the model it verifies.</p>
+              <p class="muted" style="margin:0 0 8px;">Select which model families this agent is tuned for. Cross-family verification is enforced automatically.</p>
               <div class="checkbox-row"><input type="checkbox" id="familyQwen" value="qwen" /><span>Qwen</span></div>
               <div class="checkbox-row"><input type="checkbox" id="familyLlama" value="llama" /><span>Llama</span></div>
               <div class="checkbox-row"><input type="checkbox" id="familyDeepseek" value="deepseek" /><span>DeepSeek</span></div>
@@ -315,10 +323,10 @@
           <!-- Customization -->
           <article class="card">
             <div class="eyebrow">Customization</div>
-            <p class="muted" style="margin:0 0 8px;">Add role-specific behavior, model quirks, edge cases, or overrides. This text is appended after the assembled KRL v3 base prompt.</p>
+            <p class="muted" style="margin:0 0 8px;">Add role-specific behavior, model quirks, edge cases, or overrides. Appended after the assembled KRL v3 base prompt.</p>
             <label class="inline-field">
               <span class="soft">Custom additions</span>
-              <textarea class="textarea" id="agentCustomization" rows="6" placeholder="e.g. Always output a YAML state block at the end of each response. When asked to write code, default to Python unless explicitly told otherwise. When in doubt, ask one clarifying question before proceeding."></textarea>
+              <textarea class="textarea" id="agentCustomization" rows="6" placeholder="e.g. Always output a YAML state block at the end of each response..."></textarea>
             </label>
           </article>
 
@@ -357,7 +365,7 @@
 
           <article class="card card--compact">
             <div class="eyebrow">Assembled system prompt preview</div>
-            <p class="muted" style="margin:0 0 8px;font-size:0.75rem;">Updates as you select layers. This is what gets injected into the model.</p>
+            <p class="muted" style="margin:0 0 8px;font-size:0.75rem;">Updates as you select layers.</p>
             <pre id="promptPreview" style="font-size:0.7rem;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--surface-2,#1a1a2e);padding:10px;border-radius:6px;color:var(--text-muted,#9ca3af);">Select layers to preview assembled prompt.</pre>
           </article>
 
