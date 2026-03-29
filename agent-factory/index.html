@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Agent Factory</title>
-  <meta name="description" content="Library and workspace for reusable agent profiles, reasoning layers, contracts, gates, and compatibility defaults." />
+  <meta name="description" content="Create and manage reusable agent profiles with KRL v3 reasoning layers." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
@@ -16,10 +16,9 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Agent Factory</h1>
-          <p>Library and workspace for reusable agent profiles. Define reasoning defaults here, then compose them later in Pipelines.</p>
+          <p>Create reusable agent profiles with KRL v3 reasoning layers. Chat agents, pipeline agents, one factory.</p>
         </div>
       </div>
-
       <nav class="global-nav" aria-label="Primary">
         <a class="nav-link" href="../">Home</a>
         <a class="nav-link" href="../projects/">Projects</a>
@@ -33,61 +32,67 @@
         <a class="nav-link" href="../state/">State</a>
         <a class="nav-link" href="../settings/">Settings</a>
       </nav>
-
       <div class="header-actions">
         <span class="chip">Library</span>
-        <span class="chip">Workspace</span>
-        <span class="chip">Reusable profiles</span>
+        <span class="chip">KRL v3</span>
+        <span class="chip">All surfaces</span>
       </div>
     </header>
 
     <section class="surface-banner panel">
       <div>
         <div class="eyebrow">Surface contract</div>
-        <strong>Agent Factory creates reusable agent profiles</strong>
+        <strong>Agent Factory — one stop for all agent profiles</strong>
       </div>
       <div class="banner-note">
-        This page defines reusable profiles and team compositions. Pipelines uses them later. State runs them later. Settings decides what providers are possible later.
+        Chat agents for Home and LoreCore. Pipeline agents for all creator surfaces. Factory agents for automation. All share the same KRL v3 reasoning layer system.
       </div>
     </section>
 
     <section class="factory-layout">
-      <!-- ── LEFT RAIL ── -->
+
+      <!-- ── LEFT RAIL — Library ── -->
       <aside class="panel panel-left">
         <div class="section-title">
           <div>
             <div class="eyebrow">Left rail</div>
             <h2>Agent library</h2>
           </div>
-          <span class="status-chip status-chip--good" id="libraryStatusChip">Loading inventory</span>
+          <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
         </div>
 
         <div class="stack stack--md">
           <article class="card card--compact">
-            <div class="eyebrow">Search + filter</div>
+            <div class="eyebrow">Filter</div>
             <div class="field-grid">
               <label class="inline-field">
-                <span class="soft">Search agents</span>
-                <input class="input" id="agentSearch" placeholder="Search by name, role, description..." />
+                <span class="soft">Search</span>
+                <input class="input" id="agentSearch" placeholder="Name, role, surface..." />
               </label>
               <label class="inline-field">
-                <span class="soft">Role class</span>
-                <select class="select" id="libraryRoleClass">
-                  <option selected>All</option>
-                  <option>Planner</option>
-                  <option>Coder</option>
-                  <option>Verifier</option>
-                  <option>Auditor</option>
-                  <option>Router</option>
-                  <option>Research</option>
-                  <option>Creative</option>
-                  <option>Systems</option>
+                <span class="soft">Agent type</span>
+                <select class="select" id="filterType">
+                  <option value="all">All types</option>
+                  <option value="chat">Chat</option>
+                  <option value="pipeline">Pipeline</option>
+                  <option value="factory">Factory</option>
                 </select>
               </label>
               <label class="inline-field">
-                <span class="soft">Subtype</span>
-                <select class="select" id="librarySubtype">
-                  <option selected>All</option>
+                <span class="soft">Role</span>
+                <select class="select" id="filterRole">
+                  <option value="all">All roles</option>
+                  <option>Planner</option>
+                  <option>Reasoner</option>
+                  <option>Coder</option>
+                  <option>Builder</option>
+                  <option>Verifier</option>
+                  <option>Critic</option>
+                  <option>Router</option>
+                  <option>Resolver</option>
+                  <option>Auditor</option>
+                  <option>Research</option>
+                  <option>Creative</option>
                 </select>
               </label>
             </div>
@@ -95,58 +100,61 @@
 
           <article class="card card--compact">
             <div class="eyebrow">Saved agents</div>
-            <div class="agent-library-list" id="agentLibraryList" aria-live="polite"></div>
+            <div id="agentLibraryList" class="agent-library-list" aria-live="polite">
+              <div class="library-card"><strong>Loading...</strong></div>
+            </div>
           </article>
 
           <article class="card card--compact">
-            <div class="eyebrow">Library rules</div>
+            <div class="eyebrow">Rules</div>
             <ul class="rule-list">
-              <li>Agent Factory defines reusable profiles.</li>
-              <li>Profiles carry defaults, not live runtime state.</li>
-              <li>Pipelines can override later without mutating the source profile.</li>
-              <li>State and Settings stay separate.</li>
-              <li>Cross-family verification is enforced — no model verifies itself.</li>
+              <li>Chat agents inject into Home and LoreCore conversations.</li>
+              <li>Pipeline agents run in creator surface stages.</li>
+              <li>No model verifies itself — cross-family quorum enforced.</li>
+              <li>KRL v3 layers are composed, not typed as filenames.</li>
             </ul>
           </article>
         </div>
       </aside>
 
-      <!-- ── CENTER ── -->
+      <!-- ── CENTER — Workspace ── -->
       <main class="panel panel-center">
         <div class="section-title">
           <div>
             <div class="eyebrow">Center surface</div>
-            <h2>Agent workspace</h2>
-            <p class="muted">Build or edit a reusable agent profile. This is where role identity, reasoning layers, contracts and gates are defined.</p>
+            <h2 id="workspaceTitle">Agent workspace</h2>
+            <p class="muted" id="workspaceSubtitle">Select an agent or create a new one.</p>
           </div>
           <div class="button-row">
-            <button class="button" id="newAgentBtn" type="button">New draft</button>
-            <button class="button" id="cloneAgentBtn" type="button">Clone selected</button>
-            <button class="button button--primary" id="saveAgentBtn" type="button">Save to backend</button>
+            <button class="button" id="newAgentBtn" type="button">New agent</button>
+            <button class="button" id="cloneAgentBtn" type="button">Clone</button>
+            <button class="button button--primary" id="saveAgentBtn" type="button">Save</button>
             <button class="button" id="deleteAgentBtn" type="button">Delete</button>
           </div>
         </div>
 
+        <!-- KPI strip -->
         <section class="workspace-kpis">
           <article class="metric-card">
-            <span class="soft">Role class</span>
-            <strong id="workspaceRoleClass">—</strong>
+            <span class="soft">Type</span>
+            <strong id="kpiType">—</strong>
           </article>
           <article class="metric-card">
-            <span class="soft">Subtype</span>
-            <strong id="workspaceSubtype">—</strong>
+            <span class="soft">Role</span>
+            <strong id="kpiRole">—</strong>
           </article>
           <article class="metric-card">
-            <span class="soft">Quorum default</span>
-            <strong id="workspaceQuorum">—</strong>
+            <span class="soft">Layers</span>
+            <strong id="kpiLayers">—</strong>
           </article>
           <article class="metric-card">
-            <span class="soft">Compatibility</span>
-            <strong id="workspaceCompatibility">—</strong>
+            <span class="soft">Quorum</span>
+            <strong id="kpiQuorum">—</strong>
           </article>
         </section>
 
         <div class="workspace-grid">
+
           <!-- Identity -->
           <article class="card">
             <div class="eyebrow">Identity</div>
@@ -155,114 +163,163 @@
                 <span class="soft">Agent name</span>
                 <input class="input" id="agentName" placeholder="Lead Planner v1" />
               </label>
+
               <label class="inline-field">
-                <span class="soft">Role class</span>
-                <select class="select" id="agentRoleClass">
+                <span class="soft">Agent type</span>
+                <select class="select" id="agentType">
+                  <option value="chat">Chat agent — Home / LoreCore</option>
+                  <option value="pipeline">Pipeline agent — Creator surfaces</option>
+                  <option value="factory">Factory agent — Spawning / automation</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Role</span>
+                <select class="select" id="agentRole">
                   <option>Planner</option>
+                  <option>Reasoner</option>
                   <option>Coder</option>
+                  <option>Builder</option>
                   <option>Verifier</option>
-                  <option>Auditor</option>
+                  <option>Critic</option>
                   <option>Router</option>
+                  <option>Resolver</option>
+                  <option>Auditor</option>
                   <option>Research</option>
                   <option>Creative</option>
-                  <option>Systems</option>
+                </select>
+              </label>
+
+              <label class="inline-field">
+                <span class="soft">Description</span>
+                <textarea class="textarea" id="agentDescription" rows="2" placeholder="What does this agent exist to do?"></textarea>
+              </label>
+            </div>
+          </article>
+
+          <!-- Chat agent fields — shown when type = chat -->
+          <article class="card" id="chatFields">
+            <div class="eyebrow">Chat agent — surfaces + memory</div>
+            <div class="field-grid">
+              <div class="eyebrow" style="margin-top:4px;">Active on surfaces</div>
+              <label class="checkbox-row">
+                <input type="checkbox" id="surfaceHome" />
+                <span>Home — single / multi / discussion</span>
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="surfaceLorecore" />
+                <span>LoreCore — creative writing sessions</span>
+              </label>
+              <label class="inline-field" style="margin-top:8px;">
+                <span class="soft">Memory scope</span>
+                <select class="select" id="chatMemoryScope">
+                  <option value="session">Session — per conversation</option>
+                  <option value="project">Project — shared across sessions</option>
+                  <option value="global">Global — always available</option>
                 </select>
               </label>
               <label class="inline-field">
-                <span class="soft">Subtype</span>
-                <input class="input" id="agentSubtype" placeholder="C++ Coder, Strict Verifier, Structured Planner..." />
-              </label>
-              <label class="inline-field">
-                <span class="soft">Description</span>
-                <textarea class="textarea" id="agentDescription" placeholder="What does this agent exist to do?"></textarea>
-              </label>
-            </div>
-          </article>
-
-          <!-- Reasoning layer — the most important field -->
-          <article class="card">
-            <div class="eyebrow">System prompt / Reasoning layer</div>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">System prompt</span>
-                <textarea class="textarea" id="agentSystemPrompt" rows="8" placeholder="You are running Kristoffer Reasoning Layer v3 — [Role] mode. Your job is to..."></textarea>
-              </label>
-              <label class="inline-field">
-                <span class="soft">Active KRL v3 layers (comma separated)</span>
-                <input class="input" id="agentReasoningLayers" placeholder="A, B, C, E" />
-              </label>
-              <label class="inline-field">
-                <span class="soft">Model families this agent is tuned for (comma separated)</span>
-                <input class="input" id="agentModelFamily" placeholder="qwen, llama, deepseek" />
-              </label>
-              <label class="inline-field">
-                <span class="soft">Task types (comma separated)</span>
-                <input class="input" id="agentTaskTypes" placeholder="planning, scoping, work_mapping" />
+                <span class="soft">Panel role in discussion mode</span>
+                <select class="select" id="chatPanelRole">
+                  <option value="lead">Lead — primary responder</option>
+                  <option value="support">Support — critique and verify</option>
+                  <option value="router">Router — route and summarize</option>
+                </select>
               </label>
             </div>
           </article>
 
-          <!-- Contracts + gates -->
-          <article class="card">
-            <div class="eyebrow">Contracts + gates</div>
+          <!-- Pipeline agent fields — shown when type = pipeline -->
+          <article class="card" id="pipelineFields" style="display:none;">
+            <div class="eyebrow">Pipeline agent — stages + contracts</div>
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Output contract</span>
-                <input class="input" id="agentOutputContract" placeholder="structured_markdown_plan" />
+                <input class="input" id="agentOutputContract" placeholder="structured_markdown_plan, raw_python_file..." />
               </label>
               <label class="inline-field">
                 <span class="soft">Validation gate</span>
-                <input class="input" id="agentValidationGate" placeholder="plan_schema_gate" />
+                <input class="input" id="agentValidationGate" placeholder="plan_schema_gate, python_static_check..." />
               </label>
               <label class="inline-field">
                 <span class="soft">Quorum default</span>
-                <select class="select" id="agentQuorumDefault">
-                  <option value="single">single pass</option>
+                <select class="select" id="agentQuorum">
+                  <option value="single">Single pass</option>
                   <option value="2-of-3">2-of-3</option>
                   <option value="3-of-3">3-of-3</option>
                 </select>
               </label>
               <label class="inline-field">
                 <span class="soft">Fallback policy</span>
-                <select class="select" id="agentFallbackPolicy">
-                  <option value="explicit_fallback_only">explicit fallback only</option>
-                  <option value="same_family_fallback">same family fallback</option>
-                  <option value="no_fallback">no fallback</option>
+                <select class="select" id="agentFallback">
+                  <option value="explicit_fallback_only">Explicit fallback only</option>
+                  <option value="same_family_fallback">Same family fallback</option>
+                  <option value="no_fallback">No fallback</option>
                 </select>
               </label>
               <label class="inline-field">
-                <span class="soft">Timeout (seconds)</span>
-                <select class="select" id="agentTimeoutSeconds">
+                <span class="soft">Timeout</span>
+                <select class="select" id="agentTimeout">
                   <option value="60">60s</option>
                   <option value="90">90s</option>
                   <option value="120">120s</option>
                   <option value="150">150s</option>
                 </select>
               </label>
+              <label class="inline-field">
+                <span class="soft">Memory scope</span>
+                <select class="select" id="pipelineMemoryScope">
+                  <option value="job">Job — per pipeline run</option>
+                  <option value="project">Project — shared across runs</option>
+                  <option value="session">Session</option>
+                </select>
+              </label>
             </div>
           </article>
 
-          <!-- Compatibility -->
+          <!-- Model family -->
           <article class="card">
-            <div class="eyebrow">Compatibility</div>
+            <div class="eyebrow">Model family preference</div>
             <div class="field-grid">
-              <label class="checkbox-row">
-                <input type="checkbox" id="compatPipelines" />
-                <span>Usable in Pipelines</span>
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="compatHome" />
-                <span>Usable in Home discussion</span>
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="compatLoreDiscussion" />
-                <span>Usable in LoreCore discussion mode</span>
-              </label>
-              <label class="checkbox-row">
-                <input type="checkbox" id="compatCreatorPresets" />
-                <span>Usable in creator pipeline presets</span>
-              </label>
+              <p class="muted" style="margin:0 0 8px;">Select which model families this agent is tuned for. Cross-family verification is enforced automatically — a Verifier will not be assigned the same family as the model it verifies.</p>
+              <div class="checkbox-row"><input type="checkbox" id="familyQwen" value="qwen" /><span>Qwen</span></div>
+              <div class="checkbox-row"><input type="checkbox" id="familyLlama" value="llama" /><span>Llama</span></div>
+              <div class="checkbox-row"><input type="checkbox" id="familyDeepseek" value="deepseek" /><span>DeepSeek</span></div>
+              <div class="checkbox-row"><input type="checkbox" id="familyGemma" value="gemma" /><span>Gemma</span></div>
+              <div class="checkbox-row"><input type="checkbox" id="familyMistral" value="mistral" /><span>Mistral / Devstral</span></div>
+              <div class="checkbox-row"><input type="checkbox" id="familyPhi" value="phi" /><span>Phi</span></div>
+              <div class="checkbox-row"><input type="checkbox" id="familyCloud" value="cloud" /><span>Cloud (any provider)</span></div>
             </div>
+          </article>
+
+          <!-- KRL v3 layer selector -->
+          <article class="card">
+            <div class="eyebrow">KRL v3 reasoning layers</div>
+            <p class="muted" style="margin:0 0 12px;">Select layers to include. System assembles the base prompt automatically from these selections.</p>
+            <div class="field-grid">
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="A" /><span><strong>A</strong> — Epistemic base: no guessing, separate facts/assumptions/hypotheses</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="B" /><span><strong>B</strong> — Intake classifier: mode (IDEATION/BUILD/TROUBLESHOOT/AUDIT/RESEARCH/CREATIVE/SALVAGE) + plane (CONTROL/DATA/SESSION_ARTIFACT)</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="C" /><span><strong>C</strong> — Multiscale workspace: local step, subsystem, global system, process layer, portability layer</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="D" /><span><strong>D</strong> — Evidence ledger: known facts, unknowns, assumptions, hypotheses, disconfirmation tests</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="E" /><span><strong>E</strong> — Option lattice: direct fix, inspect-first, upstream fix, bypass, redesign, defer</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="F" /><span><strong>F</strong> — Backtracking engine: name failing assumption, jump to last clean branch, reopen routes</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="G" /><span><strong>G</strong> — Curiosity engine: what caused this, what adjacent system solved it, what hidden bottleneck exists</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="H" /><span><strong>H</strong> — Critical audit: evidence-backed vs inferred, weakest point, smallest real proof</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="I" /><span><strong>I</strong> — Work offloading: shift repetitive, friction-heavy work from human to machine</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="J" /><span><strong>J</strong> — Artifact engine: state_capsule, operating_prompt, decision_log, route_lattice, ruleset</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="K" /><span><strong>K</strong> — Rule promotion: convert recurring patterns into rules, detectors, templates, regression tests</span></label>
+              <label class="checkbox-row"><input type="checkbox" class="krl-layer" value="L" /><span><strong>L</strong> — Portability adapter: same logic, different wrappers for frontier/local/short-context models</span></label>
+            </div>
+          </article>
+
+          <!-- Customization -->
+          <article class="card">
+            <div class="eyebrow">Customization</div>
+            <p class="muted" style="margin:0 0 8px;">Add role-specific behavior, model quirks, edge cases, or overrides. This text is appended after the assembled KRL v3 base prompt.</p>
+            <label class="inline-field">
+              <span class="soft">Custom additions</span>
+              <textarea class="textarea" id="agentCustomization" rows="6" placeholder="e.g. Always output a YAML state block at the end of each response. When asked to write code, default to Python unless explicitly told otherwise. When in doubt, ask one clarifying question before proceeding."></textarea>
+            </label>
           </article>
 
           <!-- Test fire -->
@@ -270,55 +327,45 @@
             <div class="eyebrow">Test fire</div>
             <div class="field-grid">
               <label class="inline-field">
-                <span class="soft">Test prompt (optional — uses default if empty)</span>
-                <textarea class="textarea" id="agentTestPrompt" rows="3" placeholder="Respond in one sentence confirming you are operational and state your role."></textarea>
+                <span class="soft">Test prompt (leave empty for default)</span>
+                <textarea class="textarea" id="agentTestPrompt" rows="2" placeholder="Respond in one sentence confirming you are operational and state your role."></textarea>
               </label>
-              <button class="button button--primary" id="testAgentBtn" type="button">Test Agent</button>
+              <button class="button button--primary" id="testAgentBtn" type="button">Test agent against live model</button>
             </div>
           </article>
+
         </div>
       </main>
 
-      <!-- ── RIGHT RAIL ── -->
+      <!-- ── RIGHT RAIL — Preview ── -->
       <aside class="panel panel-right">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Profile + preview</h2>
+            <h2>Assembled prompt</h2>
           </div>
-          <span class="status-chip status-chip--warn" id="workspaceStatusChip">Draft mode</span>
+          <span class="status-chip status-chip--warn" id="workspaceStatusChip">Draft</span>
         </div>
 
         <div class="stack stack--md">
           <article class="card card--compact">
-            <div class="eyebrow">Profile summary</div>
-            <strong id="previewAgentName">—</strong>
-            <p class="muted" id="previewAgentDescription">Select an agent to inspect its defaults.</p>
-            <p class="muted">ID: <code id="previewAgentId">—</code></p>
-            <p class="muted">Verifier status: <span id="previewVerifierStatus">—</span></p>
+            <div class="eyebrow">Profile</div>
+            <strong id="previewName">—</strong>
+            <p class="muted" id="previewDescription">Select or create an agent.</p>
+            <p class="muted">ID: <code id="previewId">—</code></p>
           </article>
 
           <article class="card card--compact">
-            <div class="eyebrow">Contract preview</div>
-            <div class="preview-box" id="promptPreviewBox">
-              <strong>—</strong>
-              <span>Output contract and quorum appear here.</span>
-            </div>
-          </article>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Gate preview</div>
-            <div class="preview-box" id="contractPreviewBox">
-              <strong>—</strong>
-              <span>Validation gate and fallback policy appear here.</span>
-            </div>
+            <div class="eyebrow">Assembled system prompt preview</div>
+            <p class="muted" style="margin:0 0 8px;font-size:0.75rem;">Updates as you select layers. This is what gets injected into the model.</p>
+            <pre id="promptPreview" style="font-size:0.7rem;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;background:var(--surface-2,#1a1a2e);padding:10px;border-radius:6px;color:var(--text-muted,#9ca3af);">Select layers to preview assembled prompt.</pre>
           </article>
 
           <article class="card card--compact">
             <div class="eyebrow">Last test result</div>
-            <div class="preview-box" id="validationPreviewBox">
+            <div id="testResultBox">
               <strong>Not yet tested</strong>
-              <span>Use Test Agent to fire a live test against this profile.</span>
+              <p class="muted">Save the agent first, then use Test fire.</p>
             </div>
           </article>
 
@@ -336,26 +383,19 @@
             </label>
             <div class="preview-box" id="recommendedTeamBox">
               <strong>No team loaded</strong>
-              <span>Use the button below to request a recommended team from the backend.</span>
+              <span>Use button below to load recommended team.</span>
             </div>
-          </article>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Quick tools</div>
-            <div class="button-grid">
-              <button class="button" id="loadRecommendedBtn" type="button">Load recommended team</button>
-              <button class="button" id="checkCompatibilityBtn" type="button">Check compatibility</button>
-            </div>
+            <button class="button" id="loadRecommendedBtn" type="button" style="margin-top:8px;">Load recommended team</button>
           </article>
 
           <article class="card card--compact">
             <div class="eyebrow">Backend routes</div>
             <ul class="rule-list">
-              <li><code>GET /api/agents</code> — load library</li>
-              <li><code>POST /api/agents</code> — create agent</li>
-              <li><code>PUT /api/agents/{id}</code> — update agent</li>
-              <li><code>POST /api/agents/{id}/clone</code> — clone agent</li>
-              <li><code>DELETE /api/agents/{id}</code> — delete agent</li>
+              <li><code>GET /api/agents</code> — list</li>
+              <li><code>POST /api/agents</code> — create</li>
+              <li><code>PUT /api/agents/{id}</code> — update</li>
+              <li><code>POST /api/agents/{id}/clone</code> — clone</li>
+              <li><code>DELETE /api/agents/{id}</code> — delete</li>
               <li><code>POST /api/agents/{id}/test</code> — test fire</li>
             </ul>
           </article>
@@ -371,14 +411,8 @@
       try {
         const params = new URLSearchParams(window.location.search);
         const apiBase = params.get("apiBase");
-        if (apiBase) {
-          const normalized = apiBase.replace(/\/+$/, "");
-          window.PM_API_BASE = normalized;
-          localStorage.setItem("PM_API_BASE", normalized);
-        } else {
-          const saved = localStorage.getItem("PM_API_BASE");
-          if (saved) window.PM_API_BASE = saved;
-        }
+        if (apiBase) { window.PM_API_BASE = apiBase.replace(/\/+$/, ""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+        else { const saved = localStorage.getItem("PM_API_BASE"); if (saved) window.PM_API_BASE = saved; }
       } catch {}
     })();
   </script>
