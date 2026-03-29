@@ -203,9 +203,14 @@ function parseList(v) {
 }
 
 function normalize(raw, i = 0) {
+  // Always prefer public_id as the stable internal id.
+  // Backend returns "id": null for new-style agents — never use that as fallback.
+  const publicId = raw?.public_id || "";
+  const stableId = publicId || (raw?.id != null ? String(raw.id) : null) || `draft_${i}`;
+
   return {
-    id: raw?.public_id || raw?.id || `agent_${i}`,
-    publicId: raw?.public_id || "",
+    id: stableId,
+    publicId,
     name: raw?.name || `Agent ${i+1}`,
     agentType: raw?.agent_type || raw?.agentType || "pipeline",
     role: raw?.role || raw?.role_class || "Planner",
@@ -229,7 +234,7 @@ function normalize(raw, i = 0) {
     lastTestedAt: raw?.last_tested_at || null,
     verifierStatus: raw?.verifier_status || "unverified",
     mockFlag: Boolean(raw?.mock_flag),
-    source: raw?.public_id ? "backend" : "draft",
+    source: publicId ? "backend" : "draft",
   };
 }
 
@@ -487,6 +492,7 @@ async function saveAgent() {
   }
 
   const saved = normalize(r.body);
+  // Deduplicate by stable id (public_id based) — remove both the old draft id and any existing copy of the saved id
   state.agents = [saved, ...state.agents.filter(x => x.id !== a.id && x.id !== saved.id)];
   state.selectedId = saved.id;
   renderAll();
@@ -528,7 +534,7 @@ async function testAgent() {
   const r = await api(`/api/agents/${a.publicId}/test`, { method: "POST", body: { prompt: testPrompt } });
 
   if (!r.ok) {
-    chip.textContent = "Test failed"; 
+    chip.textContent = "Test failed";
     showToast(`Test failed: ${r.body?.detail || r.status}`, "warn");
     return;
   }
