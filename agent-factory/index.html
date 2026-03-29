@@ -4,14 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Agent Factory</title>
-  <meta
-    name="description"
-    content="Library and workspace for reusable agent profiles, reasoning layers, contracts, gates, and compatibility defaults."
-  />
-  <link
-    rel="icon"
-    href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E"
-  />
+  <meta name="description" content="Library and workspace for reusable agent profiles, reasoning layers, contracts, gates, and compatibility defaults." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
@@ -22,9 +16,7 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Agent Factory</h1>
-          <p>
-            Library and workspace for reusable agent profiles. Define reasoning defaults here, then compose them later in Pipelines.
-          </p>
+          <p>Library and workspace for reusable agent profiles. Define reasoning defaults here, then compose them later in Pipelines.</p>
         </div>
       </div>
 
@@ -60,6 +52,7 @@
     </section>
 
     <section class="factory-layout">
+      <!-- ── LEFT RAIL ── -->
       <aside class="panel panel-left">
         <div class="section-title">
           <div>
@@ -75,9 +68,8 @@
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Search agents</span>
-                <input class="input" id="agentSearch" placeholder="Search by name, role, subtype..." />
+                <input class="input" id="agentSearch" placeholder="Search by name, role, description..." />
               </label>
-
               <label class="inline-field">
                 <span class="soft">Role class</span>
                 <select class="select" id="libraryRoleClass">
@@ -92,7 +84,6 @@
                   <option>Systems</option>
                 </select>
               </label>
-
               <label class="inline-field">
                 <span class="soft">Subtype</span>
                 <select class="select" id="librarySubtype">
@@ -114,25 +105,25 @@
               <li>Profiles carry defaults, not live runtime state.</li>
               <li>Pipelines can override later without mutating the source profile.</li>
               <li>State and Settings stay separate.</li>
-              <li>Only confirmed backend routes are used on this page.</li>
+              <li>Cross-family verification is enforced — no model verifies itself.</li>
             </ul>
           </article>
         </div>
       </aside>
 
+      <!-- ── CENTER ── -->
       <main class="panel panel-center">
         <div class="section-title">
           <div>
             <div class="eyebrow">Center surface</div>
             <h2>Agent workspace</h2>
-            <p class="muted">
-              Build or edit a reusable agent profile here. This is where role identity, defaults, contracts and compatibility are defined.
-            </p>
+            <p class="muted">Build or edit a reusable agent profile. This is where role identity, reasoning layers, contracts and gates are defined.</p>
           </div>
           <div class="button-row">
             <button class="button" id="newAgentBtn" type="button">New draft</button>
             <button class="button" id="cloneAgentBtn" type="button">Clone selected</button>
             <button class="button button--primary" id="saveAgentBtn" type="button">Save to backend</button>
+            <button class="button" id="deleteAgentBtn" type="button">Delete</button>
           </div>
         </div>
 
@@ -156,14 +147,14 @@
         </section>
 
         <div class="workspace-grid">
+          <!-- Identity -->
           <article class="card">
             <div class="eyebrow">Identity</div>
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Agent name</span>
-                <input class="input" id="agentName" />
+                <input class="input" id="agentName" placeholder="Lead Planner v1" />
               </label>
-
               <label class="inline-field">
                 <span class="soft">Role class</span>
                 <select class="select" id="agentRoleClass">
@@ -177,12 +168,10 @@
                   <option>Systems</option>
                 </select>
               </label>
-
               <label class="inline-field">
                 <span class="soft">Subtype</span>
-                <input class="input" id="agentSubtype" placeholder="C++ Coder, Structured Planner, Strict Verifier..." />
+                <input class="input" id="agentSubtype" placeholder="C++ Coder, Strict Verifier, Structured Planner..." />
               </label>
-
               <label class="inline-field">
                 <span class="soft">Description</span>
                 <textarea class="textarea" id="agentDescription" placeholder="What does this agent exist to do?"></textarea>
@@ -190,69 +179,70 @@
             </div>
           </article>
 
+          <!-- Reasoning layer — the most important field -->
           <article class="card">
-            <div class="eyebrow">Reasoning + prompt</div>
+            <div class="eyebrow">System prompt / Reasoning layer</div>
             <div class="field-grid">
               <label class="inline-field">
-                <span class="soft">Reasoning layer</span>
-                <input class="input" id="agentReasoningLayer" placeholder="cpp_architecture_strict_v1" />
+                <span class="soft">System prompt</span>
+                <textarea class="textarea" id="agentSystemPrompt" rows="8" placeholder="You are running Kristoffer Reasoning Layer v3 — [Role] mode. Your job is to..."></textarea>
               </label>
-
               <label class="inline-field">
-                <span class="soft">Prompt pack</span>
-                <input class="input" id="agentPromptPack" placeholder="coder_operating_prompt" />
+                <span class="soft">Active KRL v3 layers (comma separated)</span>
+                <input class="input" id="agentReasoningLayers" placeholder="A, B, C, E" />
               </label>
-
               <label class="inline-field">
-                <span class="soft">Default model family</span>
-                <input class="input" id="agentModelFamily" placeholder="DeepSeek / Llama / Qwen Coder..." />
+                <span class="soft">Model families this agent is tuned for (comma separated)</span>
+                <input class="input" id="agentModelFamily" placeholder="qwen, llama, deepseek" />
+              </label>
+              <label class="inline-field">
+                <span class="soft">Task types (comma separated)</span>
+                <input class="input" id="agentTaskTypes" placeholder="planning, scoping, work_mapping" />
               </label>
             </div>
           </article>
 
+          <!-- Contracts + gates -->
           <article class="card">
             <div class="eyebrow">Contracts + gates</div>
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Output contract</span>
-                <input class="input" id="agentOutputContract" placeholder="raw_cpp_module" />
+                <input class="input" id="agentOutputContract" placeholder="structured_markdown_plan" />
               </label>
-
               <label class="inline-field">
                 <span class="soft">Validation gate</span>
-                <input class="input" id="agentValidationGate" placeholder="cpp_compile_gate" />
+                <input class="input" id="agentValidationGate" placeholder="plan_schema_gate" />
               </label>
-
               <label class="inline-field">
                 <span class="soft">Quorum default</span>
                 <select class="select" id="agentQuorumDefault">
-                  <option>single pass</option>
-                  <option>2-of-3</option>
-                  <option>3-of-3</option>
+                  <option value="single">single pass</option>
+                  <option value="2-of-3">2-of-3</option>
+                  <option value="3-of-3">3-of-3</option>
                 </select>
               </label>
-
               <label class="inline-field">
                 <span class="soft">Fallback policy</span>
                 <select class="select" id="agentFallbackPolicy">
-                  <option>explicit fallback only</option>
-                  <option>same family fallback</option>
-                  <option>no fallback</option>
+                  <option value="explicit_fallback_only">explicit fallback only</option>
+                  <option value="same_family_fallback">same family fallback</option>
+                  <option value="no_fallback">no fallback</option>
                 </select>
               </label>
-
               <label class="inline-field">
-                <span class="soft">Default timeout</span>
-                <select class="select" id="agentTimeoutDefault">
-                  <option>60s</option>
-                  <option>90s</option>
-                  <option>120s</option>
-                  <option>150s</option>
+                <span class="soft">Timeout (seconds)</span>
+                <select class="select" id="agentTimeoutSeconds">
+                  <option value="60">60s</option>
+                  <option value="90">90s</option>
+                  <option value="120">120s</option>
+                  <option value="150">150s</option>
                 </select>
               </label>
             </div>
           </article>
 
+          <!-- Compatibility -->
           <article class="card">
             <div class="eyebrow">Compatibility</div>
             <div class="field-grid">
@@ -274,14 +264,27 @@
               </label>
             </div>
           </article>
+
+          <!-- Test fire -->
+          <article class="card">
+            <div class="eyebrow">Test fire</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Test prompt (optional — uses default if empty)</span>
+                <textarea class="textarea" id="agentTestPrompt" rows="3" placeholder="Respond in one sentence confirming you are operational and state your role."></textarea>
+              </label>
+              <button class="button button--primary" id="testAgentBtn" type="button">Test Agent</button>
+            </div>
+          </article>
         </div>
       </main>
 
+      <!-- ── RIGHT RAIL ── -->
       <aside class="panel panel-right">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Tools + preview</h2>
+            <h2>Profile + preview</h2>
           </div>
           <span class="status-chip status-chip--warn" id="workspaceStatusChip">Draft mode</span>
         </div>
@@ -290,30 +293,32 @@
           <article class="card card--compact">
             <div class="eyebrow">Profile summary</div>
             <strong id="previewAgentName">—</strong>
-            <p class="muted" id="previewAgentDescription">Select an agent to inspect its reusable defaults.</p>
-          </article>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Prompt preview</div>
-            <div class="preview-box" id="promptPreviewBox">
-              <strong>—</strong>
-              <span>Prompt pack preview appears here.</span>
-            </div>
+            <p class="muted" id="previewAgentDescription">Select an agent to inspect its defaults.</p>
+            <p class="muted">ID: <code id="previewAgentId">—</code></p>
+            <p class="muted">Verifier status: <span id="previewVerifierStatus">—</span></p>
           </article>
 
           <article class="card card--compact">
             <div class="eyebrow">Contract preview</div>
-            <div class="preview-box" id="contractPreviewBox">
+            <div class="preview-box" id="promptPreviewBox">
               <strong>—</strong>
-              <span>Output contract preview appears here.</span>
+              <span>Output contract and quorum appear here.</span>
             </div>
           </article>
 
           <article class="card card--compact">
-            <div class="eyebrow">Validation preview</div>
-            <div class="preview-box" id="validationPreviewBox">
+            <div class="eyebrow">Gate preview</div>
+            <div class="preview-box" id="contractPreviewBox">
               <strong>—</strong>
-              <span>Validation gate preview appears here.</span>
+              <span>Validation gate and fallback policy appear here.</span>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Last test result</div>
+            <div class="preview-box" id="validationPreviewBox">
+              <strong>Not yet tested</strong>
+              <span>Use Test Agent to fire a live test against this profile.</span>
             </div>
           </article>
 
@@ -340,17 +345,18 @@
             <div class="button-grid">
               <button class="button" id="loadRecommendedBtn" type="button">Load recommended team</button>
               <button class="button" id="checkCompatibilityBtn" type="button">Check compatibility</button>
-              <button class="button" id="archiveAgentBtn" type="button">Archive draft</button>
             </div>
           </article>
 
           <article class="card card--compact">
-            <div class="eyebrow">Backend truth</div>
+            <div class="eyebrow">Backend routes</div>
             <ul class="rule-list">
-              <li><code>GET /api/agents</code> loads the library.</li>
-              <li><code>POST /api/agents/mock</code> is used as the save path here.</li>
-              <li>No confirmed “sample test” route exists in main.py.</li>
-              <li>No confirmed dedicated “agent save/update” route exists beyond mock creation.</li>
+              <li><code>GET /api/agents</code> — load library</li>
+              <li><code>POST /api/agents</code> — create agent</li>
+              <li><code>PUT /api/agents/{id}</code> — update agent</li>
+              <li><code>POST /api/agents/{id}/clone</code> — clone agent</li>
+              <li><code>DELETE /api/agents/{id}</code> — delete agent</li>
+              <li><code>POST /api/agents/{id}/test</code> — test fire</li>
             </ul>
           </article>
         </div>
@@ -371,11 +377,9 @@
           localStorage.setItem("PM_API_BASE", normalized);
         } else {
           const saved = localStorage.getItem("PM_API_BASE");
-          if (saved) {
-            window.PM_API_BASE = saved;
-          }
+          if (saved) window.PM_API_BASE = saved;
         }
-      } catch (error) {}
+      } catch {}
     })();
   </script>
   <script type="module" src="page.js"></script>
