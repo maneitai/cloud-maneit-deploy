@@ -53,19 +53,22 @@ function normalizeBook(raw, i = 0) {
   return {
     id: raw?.book_public_id || raw?.public_id || raw?.id || `book_${i}`,
     title: raw?.title || raw?.name || `Book ${i+1}`,
-    description: raw?.description || raw?.summary || "",
-    status: raw?.status || raw?.phase || "",
+    description: raw?.description || raw?.summary || raw?.premise || "",
+    status: raw?.status || raw?.phase || raw?.active_stage || "",
+    libraryId: raw?.library_public_id || "LIB-3001",
     raw,
   };
 }
 
 function normalizeSession(raw, i = 0) {
+  // Messages may be nested in .messages array or .items
+  const msgs = Array.isArray(raw?.messages) ? raw.messages
+             : Array.isArray(raw?.history)  ? raw.history
+             : Array.isArray(raw?.items)    ? raw.items : [];
   return {
     id: raw?.session_public_id || raw?.public_id || raw?.id || `session_${i}`,
     title: raw?.title || raw?.name || raw?.label || `Session ${i+1}`,
-    messages: Array.isArray(raw?.messages) ? raw.messages
-            : Array.isArray(raw?.history) ? raw.history
-            : Array.isArray(raw?.items) ? raw.items : [],
+    messages: msgs,
     raw,
   };
 }
@@ -76,7 +79,7 @@ function normalizeEntity(raw, i = 0, type = "item") {
     id: raw?.public_id || raw?.id || raw?.[`${type}_public_id`] || `${type}_${i}`,
     title: raw?.title || raw?.name || `${type} ${i+1}`,
     description: raw?.description || raw?.summary || content || "",
-    order: raw?.order ?? raw?.chapter_number ?? raw?.position ?? i,
+    order: raw?.order_index ?? raw?.order ?? raw?.chapter_number ?? raw?.position ?? i,
     wordCount: raw?.word_count || wordCount(content),
     content,
     raw,
@@ -156,25 +159,31 @@ function selectBook(id) {
 
 // ── Load entities for selected book ──────────────────────────────────────────
 async function loadBookEntities(bookId) {
-  const r = await api("/api/lorecore/overview");
-  if (r.ok) {
-    const ov = r.body || {};
-    // Try to find book-scoped data; fall back to top-level arrays
-    const allBooks = normalizeList(ov, ["books","book_library","items"]);
-    const bookRaw = allBooks.find(b => (b.book_public_id || b.public_id || b.id) === bookId);
-    const src = bookRaw || ov;
-    state.characters = normalizeList(src, ["characters"]).map((x,i) => normalizeEntity(x,i,"character"));
-    state.worlds     = normalizeList(src, ["worlds"]).map((x,i) => normalizeEntity(x,i,"world"));
-    state.scenes     = normalizeList(src, ["scenes"]).map((x,i) => normalizeEntity(x,i,"scene"));
-    state.chapters   = normalizeList(src, ["chapters"]).map((x,i) => normalizeEntity(x,i,"chapter"))
-                        .sort((a,b) => a.order - b.order);
-  }
-  const [dr, nr] = await Promise.all([
+  const book = state.books.find(b => b.id === bookId);
+  const libraryId = book?.libraryId || "LIB-3001";
+
+  // Fetch overview scoped to this book + library, plus chapters + drafts + notes in parallel
+  const [ovR, chapR, draftsR, notesR] = await Promise.all([
+    api(`/api/lorecore/overview?library_public_id=${encodeURIComponent(libraryId)}&book_public_id=${encodeURIComponent(bookId)}`),
+    api(`/api/lorecore/chapters?book_public_id=${encodeURIComponent(bookId)}`),
     api(`/api/lorecore/drafts?book_public_id=${encodeURIComponent(bookId)}`),
     api(`/api/lorecore/notes?book_public_id=${encodeURIComponent(bookId)}`),
   ]);
-  state.drafts = dr.ok ? normalizeList(dr.body, ["drafts","items","data"]).map((x,i) => normalizeEntity(x,i,"draft")) : [];
-  state.notes  = nr.ok ? normalizeList(nr.body, ["notes","items","data"]).map((x,i) => normalizeEntity(x,i,"note"))  : [];
+
+  if (ovR.ok) {
+    const ov = ovR.body || {};
+    state.characters = normalizeList(ov, ["characters"]).map((x,i) => normalizeEntity(x,i,"character"));
+    state.worlds     = normalizeList(ov, ["worlds"]).map((x,i) => normalizeEntity(x,i,"world"));
+    state.scenes     = normalizeList(ov, ["scenes"]).map((x,i) => normalizeEntity(x,i,"scene"));
+  }
+
+  // Chapters from dedicated endpoint — more reliable than overview
+  state.chapters = chapR.ok
+    ? normalizeList(chapR.body, ["items","chapters","data"]).map((x,i) => normalizeEntity(x,i,"chapter")).sort((a,b) => a.order - b.order)
+    : [];
+
+  state.drafts = draftsR.ok ? normalizeList(draftsR.body, ["items","drafts","data"]).map((x,i) => normalizeEntity(x,i,"draft")) : [];
+  state.notes  = notesR.ok  ? normalizeList(notesR.body,  ["items","notes","data"]).map((x,i) => normalizeEntity(x,i,"note"))  : [];
 
   renderActiveTab();
   renderChapterList();
@@ -185,10 +194,10 @@ async function loadBookEntities(bookId) {
 function switchTab(tab) {
   state.activeEntityTab = tab;
   qsa(".lib-tab").forEach(b => b.classList.toggle("lib-tab--active", b.dataset.tab === tab));
-  qs("#tabEntity").style.display  = tab !== "chapters" ? "block" : "none";
+  qs("#tabEntity").style.display   = tab !== "chapters" ? "block" : "none";
   qs("#tabChapters").style.display = tab === "chapters" ? "block" : "none";
-  if (tab === "chapters") { renderChapterList(); }
-  else { renderEntityList(tab); }
+  if (tab === "chapters") renderChapterList();
+  else renderEntityList(tab);
   updateQcLabel(tab);
 }
 
@@ -198,7 +207,7 @@ function renderActiveTab() {
   else renderEntityList(tab);
 }
 
-// ── Entity list (non-chapter tabs) ────────────────────────────────────────────
+// ── Entity list ───────────────────────────────────────────────────────────────
 function getList(tab) {
   return { characters: state.characters, worlds: state.worlds, scenes: state.scenes,
            drafts: state.drafts, notes: state.notes }[tab] || [];
@@ -223,12 +232,12 @@ function renderEntityList(tab) {
 // ── Entity editor ─────────────────────────────────────────────────────────────
 const ENTITY_PANEL_FIELDS = {
   character: [
-    { id:"ep_name",    label:"Name",       type:"input"    },
-    { id:"ep_role",    label:"Role",       type:"input"    },
-    { id:"ep_desc",    label:"Description",type:"textarea" },
-    { id:"ep_traits",  label:"Key traits", type:"input"    },
-    { id:"ep_arc",     label:"Arc",        type:"textarea" },
-    { id:"ep_voice",   label:"Voice",      type:"input"    },
+    { id:"ep_name",    label:"Name",        type:"input"    },
+    { id:"ep_role",    label:"Role",        type:"input"    },
+    { id:"ep_desc",    label:"Description", type:"textarea" },
+    { id:"ep_traits",  label:"Key traits",  type:"input"    },
+    { id:"ep_arc",     label:"Arc",         type:"textarea" },
+    { id:"ep_voice",   label:"Voice",       type:"input"    },
   ],
   world: [
     { id:"ep_name",     label:"Name",        type:"input"    },
@@ -254,7 +263,6 @@ const ENTITY_PANEL_FIELDS = {
   ],
 };
 
-// singular from tab name
 function tabToSingular(tab) { return tab.replace(/s$/,""); }
 
 function openEntityEditor(tab, item, isNew = false) {
@@ -276,18 +284,18 @@ function openEntityEditor(tab, item, isNew = false) {
 
   if (item) {
     const set = (id, v) => { const el = qs(`#${id}`); if (el && v != null) el.value = Array.isArray(v) ? v.join(", ") : v; };
-    set("ep_name",    item.title || item.raw?.name || "");
-    set("ep_desc",    item.description || "");
-    set("ep_role",    item.raw?.role || "");
-    set("ep_traits",  item.raw?.traits || "");
-    set("ep_arc",     item.raw?.arc || "");
-    set("ep_voice",   item.raw?.voice || "");
-    set("ep_tone",    item.raw?.tone || "");
-    set("ep_rules",   item.raw?.rules || "");
-    set("ep_factions",item.raw?.factions || "");
-    set("ep_pov",     item.raw?.pov || "");
-    set("ep_beats",   item.raw?.beats || "");
-    set("ep_outcome", item.raw?.outcome || "");
+    set("ep_name",     item.title || item.raw?.name || "");
+    set("ep_desc",     item.description || item.raw?.summary || "");
+    set("ep_role",     item.raw?.role || "");
+    set("ep_traits",   item.raw?.traits || "");
+    set("ep_arc",      item.raw?.arc || "");
+    set("ep_voice",    item.raw?.voice || "");
+    set("ep_tone",     item.raw?.tone || "");
+    set("ep_rules",    item.raw?.rules || "");
+    set("ep_factions", item.raw?.factions || "");
+    set("ep_pov",      item.raw?.pov || item.raw?.beat_notes || "");
+    set("ep_beats",    item.raw?.beats || item.raw?.beat_notes || "");
+    set("ep_outcome",  item.raw?.outcome || "");
   }
 
   qs("#extractStatus").style.display = "none";
@@ -298,8 +306,8 @@ function openEntityEditor(tab, item, isNew = false) {
 
 function closeEntityEditor() {
   state.activeEntity = null;
-  qs("#entityEditorEmpty").style.display = "block";
-  qs("#entityEditorActive").style.display = "none";
+  if (qs("#entityEditorEmpty")) qs("#entityEditorEmpty").style.display = "block";
+  if (qs("#entityEditorActive")) qs("#entityEditorActive").style.display = "none";
 }
 
 const SAVE_ROUTES = {
@@ -314,13 +322,16 @@ async function saveEntity() {
   if (!state.activeEntity) return;
   const { type, data, isNew } = state.activeEntity;
   const get = id => qs(`#${id}`)?.value.trim() || "";
+  const book = state.books.find(b => b.id === state.selectedBookId);
   const payload = {
     title: get("ep_name"), name: get("ep_name"),
-    description: get("ep_desc"), role: get("ep_role"),
-    traits: get("ep_traits"), arc: get("ep_arc"), voice: get("ep_voice"),
+    summary: get("ep_desc"), description: get("ep_desc"),
+    role: get("ep_role"), traits: get("ep_traits"),
+    arc: get("ep_arc"), voice: get("ep_voice"),
     tone: get("ep_tone"), rules: get("ep_rules"), factions: get("ep_factions"),
-    pov: get("ep_pov"), beats: get("ep_beats"), outcome: get("ep_outcome"),
+    pov: get("ep_pov"), beat_notes: get("ep_beats"), outcome: get("ep_outcome"),
     book_public_id: state.selectedBookId,
+    library_public_id: book?.libraryId || "LIB-3001",
   };
   const routes = SAVE_ROUTES[type];
   if (!routes) { showToast(`No route for ${type}`, "warn"); return; }
@@ -389,16 +400,31 @@ async function saveChapter() {
   if (!ch) return;
   const title = qs("#chapterTitleInput")?.value.trim() || ch.title;
   const content = qs("#chapterContent")?.value || "";
-  const payload = { title, name: title, content, description: content, book_public_id: state.selectedBookId };
+  const payload = { title, name: title, content, summary: content, book_public_id: state.selectedBookId };
   const statusEl = qs("#chapterSaveStatus");
   if (statusEl) statusEl.textContent = "Saving…";
-  let r = await api(`/api/lorecore/chapters/${encodeURIComponent(id)}`, { method: "PUT", body: payload });
-  if (!r.ok) r = await api("/api/lorecore/chapters", { method: "POST", body: payload });
-  if (!r.ok) {
-    if (statusEl) statusEl.textContent = "Save failed — backend pending";
-    showToast("Chapter backend pending", "warn"); return;
+
+  // Try PUT on existing, fall back to POST for new
+  let r;
+  if (id && !id.startsWith("chapter_")) {
+    r = await api(`/api/lorecore/chapters/${encodeURIComponent(id)}`, { method: "PUT", body: payload });
+  } else {
+    r = await api("/api/lorecore/chapters", { method: "POST", body: payload });
   }
+
+  if (!r.ok) {
+    if (statusEl) statusEl.textContent = "Save failed";
+    showToast(`Chapter save failed: ${r.status}`, "warn"); return;
+  }
+
+  // Update local state
   ch.title = title; ch.content = content; ch.wordCount = wordCount(content);
+  // If was a POST, update the id with the real public_id from response
+  if (r.body?.public_id && r.body.public_id !== id) {
+    ch.id = r.body.public_id;
+    state.activeChapterId = ch.id;
+  }
+
   if (statusEl) statusEl.textContent = `Saved · ${new Date().toLocaleTimeString()}`;
   renderChapterList();
   showToast("Chapter saved", "good");
@@ -477,11 +503,14 @@ async function quickCreate() {
   if (!title) { showToast("Title required", "warn"); return; }
   const route = QC_ROUTES[tab];
   if (!route) { showToast(`Create ${tab}: backend pending`, "warn"); return; }
+  const book = state.books.find(b => b.id === state.selectedBookId);
   const payload = {
-    title, name: title, description: get("qc_desc"),
+    title, name: title,
+    summary: get("qc_desc"), description: get("qc_desc"),
     role: get("qc_role"), tone: get("qc_tone"), pov: get("qc_pov"),
     order: parseInt(get("qc_order")) || state.chapters.length + 1,
     book_public_id: state.selectedBookId,
+    library_public_id: book?.libraryId || "LIB-3001",
   };
   const r = await api(route, { method: "POST", body: payload });
   if (!r.ok) { showToast(`Create failed: ${r.status}`, "warn"); return; }
@@ -508,11 +537,12 @@ async function extractFromChat(type) {
 
   const r = await api("/api/lorecore/extract", {
     method: "POST",
-    body: { entity_type: type, conversation: conv, prompt: prompts[type] || prompts.note },
+    body: { entity_type: type, conversation: conv, prompt: prompts[type] || prompts.note,
+            book_public_id: state.selectedBookId },
   });
 
   if (!r.ok) {
-    if (statusEl) statusEl.textContent = "/api/lorecore/extract not yet available on backend.";
+    if (statusEl) statusEl.textContent = `/api/lorecore/extract returned ${r.status}. Backend may still be starting.`;
     return;
   }
 
@@ -530,7 +560,7 @@ async function extractFromChat(type) {
     updateWordCount();
   } else {
     set("ep_name",    data.name || data.title || "");
-    set("ep_desc",    data.description || data.content || "");
+    set("ep_desc",    data.description || data.summary || data.content || "");
     set("ep_role",    data.role || "");
     set("ep_traits",  data.traits || "");
     set("ep_arc",     data.arc || "");
@@ -574,8 +604,14 @@ async function sendMessage() {
   const content = qs("#messageInput")?.value.trim() || "";
   if (!content) return;
 
-  const payload = { prompt: content, content, mode: state.chatMode, selected_models: state.selectedModels };
+  const book = state.books.find(b => b.id === state.selectedBookId);
+  const payload = {
+    prompt: content,
+    mode: state.chatMode,
+    selected_models: state.selectedModels,
+  };
   if (state.selectedBookId) payload.book_public_id = state.selectedBookId;
+  if (book?.libraryId) payload.library_public_id = book.libraryId;
 
   state.messages.push({ role: "user", content });
   qs("#messageInput").value = "";
@@ -588,13 +624,24 @@ async function sendMessage() {
 
   if (!r.ok) { if (st) st.textContent = "Send failed"; showToast("Send failed", "warn"); return; }
 
+  // Response is _session_with_messages — extract the last assistant message(s)
   const body = r.body;
-  if (state.chatMode === "parallel" && Array.isArray(body?.responses)) {
-    body.responses.forEach(resp => state.messages.push({ role: resp.model||"assistant", content: resp.content||resp.text||"" }));
-  } else if (state.chatMode === "discussion" && Array.isArray(body?.turns)) {
-    body.turns.forEach(turn => state.messages.push({ role: turn.model||turn.role||"assistant", content: turn.content||turn.text||"" }));
+  const allMsgs = Array.isArray(body?.messages) ? body.messages : [];
+  if (allMsgs.length) {
+    // Find messages added after our user message — assistant replies
+    const lastUserIdx = [...allMsgs].reverse().findIndex(m => m.role === "user");
+    const newMsgs = lastUserIdx >= 0 ? allMsgs.slice(allMsgs.length - lastUserIdx) : [];
+    const assistantMsgs = newMsgs.filter(m => m.role === "assistant");
+    if (assistantMsgs.length) {
+      assistantMsgs.forEach(m => state.messages.push({ role: m.model || "assistant", content: m.content || "" }));
+    } else {
+      // Fallback: just take the last message if it's assistant
+      const last = allMsgs[allMsgs.length - 1];
+      if (last?.role === "assistant") state.messages.push({ role: last.model || "assistant", content: last.content || "" });
+    }
   } else {
-    const reply = body?.content || body?.response || body?.text || body?.message || "";
+    // Old-style response with content/model at top level
+    const reply = body?.content || body?.response || body?.text || "";
     if (reply) state.messages.push({ role: body?.model || "assistant", content: reply });
   }
 
@@ -608,10 +655,32 @@ async function loadOverview() {
   const r = await api("/api/lorecore/overview");
   if (!r.ok) { setChip("#libraryStatusChip", "Failed", "status-chip--warn"); showToast("Overview failed","warn"); return; }
   const ov = r.body || {};
-  state.books    = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
-  state.sessions = normalizeList(ov, ["sessions","discussion_sessions","chat_sessions"]).map(normalizeSession);
+
+  state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
+
+  // Sessions come from chat_threads in the overview
+  const rawSessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]);
+  state.sessions = rawSessions.map(normalizeSession);
+
+  // If overview includes a chat_session with messages, load those
+  if (ov.chat_session?.messages?.length && !state.messages.length) {
+    state.messages = ov.chat_session.messages;
+  }
+
   if (!state.selectedBookId && state.books.length) state.selectedBookId = state.books[0].id;
   if (!state.selectedSessionId && state.sessions.length) state.selectedSessionId = state.sessions[0].id;
+
+  // Also pick up model pool from overview
+  if (!state.availableModels.length && Array.isArray(ov.model_pool)) {
+    state.availableModels = ov.model_pool
+      .filter(m => {
+        const a = String(m?.alias || m?.name || "").toLowerCase();
+        return a && !a.startsWith("ggml-vocab-") && m?.enabled !== false;
+      })
+      .map(m => ({ alias: m.alias || m.name, label: m.display_name || m.alias || m.name }));
+    renderModelList();
+  }
+
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
   renderSessionSelect();
@@ -625,10 +694,19 @@ function renderSessionSelect() {
     sel.innerHTML = `<option value="">No session</option>`;
     setChip("#sessionChip","No session","status-chip--warn"); return;
   }
-  sel.innerHTML = state.sessions.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.title)}</option>`).join("");
-  sel.value = state.selectedSessionId || state.sessions[0].id;
-  const session = state.sessions.find(s => s.id === sel.value);
-  state.messages = session?.messages || [];
+  sel.innerHTML = state.sessions.map(s =>
+    `<option value="${escHtml(s.id)}">${escHtml(s.title)}</option>`
+  ).join("");
+  const targetId = state.selectedSessionId || state.sessions[0].id;
+  sel.value = targetId;
+  state.selectedSessionId = targetId;
+
+  // Load messages for selected session if we don't have them yet
+  const session = state.sessions.find(s => s.id === targetId);
+  if (session?.messages?.length && !state.messages.length) {
+    state.messages = session.messages;
+  }
+
   renderChatFeed();
   setChip("#sessionChip","Active","status-chip--good");
 }
@@ -638,8 +716,10 @@ async function createBook() {
   const title = qs("#newBookTitle")?.value.trim() || "";
   if (!title) { showToast("Title required","warn"); return; }
   const r = await api("/api/lorecore/books", { method:"POST", body:{
-    title, status: qs("#newBookStatus")?.value.trim()||"",
-    description: qs("#newBookDesc")?.value.trim()||"",
+    title,
+    status: qs("#newBookStatus")?.value.trim() || "",
+    description: qs("#newBookDesc")?.value.trim() || "",
+    premise: qs("#newBookDesc")?.value.trim() || "",
   }});
   if (!r.ok) { showToast(`Create book failed: ${r.status}`,"warn"); return; }
   showToast("Book created","good");
@@ -654,7 +734,7 @@ async function runStage() {
   const stage = qs("#stageSelect")?.value || "draft";
   setChip("#pipelineStatusChip","Running…","status-chip--warn");
   const r = await api(`/api/lorecore/books/${encodeURIComponent(state.selectedBookId)}/run-stage`,
-    { method:"POST", body:{ stage } });
+    { method:"POST", body:{ stage, stage_id: stage } });
   if (!r.ok) { setChip("#pipelineStatusChip","Failed","status-chip--warn"); showToast(`Stage failed: ${r.status}`,"warn"); return; }
   setChip("#pipelineStatusChip",`${stage} done`,"status-chip--good");
   const rb = qs("#stageResultBox"), rt = qs("#stageResultText");
@@ -691,13 +771,11 @@ function renderEntityCounts() {
 
 // ── Events ────────────────────────────────────────────────────────────────────
 function bindEvents() {
-  // Book list
   qs("#bookList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-book-id]");
     if (btn) selectBook(btn.dataset.bookId);
   });
 
-  // New book
   qs("#newBookToggleBtn")?.addEventListener("click", () => {
     qs("#newBookForm").style.display = "block";
     qs("#newBookToggleBtn").style.display = "none";
@@ -708,13 +786,11 @@ function bindEvents() {
   });
   qs("#saveNewBookBtn")?.addEventListener("click", createBook);
 
-  // Tabs
   qs("#libTabs")?.addEventListener("click", e => {
     const btn = e.target.closest(".lib-tab");
     if (btn) switchTab(btn.dataset.tab);
   });
 
-  // Entity list
   qs("#entityList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-entity-tab][data-entity-id]");
     if (!btn) return;
@@ -724,15 +800,10 @@ function bindEvents() {
     if (item) openEntityEditor(tab, item, false);
   });
 
-  // Entity editor
   qs("#saveEntityBtn")?.addEventListener("click", saveEntity);
-  qs("#closeEntityBtn")?.addEventListener("click", () => closeEntityEditor());
-  qs("#extractEntityBtn")?.addEventListener("click", () => {
-    const type = state.activeEntity?.type || "character";
-    extractFromChat(type);
-  });
+  qs("#closeEntityBtn")?.addEventListener("click", closeEntityEditor);
+  qs("#extractEntityBtn")?.addEventListener("click", () => extractFromChat(state.activeEntity?.type || "character"));
 
-  // Chapter list
   qs("#chapterList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-chapter-id]");
     if (btn) openChapter(btn.dataset.chapterId);
@@ -743,24 +814,16 @@ function bindEvents() {
   qs("#chapterContent")?.addEventListener("input", updateWordCount);
   qs("#extractChapterBtn")?.addEventListener("click", () => extractFromChat("chapter"));
 
-  // Quick create
   qs("#libNewBtn")?.addEventListener("click", openQuickCreate);
   qs("#closeQcBtn")?.addEventListener("click", () => qs("#quickCreatePanel").style.display = "none");
   qs("#qcCreateBtn")?.addEventListener("click", quickCreate);
 
-  // Extract from right rail
   qs("#openExtractBtn")?.addEventListener("click", () => {
     const type = qs("#extractTypeSelect")?.value || "character";
-    if (type === "chapter") {
-      switchTab("chapters");
-      extractFromChat("chapter");
-    } else {
-      switchTab(type + "s");
-      openEntityEditor(type + "s", null, true);
-    }
+    if (type === "chapter") { switchTab("chapters"); extractFromChat("chapter"); }
+    else { switchTab(type + "s"); openEntityEditor(type + "s", null, true); }
   });
 
-  // Mode cards
   qs("#modeCards")?.addEventListener("click", e => {
     const card = e.target.closest(".mode-card");
     if (!card) return;
@@ -771,7 +834,6 @@ function bindEvents() {
     renderModelList(); updateContextStrip();
   });
 
-  // Session
   qs("#sessionSelect")?.addEventListener("change", e => {
     state.selectedSessionId = e.target.value || null;
     const session = state.sessions.find(s => s.id === state.selectedSessionId);
@@ -779,13 +841,11 @@ function bindEvents() {
     renderChatFeed(); updateContextStrip();
   });
 
-  // Chat
   qs("#sendBtn")?.addEventListener("click", sendMessage);
   qs("#messageInput")?.addEventListener("keydown", e => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendMessage();
   });
 
-  // Pipeline
   qs("#runStageBtn")?.addEventListener("click", runStage);
   qs("#exportBtn")?.addEventListener("click", exportLore);
   qs("#refreshBtn")?.addEventListener("click", loadOverview);
