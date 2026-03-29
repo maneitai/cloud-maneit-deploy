@@ -4,242 +4,339 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — LoreCore</title>
-  <meta name="description" content="LoreCore — creative thinking room, story library, and pipeline surface for books, worlds, characters, scenes, drafts, and notes." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='16'%20fill='%23111827'/%3E%3Cpath%20d='M22%2020h18c3.314%200%206%202.686%206%206v18H28c-3.314%200-6-2.686-6-6V20zm6%204h12v16H28c-1.105%200-2-.895-2-2V24z'%20fill='%23d1d5db'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
-  <div class="page-shell">
+<div class="page-shell">
 
-    <header class="page-header">
-      <div class="brand">
-        <div class="brand-mark">PM</div>
-        <div class="header-copy">
-          <div class="eyebrow">PM</div>
-          <h1>LoreCore</h1>
-          <p>Creative thinking room. Story library. Pipeline surface.</p>
-        </div>
+  <!-- ── Header ── -->
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">PM</div>
+      <div class="header-copy">
+        <div class="eyebrow">PM</div>
+        <h1>LoreCore</h1>
+        <p>Creative thinking room · Story library · Chapter editor · Pipeline</p>
       </div>
-      <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link" href="../">Home</a>
-        <a class="nav-link" href="../projects/">Projects</a>
-        <a class="nav-link" href="../pipelines/">Pipelines</a>
-        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
-        <a class="nav-link" href="../appcreator/">AppCreator</a>
-        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
-        <a class="nav-link" href="../research-core/">Research Core</a>
-        <a class="nav-link nav-link--active" href="../lorecore/">LoreCore</a>
-        <a class="nav-link" href="../game-designer/">Game Designer</a>
-        <a class="nav-link" href="../state/">State</a>
-        <a class="nav-link" href="../settings/">Settings</a>
-      </nav>
-      <div class="header-actions">
-        <span class="chip">Thinking room</span>
-        <span class="chip">Story library</span>
-        <span class="chip">Pipeline</span>
+    </div>
+    <nav class="global-nav" aria-label="Primary">
+      <a class="nav-link" href="../">Home</a>
+      <a class="nav-link" href="../projects/">Projects</a>
+      <a class="nav-link" href="../pipelines/">Pipelines</a>
+      <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+      <a class="nav-link" href="../appcreator/">AppCreator</a>
+      <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+      <a class="nav-link" href="../research-core/">Research Core</a>
+      <a class="nav-link nav-link--active" href="../lorecore/">LoreCore</a>
+      <a class="nav-link" href="../game-designer/">Game Designer</a>
+      <a class="nav-link" href="../state/">State</a>
+      <a class="nav-link" href="../settings/">Settings</a>
+    </nav>
+    <div class="header-actions">
+      <span class="chip">Books</span>
+      <span class="chip">Chapters</span>
+      <span class="chip">Discussion</span>
+    </div>
+  </header>
+
+  <!-- ── Main 3-col layout ── -->
+  <div class="lorecore-layout">
+
+    <!-- ══ LEFT RAIL — Library ══ -->
+    <aside class="panel panel-left">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Library</div>
+          <h2>Books</h2>
+        </div>
+        <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
       </div>
-    </header>
 
-    <section class="lorecore-layout">
+      <!-- Book list -->
+      <div id="bookLibraryList" class="book-library-list">
+        <div class="lib-placeholder">Loading books…</div>
+      </div>
 
-      <!-- ── LEFT RAIL — Library navigation ── -->
-      <aside class="panel panel-left" id="leftRail">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Library</div>
-            <h2>Story objects</h2>
-          </div>
-          <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
+      <!-- Book entity tabs — shown when a book is selected -->
+      <div id="bookEntitySection" style="display:none;">
+        <div class="entity-tabs" id="entityTabs">
+          <button class="entity-tab entity-tab--active" data-tab="characters">Characters</button>
+          <button class="entity-tab" data-tab="worlds">Worlds</button>
+          <button class="entity-tab" data-tab="scenes">Scenes</button>
+          <button class="entity-tab" data-tab="chapters">Chapters</button>
+          <button class="entity-tab" data-tab="drafts">Drafts</button>
+          <button class="entity-tab" data-tab="notes">Notes</button>
         </div>
+        <div id="entityList" class="entity-list"></div>
 
-        <!-- Library tabs -->
-        <div class="lib-tabs" id="libTabs">
-          <button class="lib-tab lib-tab--active" data-tab="books">Books</button>
-          <button class="lib-tab" data-tab="characters">Characters</button>
-          <button class="lib-tab" data-tab="worlds">Worlds</button>
-          <button class="lib-tab" data-tab="scenes">Scenes</button>
-          <button class="lib-tab" data-tab="drafts">Drafts</button>
-          <button class="lib-tab" data-tab="notes">Notes</button>
-        </div>
-
-        <!-- Library lists -->
-        <div class="lib-list" id="lib-books">
-          <div class="library-card"><strong>Loading...</strong></div>
-        </div>
-        <div class="lib-list" id="lib-characters" style="display:none;"></div>
-        <div class="lib-list" id="lib-worlds" style="display:none;"></div>
-        <div class="lib-list" id="lib-scenes" style="display:none;"></div>
-        <div class="lib-list" id="lib-drafts" style="display:none;"></div>
-        <div class="lib-list" id="lib-notes" style="display:none;"></div>
-
-        <!-- Quick create -->
+        <!-- Quick create for active tab -->
         <div class="quick-create" id="quickCreate">
-          <div class="eyebrow" style="margin-bottom:8px;">Quick create</div>
+          <div class="eyebrow qc-label" id="quickCreateLabel">New character</div>
           <div id="quickCreateFields"></div>
-          <button class="button button--primary" id="quickCreateBtn" type="button" style="margin-top:8px;width:100%;">Create</button>
+          <button class="button button--primary qc-btn" id="quickCreateBtn" type="button">Create</button>
         </div>
-      </aside>
+      </div>
 
-      <!-- ── CENTER — Chat + active entity ── -->
-      <main class="panel panel-center" id="centerPanel">
+      <!-- No book selected -->
+      <div id="noBookHint" class="lib-placeholder muted" style="margin-top:12px;">
+        Select a book to see its characters, worlds, chapters, and more.
+      </div>
 
-        <!-- Session selector row -->
-        <div class="session-row">
-          <select class="select" id="sessionSelect" style="flex:1;max-width:280px;"></select>
-          <span class="status-chip status-chip--warn" id="sessionStatusChip">No session</span>
-          <button class="button" id="refreshBtn" type="button">Refresh</button>
-          <button class="button" id="exportBtn" type="button">Export</button>
+      <!-- New book -->
+      <div class="new-book-form" id="newBookForm" style="display:none;">
+        <div class="eyebrow" style="margin-bottom:8px;">New book</div>
+        <input class="input" id="newBookTitle" placeholder="Book title" style="margin-bottom:6px;" />
+        <input class="input" id="newBookStatus" placeholder="Phase: outline / draft / revision…" style="margin-bottom:6px;" />
+        <textarea class="textarea" id="newBookDesc" placeholder="Description, scope, tone" rows="2" style="margin-bottom:8px;"></textarea>
+        <div class="button-row">
+          <button class="button" id="cancelNewBookBtn" type="button">Cancel</button>
+          <button class="button button--primary" id="saveNewBookBtn" type="button">Create book</button>
+        </div>
+      </div>
+
+      <button class="button" id="newBookToggleBtn" type="button" style="width:100%;margin-top:10px;">+ New book</button>
+    </aside>
+
+    <!-- ══ CENTER — Chat top + Chapter editor bottom ══ -->
+    <main class="panel panel-center">
+
+      <!-- ── Chat section ── -->
+      <div class="chat-section">
+
+        <!-- Model + mode controls -->
+        <div class="chat-controls">
+          <div class="mode-cards" id="modeCards">
+            <button class="mode-card mode-card--active" data-mode="single">
+              <span class="mode-icon">◉</span>
+              <span class="mode-label">Single</span>
+            </button>
+            <button class="mode-card" data-mode="parallel">
+              <span class="mode-icon">⊞</span>
+              <span class="mode-label">Parallel</span>
+            </button>
+            <button class="mode-card" data-mode="discussion">
+              <span class="mode-icon">⬡</span>
+              <span class="mode-label">Discussion</span>
+            </button>
+          </div>
+
+          <div class="model-selector" id="modelSelector">
+            <div class="eyebrow" style="margin-bottom:6px;">Models</div>
+            <div id="modelList" class="model-list">
+              <div class="muted" style="font-size:12px;">Loading models…</div>
+            </div>
+          </div>
+
+          <div class="session-controls">
+            <select class="select" id="sessionSelect">
+              <option value="">No session</option>
+            </select>
+            <span class="status-chip status-chip--warn" id="sessionChip">—</span>
+            <button class="button" id="refreshBtn" type="button">Refresh</button>
+            <button class="button" id="exportBtn" type="button">Export</button>
+          </div>
         </div>
 
-        <!-- Chat feed — primary surface -->
+        <!-- Chat feed -->
         <div class="chat-feed" id="chatFeed">
           <div class="chat-placeholder">
-            <div style="font-size:2rem;margin-bottom:12px;">📖</div>
-            <div style="font-weight:600;margin-bottom:6px;">LoreCore thinking room</div>
-            <div class="muted" style="font-size:13px;">No session active. Select a session above or send a message to start.</div>
+            <div class="chat-placeholder-icon">📖</div>
+            <div class="chat-placeholder-title">LoreCore thinking room</div>
+            <div class="muted" style="font-size:13px;">Select a session and models to start. No book context required.</div>
           </div>
         </div>
 
         <!-- Chat input -->
-        <div class="chat-input-row">
-          <textarea class="textarea chat-textarea" id="messageInput" placeholder="Think out loud. Build characters, worlds, plots. Extract anything later." rows="3"></textarea>
+        <div class="chat-input-area">
+          <textarea class="textarea chat-textarea" id="messageInput"
+            placeholder="Think out loud. Build characters, worlds, plot. Ctrl+Enter to send." rows="3"></textarea>
           <div class="chat-input-actions">
+            <span class="muted" id="chatStatusText" style="font-size:12px;"></span>
             <button class="button button--primary" id="sendBtn" type="button">Send</button>
           </div>
         </div>
+      </div>
 
-        <!-- Active entity panel — opens below chat when something is selected -->
-        <div id="entityPanel" style="display:none;">
-          <div class="entity-panel-header">
-            <div>
-              <div class="eyebrow" id="entityPanelEyebrow">Entity</div>
-              <strong id="entityPanelTitle">—</strong>
-            </div>
-            <div class="button-row">
-              <button class="button" id="extractFromChatBtn" type="button">Extract from chat</button>
-              <button class="button button--primary" id="saveEntityBtn" type="button">Save</button>
-              <button class="button" id="closeEntityBtn" type="button">✕</button>
-            </div>
+      <!-- ── Divider ── -->
+      <div class="center-divider">
+        <span class="eyebrow">Chapter editor</span>
+        <span class="status-chip status-chip--warn" id="chapterStatusChip">No chapter selected</span>
+      </div>
+
+      <!-- ── Chapter editor section ── -->
+      <div class="chapter-section">
+
+        <!-- Chapter sidebar -->
+        <div class="chapter-sidebar" id="chapterSidebar">
+          <div class="chapter-sidebar-head">
+            <span class="eyebrow">Chapters</span>
+            <button class="button button--small" id="addChapterBtn" type="button">+ Add</button>
           </div>
-          <div class="entity-fields" id="entityFields"></div>
-          <div class="extract-status" id="extractStatus" style="display:none;"></div>
+          <div id="chapterSidebarList" class="chapter-sidebar-list">
+            <div class="lib-placeholder muted">Select a book.</div>
+          </div>
         </div>
 
-      </main>
+        <!-- Chapter editor -->
+        <div class="chapter-editor" id="chapterEditor">
+          <div class="chapter-editor-empty" id="chapterEditorEmpty">
+            <div class="muted" style="text-align:center;padding:40px 20px;">
+              Select a chapter to edit, or add a new one.
+            </div>
+          </div>
 
-      <!-- ── RIGHT RAIL — Pipeline controls ── -->
-      <aside class="panel panel-right" id="rightRail">
-        <div class="section-title">
+          <div id="chapterEditorActive" style="display:none;">
+            <div class="chapter-editor-header">
+              <div class="chapter-nav">
+                <button class="button button--small" id="prevChapterBtn" type="button">← Prev</button>
+                <button class="button button--small" id="nextChapterBtn" type="button">Next →</button>
+              </div>
+              <div class="chapter-meta">
+                <input class="input chapter-title-input" id="chapterTitleInput" placeholder="Chapter title" />
+                <span class="word-count" id="wordCount">0 words</span>
+              </div>
+              <div class="button-row">
+                <button class="button" id="extractChapterBtn" type="button">Extract from chat</button>
+                <button class="button button--primary" id="saveChapterBtn" type="button">Save chapter</button>
+              </div>
+            </div>
+            <textarea class="textarea chapter-content-input" id="chapterContentInput"
+              placeholder="Write here…"></textarea>
+            <div class="chapter-editor-footer">
+              <span class="muted" id="chapterSaveStatus" style="font-size:12px;"></span>
+              <span class="word-count-detail" id="wordCountDetail"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Entity edit panel — slides in when entity selected -->
+      <div id="entityPanel" style="display:none;">
+        <div class="entity-panel-header">
           <div>
-            <div class="eyebrow">Right rail</div>
-            <h2>Pipeline</h2>
+            <div class="eyebrow" id="entityPanelEyebrow">Entity</div>
+            <strong id="entityPanelTitle">—</strong>
           </div>
-          <span class="status-chip status-chip--warn" id="pipelineStatusChip">Idle</span>
+          <div class="button-row">
+            <button class="button" id="extractEntityBtn" type="button">Extract from chat</button>
+            <button class="button button--primary" id="saveEntityBtn" type="button">Save</button>
+            <button class="button" id="closeEntityBtn" type="button">✕</button>
+          </div>
         </div>
+        <div class="entity-fields" id="entityFields"></div>
+        <div class="extract-status" id="extractStatus" style="display:none;"></div>
+      </div>
 
-        <div class="stack stack--md">
+    </main>
 
-          <article class="card card--compact">
-            <div class="eyebrow">Active book context</div>
-            <select class="select" id="bookContextSelect" style="width:100%;margin-top:6px;">
-              <option value="">No book context (free thinking room)</option>
+    <!-- ══ RIGHT RAIL — Pipeline + info ══ -->
+    <aside class="panel panel-right">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Right rail</div>
+          <h2>Pipeline</h2>
+        </div>
+        <span class="status-chip status-chip--warn" id="pipelineStatusChip">Idle</span>
+      </div>
+
+      <div class="stack stack--md">
+
+        <article class="card card--compact">
+          <div class="eyebrow">Active context</div>
+          <div style="margin-top:8px;display:grid;gap:6px;">
+            <div class="context-row"><span class="soft">Book</span><strong id="ctxBook">—</strong></div>
+            <div class="context-row"><span class="soft">Session</span><strong id="ctxSession">—</strong></div>
+            <div class="context-row"><span class="soft">Mode</span><strong id="ctxMode">single</strong></div>
+            <div class="context-row"><span class="soft">Models</span><strong id="ctxModels">—</strong></div>
+          </div>
+        </article>
+
+        <article class="card card--compact">
+          <div class="eyebrow">Run stage</div>
+          <div class="field-grid" style="margin-top:8px;">
+            <label class="inline-field">
+              <span class="soft">Stage</span>
+              <select class="select" id="stageSelect">
+                <option value="draft">Draft</option>
+                <option value="outline">Outline</option>
+                <option value="revise">Revise</option>
+                <option value="worldbuild">Worldbuild</option>
+                <option value="character">Character</option>
+                <option value="polish">Polish</option>
+                <option value="export">Export</option>
+              </select>
+            </label>
+          </div>
+          <button class="button button--primary" id="runStageBtn" type="button" style="width:100%;margin-top:10px;">Run stage</button>
+          <div class="preview-box" id="stageResultBox" style="margin-top:8px;display:none;">
+            <strong>Result</strong>
+            <span id="stageResultText"></span>
+          </div>
+        </article>
+
+        <article class="card card--compact">
+          <div class="eyebrow">Library counts</div>
+          <div class="preview-box" id="entityCountBox">
+            <strong>—</strong><span>Loading…</span>
+          </div>
+        </article>
+
+        <article class="card card--compact">
+          <div class="eyebrow">Extract from chat</div>
+          <p class="muted" style="font-size:12px;margin-bottom:8px;">Select type, then click Extract from chat in the entity or chapter panel.</p>
+          <label class="inline-field">
+            <span class="soft">Extract as</span>
+            <select class="select" id="extractTypeSelect">
+              <option value="character">Character</option>
+              <option value="world">World</option>
+              <option value="scene">Scene</option>
+              <option value="chapter">Chapter</option>
+              <option value="note">Note</option>
             </select>
-            <p class="muted" style="font-size:12px;margin-top:6px;" id="bookContextNote">Chat runs without book scope. Select a book to anchor the session.</p>
-          </article>
+          </label>
+          <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open extract panel</button>
+        </article>
 
-          <article class="card card--compact">
-            <div class="eyebrow">Run stage</div>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Stage</span>
-                <select class="select" id="stageSelect">
-                  <option value="draft">Draft</option>
-                  <option value="outline">Outline</option>
-                  <option value="revise">Revise</option>
-                  <option value="worldbuild">Worldbuild</option>
-                  <option value="character">Character</option>
-                  <option value="polish">Polish</option>
-                  <option value="export">Export</option>
-                </select>
-              </label>
-              <label class="inline-field">
-                <span class="soft">Target</span>
-                <select class="select" id="stageTargetSelect">
-                  <option value="">Active book</option>
-                </select>
-              </label>
-            </div>
-            <button class="button button--primary" id="runStageBtn" type="button" style="width:100%;margin-top:8px;">Run stage</button>
-            <div class="preview-box" id="stageResultBox" style="margin-top:8px;display:none;">
-              <strong>Stage result</strong>
-              <span id="stageResultText"></span>
-            </div>
-          </article>
+        <article class="card card--compact">
+          <div class="eyebrow">Backend routes</div>
+          <ul class="rule-list">
+            <li><code>GET /api/lorecore/overview</code> ✓</li>
+            <li><code>POST /api/lorecore/sessions/{id}/messages</code> ✓</li>
+            <li><code>POST /api/lorecore/books</code> ✓</li>
+            <li><code>PUT /api/lorecore/books/{id}</code> ✓</li>
+            <li><code>POST /api/lorecore/books/{id}/run-stage</code> ✓</li>
+            <li><code>GET /api/lorecore/drafts</code> ✓</li>
+            <li><code>GET /api/lorecore/notes</code> ✓</li>
+            <li><code>POST /api/lorecore/worlds</code> ✓</li>
+            <li><code>POST /api/lorecore/characters</code> ✓</li>
+            <li><code>POST /api/lorecore/scenes</code> ✓</li>
+            <li><code>POST /api/lorecore/exports</code> ✓</li>
+            <li><code>POST/PUT /api/lorecore/chapters</code> — pending</li>
+            <li><code>PUT /api/lorecore/characters/{id}</code> — pending</li>
+            <li><code>PUT /api/lorecore/worlds/{id}</code> — pending</li>
+            <li><code>POST /api/lorecore/extract</code> — pending</li>
+          </ul>
+        </article>
 
-          <article class="card card--compact">
-            <div class="eyebrow">Entity counts</div>
-            <div class="preview-box" id="entityCountBox">
-              <strong>—</strong>
-              <span>Waiting for overview.</span>
-            </div>
-          </article>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Extract from chat</div>
-            <p class="muted" style="font-size:12px;margin-bottom:8px;">Select an entity type, then click Extract from chat in the entity panel below. The model reads the conversation and fills the fields.</p>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Extract as</span>
-                <select class="select" id="extractTypeSelect">
-                  <option value="character">Character</option>
-                  <option value="world">World</option>
-                  <option value="scene">Scene</option>
-                  <option value="note">Note</option>
-                  <option value="draft">Draft</option>
-                </select>
-              </label>
-            </div>
-            <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open extract panel</button>
-          </article>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Backend routes</div>
-            <ul class="rule-list">
-              <li><code>GET /api/lorecore/overview</code> ✓</li>
-              <li><code>POST /api/lorecore/sessions/{id}/messages</code> ✓</li>
-              <li><code>POST /api/lorecore/books</code> ✓</li>
-              <li><code>PUT /api/lorecore/books/{id}</code> ✓</li>
-              <li><code>POST /api/lorecore/books/{id}/run-stage</code> ✓</li>
-              <li><code>GET /api/lorecore/drafts</code> ✓</li>
-              <li><code>GET /api/lorecore/notes</code> ✓</li>
-              <li><code>POST /api/lorecore/worlds</code> ✓</li>
-              <li><code>POST /api/lorecore/characters</code> ✓</li>
-              <li><code>POST /api/lorecore/scenes</code> ✓</li>
-              <li><code>POST /api/lorecore/exports</code> ✓</li>
-              <li><code>PUT /api/lorecore/characters/{id}</code> — pending</li>
-              <li><code>PUT /api/lorecore/worlds/{id}</code> — pending</li>
-              <li><code>PUT /api/lorecore/scenes/{id}</code> — pending</li>
-              <li><code>POST /api/lorecore/extract</code> — pending</li>
-            </ul>
-          </article>
-
-        </div>
-      </aside>
-    </section>
-
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+      </div>
+    </aside>
   </div>
 
-  <script>
-    (function () {
-      try {
-        const params = new URLSearchParams(window.location.search);
-        const apiBase = params.get("apiBase");
-        if (apiBase) { window.PM_API_BASE = apiBase.replace(/\/+$/, ""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
-        else { const saved = localStorage.getItem("PM_API_BASE"); if (saved) window.PM_API_BASE = saved; }
-      } catch {}
-    })();
-  </script>
-  <script type="module" src="page.js"></script>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+  (function () {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const b = p.get("apiBase");
+      if (b) { window.PM_API_BASE = b.replace(/\/+$/, ""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+      else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+    } catch {}
+  })();
+</script>
+<script type="module" src="page.js"></script>
 </body>
 </html>
