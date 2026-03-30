@@ -301,3 +301,257 @@ function renderReasoning() {
       markDirty();
     });
   });
+
+  // Preset selector
+  qsa(".reasoning-preset").forEach(sel => {
+    sel.addEventListener("change", () => {
+      const alias = sel.dataset.alias;
+      const presets = {
+        chat: ["A","B","G"],
+        research: ["A","B","C","D","G","H"],
+        planning: ["A","B","C","D","E","F","H"],
+        reflection: ["A","D","G","H","K"],
+        full: [...KRL_LAYERS],
+      };
+      const layers = presets[sel.value] || [];
+      state.reasoningLayers[alias] = layers;
+      markDirty();
+      // Re-render just this row's chips
+      const row = qs(`.reasoning-row[data-alias="${CSS.escape(alias)}"]`);
+      if (row) {
+        qsa(".layer-chip", row).forEach(chip => {
+          chip.classList.toggle("active", layers.includes(chip.dataset.layer));
+        });
+      }
+    });
+  });
+}
+
+function renderCounts() {
+  const el = qs("#snavCounts"); if (!el) return;
+  const groups = groupByProvider(state.models);
+  el.innerHTML = Object.entries(groups).map(([p, ms]) =>
+    `<div>${escHtml(p)}: ${ms.filter(m=>m.enabled).length}/${ms.length}</div>`
+  ).join("") + `<div style="margin-top:4px;">Total: ${state.models.filter(m=>m.enabled).length} active</div>`;
+}
+
+// ── Roster events ─────────────────────────────────────────────────────────────
+function bindRosterEvents() {
+  // Enable toggle
+  qsa(".model-enabled-toggle").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const id = cb.dataset.id;
+      if (!state.modelChanges[id]) state.modelChanges[id] = {};
+      state.modelChanges[id].enabled = cb.checked;
+      markDirty();
+    });
+  });
+
+  // Surface checkboxes
+  qsa(".surface-check-input").forEach(cb => {
+    cb.addEventListener("change", () => {
+      const id = cb.dataset.id;
+      const surface = cb.dataset.surface;
+      const model = state.models.find(m => m.public_id === id);
+      if (!model) return;
+      let surfaces = Array.isArray(model.surface_allowlist) ? [...model.surface_allowlist]
+                   : JSON.parse(model.surface_allowlist || "[]");
+      if (cb.checked && !surfaces.includes(surface)) surfaces.push(surface);
+      if (!cb.checked) surfaces = surfaces.filter(s => s !== surface);
+      if (!state.modelChanges[id]) state.modelChanges[id] = {};
+      state.modelChanges[id].surface_allowlist = surfaces;
+      markDirty();
+    });
+  });
+
+  // Save API key
+  qsa(".save-key-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const provider = btn.dataset.provider;
+      const input = qs(`.api-key-input[data-provider="${provider}"]`);
+      const key = input?.value.trim() || "";
+      state.apiKeys[provider] = key;
+      // Update notes field on all models of this provider
+      const providerModels = state.models.filter(m => m.provider === provider);
+      for (const m of providerModels) {
+        const currentNotes = m.notes || "";
+        const newNotes = currentNotes.replace(/api_key=\S+/, "").trim() + ` api_key=${key}`;
+        await api(`/api/model-pool/models/${m.public_id}`, { method: "PATCH", body: { notes: newNotes.trim() } });
+      }
+      showToast(`API key saved for ${provider}`, "good");
+    });
+  });
+
+  // Remove model
+  qsa(".remove-model-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.dataset.id;
+      const model = state.models.find(m => m.public_id === id);
+      if (!confirm(`Remove "${model?.name || id}"?`)) return;
+      const r = await api(`/api/model-pool/models/${id}`, { method: "DELETE" });
+      if (!r.ok) { showToast(`Delete failed: ${r.status}`, "warn"); return; }
+      state.models = state.models.filter(m => m.public_id !== id);
+      renderAll();
+      showToast("Model removed", "warn");
+    });
+  });
+
+  // Show add model form
+  qsa(".add-model-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const provider = btn.dataset.provider;
+      const form = qs(`#add-model-form-${provider}`);
+      if (form) form.style.display = form.style.display === "none" ? "block" : "none";
+    });
+  });
+
+  // Cancel add model
+  qsa(".cancel-add-model-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const form = qs(`#add-model-form-${btn.dataset.provider}`);
+      if (form) form.style.display = "none";
+    });
+  });
+
+  // Confirm add model
+  qsa(".confirm-add-model-btn").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const provider = btn.dataset.provider;
+      const name = qs(`#am_name_${provider}`)?.value.trim() || "";
+      const alias = qs(`#am_alias_${provider}`)?.value.trim() || "";
+      const modelId = qs(`#am_modelid_${provider}`)?.value.trim() || "";
+      if (!name || !alias) { showToast("Name and alias required", "warn"); return; }
+      const apiKey = state.apiKeys[provider] || "";
+      const r = await api("/api/model-pool/models", {
+        method: "POST",
+        body: {
+          alias, name,
+          provider,
+          runtime_driver: "openai_api",
+          enabled: true,
+          surface_allowlist: ["home", "lorecore"],
+          notes: `api_key=${apiKey} model_id=${modelId}`,
+        },
+      });
+      if (!r.ok) { showToast(`Create failed: ${r.status}`, "warn"); return; }
+      state.models.push(r.body);
+      const form = qs(`#add-model-form-${provider}`);
+      if (form) form.style.display = "none";
+      renderAll();
+      showToast(`${name} added`, "good");
+    });
+  });
+}
+
+// ── Add provider ──────────────────────────────────────────────────────────────
+function bindProviderForm() {
+  qs("#addProviderBtn")?.addEventListener("click", () => {
+    const form = qs("#addProviderForm");
+    form.style.display = form.style.display === "none" ? "block" : "none";
+  });
+  qs("#cancelProviderBtn")?.addEventListener("click", () => {
+    qs("#addProviderForm").style.display = "none";
+  });
+  qs("#saveProviderBtn")?.addEventListener("click", async () => {
+    const provider = qs("#np_id")?.value.trim().toLowerCase() || "";
+    const name = qs("#np_name")?.value.trim() || "";
+    const url = qs("#np_url")?.value.trim() || "";
+    const key = qs("#np_key")?.value.trim() || "";
+    const driver = qs("#np_driver")?.value || "openai_api";
+    if (!provider || !name) { showToast("Provider ID and name required", "warn"); return; }
+    // Store API key
+    state.apiKeys[provider] = key;
+    // Save to settings
+    const updatedKeys = { ...state.settings.api_keys, [provider]: key };
+    const updatedEndpoints = { ...state.settings.provider_endpoints, [provider]: url };
+    await api("/api/settings", { method: "PUT", body: { values: { ...state.settings, api_keys: updatedKeys, provider_endpoints: updatedEndpoints } } });
+    qs("#addProviderForm").style.display = "none";
+    showToast(`Provider ${name} added`, "good");
+    // Clear form
+    ["np_id","np_name","np_url","np_key"].forEach(id => { const el = qs(`#${id}`); if (el) el.value = ""; });
+  });
+}
+
+// ── Save all ──────────────────────────────────────────────────────────────────
+async function saveAll() {
+  setChip("#globalStatusChip", "Saving…", "status-chip--warn");
+  let ok = true;
+
+  // 1. Flush model changes
+  for (const [id, changes] of Object.entries(state.modelChanges)) {
+    const r = await api(`/api/model-pool/models/${id}`, { method: "PATCH", body: changes });
+    if (!r.ok) { ok = false; showToast(`Model update failed: ${r.status}`, "warn"); }
+  }
+  state.modelChanges = {};
+
+  // 2. Build settings payload
+  const defaultModels = qsa(".default-model-cb:checked").map(cb => cb.value);
+  const defaultMode = qs("#defaultMode")?.value || "single";
+
+  const policies = {
+    interactive: {
+      reserved_hot_slots: parseInt(qs("#pol_hot")?.value) || 1,
+      max_active_support: parseInt(qs("#pol_support")?.value) || 2,
+      max_selected_participants: parseInt(qs("#pol_participants")?.value) || 8,
+      family_diversity_required: qs("#pol_diversity")?.checked || false,
+    },
+    production: {
+      quality_over_speed: qs("#pol_quality")?.checked || true,
+      max_loaded_total: parseInt(qs("#pol_loaded")?.value) || 3,
+      minimum_distinct_families: parseInt(qs("#pol_families")?.value) || 3,
+      allow_long_running_jobs: qs("#pol_longjobs")?.checked || true,
+      panel_rounds: parseInt(qs("#pol_rounds")?.value) || 2,
+    },
+  };
+
+  const settingsPayload = {
+    ...state.settings,
+    default_models: defaultModels,
+    default_home_mode: defaultMode,
+    model_panel_policies: policies,
+    model_reasoning_layers: state.reasoningLayers,
+    api_keys: state.apiKeys,
+  };
+
+  const r = await api("/api/settings", { method: "PUT", body: { values: settingsPayload } });
+  if (!r.ok) { ok = false; showToast(`Settings save failed: ${r.status}`, "warn"); }
+  else { state.settings = settingsPayload; }
+
+  state.dirty = false;
+  setChip("#globalStatusChip", ok ? "Saved" : "Save errors", ok ? "status-chip--good" : "status-chip--warn");
+  if (ok) showToast("All changes saved", "good");
+}
+
+// ── Section nav ───────────────────────────────────────────────────────────────
+function bindNav() {
+  qsa(".snav-item").forEach(btn => {
+    btn.addEventListener("click", () => {
+      qsa(".snav-item").forEach(b => b.classList.remove("snav-item--active"));
+      qsa(".settings-section").forEach(s => s.classList.remove("active"));
+      btn.classList.add("snav-item--active");
+      const section = qs(`#section-${btn.dataset.section}`);
+      if (section) section.classList.add("active");
+    });
+  });
+}
+
+// ── Policy change listeners ───────────────────────────────────────────────────
+function bindPolicyChanges() {
+  ["pol_hot","pol_support","pol_participants","pol_diversity","pol_quality","pol_loaded","pol_families","pol_longjobs","pol_rounds"].forEach(id => {
+    const el = qs(`#${id}`);
+    el?.addEventListener("change", markDirty);
+    el?.addEventListener("input", markDirty);
+  });
+  qs("#defaultMode")?.addEventListener("change", markDirty);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+function init() {
+  bindNav();
+  bindProviderForm();
+  bindPolicyChanges();
+  qs("#saveAllBtn")?.addEventListener("click", saveAll);
+  loadAll();
+}
+
+document.addEventListener("DOMContentLoaded", init);
