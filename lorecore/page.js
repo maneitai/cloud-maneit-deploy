@@ -12,9 +12,7 @@ const state = {
 
 const qs = (s, r = document) => r.querySelector(s);
 const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
-const escHtml = v => String(v ?? "")
-  .replaceAll("&","&amp;").replaceAll("<","&lt;")
-  .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+const escHtml = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
 
 function wordCount(t) { return (t||"").trim().split(/\s+/).filter(Boolean).length; }
 
@@ -61,7 +59,6 @@ function normalizeBook(raw, i = 0) {
 }
 
 function normalizeSession(raw, i = 0) {
-  // Messages may be nested in .messages array or .items
   const msgs = Array.isArray(raw?.messages) ? raw.messages
              : Array.isArray(raw?.history)  ? raw.history
              : Array.isArray(raw?.items)    ? raw.items : [];
@@ -86,43 +83,68 @@ function normalizeEntity(raw, i = 0, type = "item") {
   };
 }
 
+function parseSurfaces(val) {
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val || "[]"); } catch { return []; }
+}
+
 // ── Models ────────────────────────────────────────────────────────────────────
 async function loadModels() {
-  const r = await api("/api/models");
+  // Use model-pool, filter to cloud models allowed on lorecore surface
+  const r = await api("/api/model-pool/models");
   const items = r.ok
     ? (Array.isArray(r.body?.items) ? r.body.items : Array.isArray(r.body) ? r.body : [])
     : [];
   state.availableModels = items
     .filter(m => {
-      const a = String(m?.alias || m?.name || m?.model_id || "").toLowerCase();
-      if (!a || a.startsWith("ggml-vocab-")) return false;
-      if ("enabled" in m && m.enabled === false) return false;
-      return true;
+      if (m.runtime_driver !== "openai_api") return false;
+      if (m.enabled === false) return false;
+      const surfaces = parseSurfaces(m.surface_allowlist);
+      return surfaces.includes("lorecore");
     })
-    .map(m => ({ alias: m.alias || m.name || m.model_id, label: m.display_name || m.alias || m.name || m.model_id }));
-  renderModelList();
+    .map(m => ({ alias: m.alias || m.name, label: m.name || m.alias }));
+  renderModelSelector();
 }
 
-function renderModelList() {
-  const el = qs("#modelList"); if (!el) return;
+function renderModelSelector() {
+  const container = qs("#modelSelectorWrap"); if (!container) return;
   if (!state.availableModels.length) {
-    el.innerHTML = `<div class="muted" style="font-size:12px;">No models</div>`; return;
+    container.innerHTML = `<div class="muted" style="font-size:12px;">No models — add models in Settings → Cloud models → enable lorecore surface.</div>`;
+    return;
   }
-  el.innerHTML = state.availableModels.map(m => `
-    <label class="model-chip ${state.selectedModels.includes(m.alias) ? "model-chip--active" : ""}">
-      <input type="checkbox" class="model-cb" value="${escHtml(m.alias)}" ${state.selectedModels.includes(m.alias) ? "checked" : ""} />
-      ${escHtml(m.label)}
-    </label>
-  `).join("");
-  qsa(".model-cb").forEach(cb => cb.addEventListener("change", () => {
-    if (cb.checked) {
-      if (state.chatMode === "single") state.selectedModels = [cb.value];
-      else if (!state.selectedModels.includes(cb.value)) state.selectedModels.push(cb.value);
-    } else {
-      state.selectedModels = state.selectedModels.filter(a => a !== cb.value);
-    }
-    renderModelList(); updateContextStrip();
-  }));
+
+  if (state.chatMode === "single") {
+    // Single dropdown
+    const current = state.selectedModels[0] || "";
+    container.innerHTML = `
+      <select class="select" id="modelDropdown">
+        <option value="">Select model…</option>
+        ${state.availableModels.map(m => `
+          <option value="${escHtml(m.alias)}" ${current === m.alias ? "selected" : ""}>${escHtml(m.label)}</option>
+        `).join("")}
+      </select>`;
+    qs("#modelDropdown")?.addEventListener("change", e => {
+      state.selectedModels = e.target.value ? [e.target.value] : [];
+      updateContextStrip();
+    });
+  } else {
+    // Multi-select checkboxes for parallel/discussion
+    container.innerHTML = `
+      <div class="model-check-list">
+        ${state.availableModels.map(m => `
+          <label class="model-check-item ${state.selectedModels.includes(m.alias) ? "model-check-item--active" : ""}">
+            <input type="checkbox" class="model-mcb" value="${escHtml(m.alias)}" ${state.selectedModels.includes(m.alias) ? "checked" : ""} />
+            ${escHtml(m.label)}
+          </label>
+        `).join("")}
+      </div>`;
+    qsa(".model-mcb").forEach(cb => cb.addEventListener("change", () => {
+      if (cb.checked && !state.selectedModels.includes(cb.value)) state.selectedModels.push(cb.value);
+      if (!cb.checked) state.selectedModels = state.selectedModels.filter(a => a !== cb.value);
+      cb.closest("label")?.classList.toggle("model-check-item--active", cb.checked);
+      updateContextStrip();
+    }));
+  }
 }
 
 // ── Book list ─────────────────────────────────────────────────────────────────
@@ -157,34 +179,27 @@ function selectBook(id) {
   if (id) loadBookEntities(id);
 }
 
-// ── Load entities for selected book ──────────────────────────────────────────
+// ── Load entities ─────────────────────────────────────────────────────────────
 async function loadBookEntities(bookId) {
   const book = state.books.find(b => b.id === bookId);
   const libraryId = book?.libraryId || "LIB-3001";
-
-  // Fetch overview scoped to this book + library, plus chapters + drafts + notes in parallel
   const [ovR, chapR, draftsR, notesR] = await Promise.all([
     api(`/api/lorecore/overview?library_public_id=${encodeURIComponent(libraryId)}&book_public_id=${encodeURIComponent(bookId)}`),
     api(`/api/lorecore/chapters?book_public_id=${encodeURIComponent(bookId)}`),
     api(`/api/lorecore/drafts?book_public_id=${encodeURIComponent(bookId)}`),
     api(`/api/lorecore/notes?book_public_id=${encodeURIComponent(bookId)}`),
   ]);
-
   if (ovR.ok) {
     const ov = ovR.body || {};
     state.characters = normalizeList(ov, ["characters"]).map((x,i) => normalizeEntity(x,i,"character"));
     state.worlds     = normalizeList(ov, ["worlds"]).map((x,i) => normalizeEntity(x,i,"world"));
     state.scenes     = normalizeList(ov, ["scenes"]).map((x,i) => normalizeEntity(x,i,"scene"));
   }
-
-  // Chapters from dedicated endpoint — more reliable than overview
   state.chapters = chapR.ok
     ? normalizeList(chapR.body, ["items","chapters","data"]).map((x,i) => normalizeEntity(x,i,"chapter")).sort((a,b) => a.order - b.order)
     : [];
-
   state.drafts = draftsR.ok ? normalizeList(draftsR.body, ["items","drafts","data"]).map((x,i) => normalizeEntity(x,i,"draft")) : [];
   state.notes  = notesR.ok  ? normalizeList(notesR.body,  ["items","notes","data"]).map((x,i) => normalizeEntity(x,i,"note"))  : [];
-
   renderActiveTab();
   renderChapterList();
   renderEntityCounts();
@@ -207,7 +222,6 @@ function renderActiveTab() {
   else renderEntityList(tab);
 }
 
-// ── Entity list ───────────────────────────────────────────────────────────────
 function getList(tab) {
   return { characters: state.characters, worlds: state.worlds, scenes: state.scenes,
            drafts: state.drafts, notes: state.notes }[tab] || [];
@@ -268,10 +282,8 @@ function tabToSingular(tab) { return tab.replace(/s$/,""); }
 function openEntityEditor(tab, item, isNew = false) {
   const singular = tabToSingular(tab);
   state.activeEntity = { type: singular, data: item, isNew };
-
   qs("#entityEditorEyebrow").textContent = singular.charAt(0).toUpperCase() + singular.slice(1);
   qs("#entityEditorTitle").textContent = item?.title || (isNew ? `New ${singular}` : "—");
-
   const defs = ENTITY_PANEL_FIELDS[singular] || ENTITY_PANEL_FIELDS.note;
   qs("#entityFields").innerHTML = defs.map(f => `
     <label class="inline-field" style="margin-bottom:8px;">
@@ -281,7 +293,6 @@ function openEntityEditor(tab, item, isNew = false) {
         : `<input class="input" id="${f.id}" />`}
     </label>
   `).join("");
-
   if (item) {
     const set = (id, v) => { const el = qs(`#${id}`); if (el && v != null) el.value = Array.isArray(v) ? v.join(", ") : v; };
     set("ep_name",     item.title || item.raw?.name || "");
@@ -297,7 +308,6 @@ function openEntityEditor(tab, item, isNew = false) {
     set("ep_beats",    item.raw?.beats || item.raw?.beat_notes || "");
     set("ep_outcome",  item.raw?.outcome || "");
   }
-
   qs("#extractStatus").style.display = "none";
   qs("#entityEditorEmpty").style.display = "none";
   qs("#entityEditorActive").style.display = "block";
@@ -337,10 +347,10 @@ async function saveEntity() {
   if (!routes) { showToast(`No route for ${type}`, "warn"); return; }
   let r;
   if (isNew || !data?.id) {
-    if (!routes.create) { showToast(`Create ${type}: backend pending`, "warn"); return; }
+    if (!routes.create) { showToast(`Create ${type}: not available`, "warn"); return; }
     r = await api(routes.create, { method: "POST", body: payload });
   } else {
-    if (!routes.update) { showToast(`Update ${type}: backend pending`, "warn"); return; }
+    if (!routes.update) { showToast(`Update ${type}: not available`, "warn"); return; }
     r = await api(routes.update(data.id), { method: "PUT", body: payload });
   }
   if (!r.ok) { showToast(`Save ${type} failed: ${r.status}`, "warn"); return; }
@@ -403,28 +413,21 @@ async function saveChapter() {
   const payload = { title, name: title, content, summary: content, book_public_id: state.selectedBookId };
   const statusEl = qs("#chapterSaveStatus");
   if (statusEl) statusEl.textContent = "Saving…";
-
-  // Try PUT on existing, fall back to POST for new
   let r;
   if (id && !id.startsWith("chapter_")) {
     r = await api(`/api/lorecore/chapters/${encodeURIComponent(id)}`, { method: "PUT", body: payload });
   } else {
     r = await api("/api/lorecore/chapters", { method: "POST", body: payload });
   }
-
   if (!r.ok) {
     if (statusEl) statusEl.textContent = "Save failed";
     showToast(`Chapter save failed: ${r.status}`, "warn"); return;
   }
-
-  // Update local state
   ch.title = title; ch.content = content; ch.wordCount = wordCount(content);
-  // If was a POST, update the id with the real public_id from response
   if (r.body?.public_id && r.body.public_id !== id) {
     ch.id = r.body.public_id;
     state.activeChapterId = ch.id;
   }
-
   if (statusEl) statusEl.textContent = `Saved · ${new Date().toLocaleTimeString()}`;
   renderChapterList();
   showToast("Chapter saved", "good");
@@ -473,7 +476,7 @@ const QC_ROUTES = {
   worlds:     "/api/lorecore/worlds",
   scenes:     "/api/lorecore/scenes",
   chapters:   "/api/lorecore/chapters",
-  drafts:     null, notes: null,
+  drafts: null, notes: null,
 };
 
 function updateQcLabel(tab) {
@@ -502,7 +505,7 @@ async function quickCreate() {
   const title = get("qc_name");
   if (!title) { showToast("Title required", "warn"); return; }
   const route = QC_ROUTES[tab];
-  if (!route) { showToast(`Create ${tab}: backend pending`, "warn"); return; }
+  if (!route) { showToast(`Create ${tab}: not available`, "warn"); return; }
   const book = state.books.find(b => b.id === state.selectedBookId);
   const payload = {
     title, name: title,
@@ -525,7 +528,6 @@ async function extractFromChat(type) {
   const statusEl = qs("#extractStatus");
   if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "Extracting…"; }
   if (!msgs.length) { if (statusEl) statusEl.textContent = "No messages to extract from."; return; }
-
   const conv = msgs.map(m => `${m.role||"message"}: ${m.content||m.text||""}`).join("\n");
   const prompts = {
     character: `Extract a character profile. Return only JSON: name, role, description, traits (array), arc, voice.\n\n${conv}`,
@@ -534,26 +536,21 @@ async function extractFromChat(type) {
     chapter:   `Extract chapter content. Return only JSON: title, content.\n\n${conv}`,
     note:      `Summarize key points. Return only JSON: title, description.\n\n${conv}`,
   };
-
   const r = await api("/api/lorecore/extract", {
     method: "POST",
     body: { entity_type: type, conversation: conv, prompt: prompts[type] || prompts.note,
             book_public_id: state.selectedBookId },
   });
-
   if (!r.ok) {
-    if (statusEl) statusEl.textContent = `/api/lorecore/extract returned ${r.status}. Backend may still be starting.`;
+    if (statusEl) statusEl.textContent = `Extract returned ${r.status}.`;
     return;
   }
-
   let data = r.body?.extracted || r.body;
   if (typeof data === "string") {
     try { data = JSON.parse(data.replace(/```json|```/g,"").trim()); }
     catch { if (statusEl) statusEl.textContent = "Could not parse result."; return; }
   }
-
   const set = (id, v) => { const el = qs(`#${id}`); if (el && v != null) el.value = Array.isArray(v) ? v.join(", ") : v; };
-
   if (type === "chapter") {
     set("chapterTitleInput", data.title || "");
     set("chapterContent", data.content || "");
@@ -573,7 +570,6 @@ async function extractFromChat(type) {
     set("ep_outcome", data.outcome || "");
     if (qs("#entityEditorTitle") && (data.name||data.title)) qs("#entityEditorTitle").textContent = data.name||data.title;
   }
-
   if (statusEl) statusEl.textContent = "✓ Filled from conversation. Review and save.";
   showToast("Extracted", "good");
 }
@@ -582,7 +578,7 @@ async function extractFromChat(type) {
 function renderChatFeed() {
   const feed = qs("#chatFeed"); if (!feed) return;
   if (!state.messages.length) {
-    feed.innerHTML = `<div class="chat-placeholder"><div class="chat-placeholder-icon">📖</div><div class="chat-placeholder-title">LoreCore thinking room</div><div class="muted" style="font-size:13px;">Select models and a session to start.</div></div>`;
+    feed.innerHTML = `<div class="chat-placeholder"><div class="chat-placeholder-icon">📖</div><div class="chat-placeholder-title">LoreCore thinking room</div><div class="muted" style="font-size:13px;">Select a model and session to start.</div></div>`;
     return;
   }
   feed.innerHTML = state.messages.map(msg => {
@@ -600,7 +596,7 @@ function renderChatFeed() {
 async function sendMessage() {
   const session = state.sessions.find(s => s.id === state.selectedSessionId) || state.sessions[0];
   if (!session) { showToast("No session available", "warn"); return; }
-  if (!state.selectedModels.length) { showToast("Select at least one model", "warn"); return; }
+  if (!state.selectedModels.length) { showToast("Select a model first", "warn"); return; }
   const content = qs("#messageInput")?.value.trim() || "";
   if (!content) return;
 
@@ -624,23 +620,19 @@ async function sendMessage() {
 
   if (!r.ok) { if (st) st.textContent = "Send failed"; showToast("Send failed", "warn"); return; }
 
-  // Response is _session_with_messages — extract the last assistant message(s)
   const body = r.body;
   const allMsgs = Array.isArray(body?.messages) ? body.messages : [];
   if (allMsgs.length) {
-    // Find messages added after our user message — assistant replies
     const lastUserIdx = [...allMsgs].reverse().findIndex(m => m.role === "user");
     const newMsgs = lastUserIdx >= 0 ? allMsgs.slice(allMsgs.length - lastUserIdx) : [];
     const assistantMsgs = newMsgs.filter(m => m.role === "assistant");
     if (assistantMsgs.length) {
       assistantMsgs.forEach(m => state.messages.push({ role: m.model || "assistant", content: m.content || "" }));
     } else {
-      // Fallback: just take the last message if it's assistant
       const last = allMsgs[allMsgs.length - 1];
       if (last?.role === "assistant") state.messages.push({ role: last.model || "assistant", content: last.content || "" });
     }
   } else {
-    // Old-style response with content/model at top level
     const reply = body?.content || body?.response || body?.text || "";
     if (reply) state.messages.push({ role: body?.model || "assistant", content: reply });
   }
@@ -657,29 +649,15 @@ async function loadOverview() {
   const ov = r.body || {};
 
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
-
-  // Sessions come from chat_threads in the overview
   const rawSessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]);
   state.sessions = rawSessions.map(normalizeSession);
 
-  // If overview includes a chat_session with messages, load those
   if (ov.chat_session?.messages?.length && !state.messages.length) {
     state.messages = ov.chat_session.messages;
   }
 
   if (!state.selectedBookId && state.books.length) state.selectedBookId = state.books[0].id;
   if (!state.selectedSessionId && state.sessions.length) state.selectedSessionId = state.sessions[0].id;
-
-  // Also pick up model pool from overview
-  if (!state.availableModels.length && Array.isArray(ov.model_pool)) {
-    state.availableModels = ov.model_pool
-      .filter(m => {
-        const a = String(m?.alias || m?.name || "").toLowerCase();
-        return a && !a.startsWith("ggml-vocab-") && m?.enabled !== false;
-      })
-      .map(m => ({ alias: m.alias || m.name, label: m.display_name || m.alias || m.name }));
-    renderModelList();
-  }
 
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
@@ -700,25 +678,20 @@ function renderSessionSelect() {
   const targetId = state.selectedSessionId || state.sessions[0].id;
   sel.value = targetId;
   state.selectedSessionId = targetId;
-
-  // Load messages for selected session if we don't have them yet
   const session = state.sessions.find(s => s.id === targetId);
   if (session?.messages?.length && !state.messages.length) {
     state.messages = session.messages;
   }
-
   renderChatFeed();
   setChip("#sessionChip","Active","status-chip--good");
 }
 
-// ── New book ──────────────────────────────────────────────────────────────────
 async function createBook() {
   const title = qs("#newBookTitle")?.value.trim() || "";
   if (!title) { showToast("Title required","warn"); return; }
   const r = await api("/api/lorecore/books", { method:"POST", body:{
     title,
     status: qs("#newBookStatus")?.value.trim() || "",
-    description: qs("#newBookDesc")?.value.trim() || "",
     premise: qs("#newBookDesc")?.value.trim() || "",
   }});
   if (!r.ok) { showToast(`Create book failed: ${r.status}`,"warn"); return; }
@@ -728,7 +701,6 @@ async function createBook() {
   await loadOverview();
 }
 
-// ── Pipeline ──────────────────────────────────────────────────────────────────
 async function runStage() {
   if (!state.selectedBookId) { showToast("Select a book first","warn"); return; }
   const stage = qs("#stageSelect")?.value || "draft";
@@ -751,7 +723,6 @@ async function exportLore() {
   showToast("Export requested","good");
 }
 
-// ── Context strip ─────────────────────────────────────────────────────────────
 function updateContextStrip() {
   const book = state.books.find(b => b.id === state.selectedBookId);
   const set = (id, v) => { const el = qs(id); if (el) el.textContent = v; };
@@ -831,7 +802,8 @@ function bindEvents() {
     qsa(".mode-card").forEach(c => c.classList.toggle("mode-card--active", c.dataset.mode === state.chatMode));
     if (state.chatMode === "single" && state.selectedModels.length > 1)
       state.selectedModels = [state.selectedModels[0]];
-    renderModelList(); updateContextStrip();
+    renderModelSelector();
+    updateContextStrip();
   });
 
   qs("#sessionSelect")?.addEventListener("change", e => {
@@ -842,8 +814,13 @@ function bindEvents() {
   });
 
   qs("#sendBtn")?.addEventListener("click", sendMessage);
+
+  // Enter = send, Shift+Enter = newline
   qs("#messageInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendMessage();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   });
 
   qs("#runStageBtn")?.addEventListener("click", runStage);
@@ -858,4 +835,8 @@ function init() {
   loadOverview();
 }
 
-document.addEventListener("DOMContentLoaded", init);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
