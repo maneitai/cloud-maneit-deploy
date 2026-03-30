@@ -58,10 +58,19 @@ function normalizeBook(raw, i = 0) {
   };
 }
 
+// Normalize a raw message from backend — handles both {role,content} and {type,text} shapes
+function normalizeMsg(raw) {
+  return {
+    role: raw?.role || raw?.type || "message",
+    content: raw?.content || raw?.text || "",
+    model: raw?.model || "",
+  };
+}
+
 function normalizeSession(raw, i = 0) {
-  const msgs = Array.isArray(raw?.messages) ? raw.messages
-             : Array.isArray(raw?.history)  ? raw.history
-             : Array.isArray(raw?.items)    ? raw.items : [];
+  const msgs = Array.isArray(raw?.messages) ? raw.messages.map(normalizeMsg)
+             : Array.isArray(raw?.history)  ? raw.history.map(normalizeMsg)
+             : Array.isArray(raw?.items)    ? raw.items.map(normalizeMsg) : [];
   return {
     id: raw?.session_public_id || raw?.public_id || raw?.id || `session_${i}`,
     title: raw?.title || raw?.name || raw?.label || `Session ${i+1}`,
@@ -90,7 +99,6 @@ function parseSurfaces(val) {
 
 // ── Models ────────────────────────────────────────────────────────────────────
 async function loadModels() {
-  // Use model-pool, filter to cloud models allowed on lorecore surface
   const r = await api("/api/model-pool/models");
   const items = r.ok
     ? (Array.isArray(r.body?.items) ? r.body.items : Array.isArray(r.body) ? r.body : [])
@@ -109,12 +117,10 @@ async function loadModels() {
 function renderModelSelector() {
   const container = qs("#modelSelectorWrap"); if (!container) return;
   if (!state.availableModels.length) {
-    container.innerHTML = `<div class="muted" style="font-size:12px;">No models — add models in Settings → Cloud models → enable lorecore surface.</div>`;
+    container.innerHTML = `<div class="muted" style="font-size:12px;">No models — enable lorecore surface in Settings.</div>`;
     return;
   }
-
   if (state.chatMode === "single") {
-    // Single dropdown
     const current = state.selectedModels[0] || "";
     container.innerHTML = `
       <select class="select" id="modelDropdown">
@@ -128,7 +134,6 @@ function renderModelSelector() {
       updateContextStrip();
     });
   } else {
-    // Multi-select checkboxes for parallel/discussion
     container.innerHTML = `
       <div class="model-check-list">
         ${state.availableModels.map(m => `
@@ -541,10 +546,7 @@ async function extractFromChat(type) {
     body: { entity_type: type, conversation: conv, prompt: prompts[type] || prompts.note,
             book_public_id: state.selectedBookId },
   });
-  if (!r.ok) {
-    if (statusEl) statusEl.textContent = `Extract returned ${r.status}.`;
-    return;
-  }
+  if (!r.ok) { if (statusEl) statusEl.textContent = `Extract returned ${r.status}.`; return; }
   let data = r.body?.extracted || r.body;
   if (typeof data === "string") {
     try { data = JSON.parse(data.replace(/```json|```/g,"").trim()); }
@@ -582,11 +584,11 @@ function renderChatFeed() {
     return;
   }
   feed.innerHTML = state.messages.map(msg => {
-    const role = msg?.role || "message";
+    const role = msg?.role || msg?.type || "message";
     const content = msg?.content || msg?.text || msg?.body || "";
     const isUser = role === "user";
     return `<div class="chat-msg ${isUser?"chat-msg--user":"chat-msg--assistant"}">
-      <div class="chat-msg-role">${escHtml(role)}</div>
+      <div class="chat-msg-role">${escHtml(msg.model && !isUser ? msg.model : role)}</div>
       <div class="chat-msg-content">${escHtml(content)}</div>
     </div>`;
   }).join("");
@@ -609,7 +611,7 @@ async function sendMessage() {
   if (state.selectedBookId) payload.book_public_id = state.selectedBookId;
   if (book?.libraryId) payload.library_public_id = book.libraryId;
 
-  state.messages.push({ role: "user", content });
+  state.messages.push({ role: "user", content, model: "" });
   qs("#messageInput").value = "";
   renderChatFeed();
   const st = qs("#chatStatusText"); if (st) st.textContent = "Sending…";
@@ -622,19 +624,33 @@ async function sendMessage() {
 
   const body = r.body;
   const allMsgs = Array.isArray(body?.messages) ? body.messages : [];
+
   if (allMsgs.length) {
-    const lastUserIdx = [...allMsgs].reverse().findIndex(m => m.role === "user");
-    const newMsgs = lastUserIdx >= 0 ? allMsgs.slice(allMsgs.length - lastUserIdx) : [];
-    const assistantMsgs = newMsgs.filter(m => m.role === "assistant");
+    // Backend returns {type, text, model} shape
+    // Find all messages after the last user message
+    const reversedIdx = [...allMsgs].reverse().findIndex(m => (m.role || m.type) === "user");
+    const newMsgs = reversedIdx >= 0 ? allMsgs.slice(allMsgs.length - reversedIdx) : allMsgs.slice(-1);
+    const assistantMsgs = newMsgs.filter(m => (m.role || m.type) === "assistant");
+
     if (assistantMsgs.length) {
-      assistantMsgs.forEach(m => state.messages.push({ role: m.model || "assistant", content: m.content || "" }));
+      assistantMsgs.forEach(m => state.messages.push({
+        role: "assistant",
+        model: m.model || "assistant",
+        content: m.content || m.text || "",
+      }));
     } else {
+      // Fallback: last message regardless of type
       const last = allMsgs[allMsgs.length - 1];
-      if (last?.role === "assistant") state.messages.push({ role: last.model || "assistant", content: last.content || "" });
+      const lastContent = last?.content || last?.text || "";
+      if (lastContent) state.messages.push({
+        role: "assistant",
+        model: last?.model || "assistant",
+        content: lastContent,
+      });
     }
   } else {
-    const reply = body?.content || body?.response || body?.text || "";
-    if (reply) state.messages.push({ role: body?.model || "assistant", content: reply });
+    const reply = body?.content || body?.text || body?.response || "";
+    if (reply) state.messages.push({ role: "assistant", model: body?.model || "assistant", content: reply });
   }
 
   if (st) st.textContent = "";
@@ -653,7 +669,7 @@ async function loadOverview() {
   state.sessions = rawSessions.map(normalizeSession);
 
   if (ov.chat_session?.messages?.length && !state.messages.length) {
-    state.messages = ov.chat_session.messages;
+    state.messages = ov.chat_session.messages.map(normalizeMsg);
   }
 
   if (!state.selectedBookId && state.books.length) state.selectedBookId = state.books[0].id;
@@ -740,6 +756,66 @@ function renderEntityCounts() {
   `;
 }
 
+// ── Drag to resize chat ───────────────────────────────────────────────────────
+function initDragResize() {
+  const handle = qs("#chatResizeHandle");
+  const feed = qs("#chatFeed");
+  if (!handle || !feed) return;
+
+  const STORAGE_KEY = "lorecore_chat_height";
+  const saved = parseInt(localStorage.getItem(STORAGE_KEY));
+  if (saved && saved > 80 && saved < 800) feed.style.minHeight = feed.style.maxHeight = saved + "px";
+
+  let dragging = false, startY = 0, startH = 0;
+
+  handle.addEventListener("mousedown", e => {
+    dragging = true;
+    startY = e.clientY;
+    startH = feed.getBoundingClientRect().height;
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const delta = e.clientY - startY;
+    const newH = Math.max(120, Math.min(800, startH + delta));
+    feed.style.minHeight = feed.style.maxHeight = newH + "px";
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    const h = parseInt(feed.style.minHeight);
+    if (h) localStorage.setItem(STORAGE_KEY, h);
+  });
+
+  // Touch support
+  handle.addEventListener("touchstart", e => {
+    dragging = true;
+    startY = e.touches[0].clientY;
+    startH = feed.getBoundingClientRect().height;
+    e.preventDefault();
+  }, { passive: false });
+
+  document.addEventListener("touchmove", e => {
+    if (!dragging) return;
+    const delta = e.touches[0].clientY - startY;
+    const newH = Math.max(120, Math.min(800, startH + delta));
+    feed.style.minHeight = feed.style.maxHeight = newH + "px";
+  }, { passive: true });
+
+  document.addEventListener("touchend", () => {
+    if (!dragging) return;
+    dragging = false;
+    const h = parseInt(feed.style.minHeight);
+    if (h) localStorage.setItem(STORAGE_KEY, h);
+  });
+}
+
 // ── Events ────────────────────────────────────────────────────────────────────
 function bindEvents() {
   qs("#bookList")?.addEventListener("click", e => {
@@ -815,7 +891,6 @@ function bindEvents() {
 
   qs("#sendBtn")?.addEventListener("click", sendMessage);
 
-  // Enter = send, Shift+Enter = newline
   qs("#messageInput")?.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -831,6 +906,7 @@ function bindEvents() {
 function init() {
   bindEvents();
   renderChatFeed();
+  initDragResize();
   loadModels();
   loadOverview();
 }
