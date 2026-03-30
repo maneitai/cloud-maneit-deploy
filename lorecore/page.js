@@ -1,6 +1,5 @@
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
-// Free chat session ID — no book context
 const FREE_SESSION_ID = "chat-lore-01";
 
 const state = {
@@ -13,7 +12,7 @@ const state = {
   activeEntity: null,
   chatMode: "single", selectedModels: [], availableModels: [],
   messages: [],
-  freeMode: true, // true = no book context
+  freeMode: true,
 };
 
 const qs = (s, r = document) => r.querySelector(s);
@@ -92,11 +91,7 @@ async function loadModels() {
   const r = await api("/api/model-pool/models");
   const items = r.ok ? (Array.isArray(r.body?.items) ? r.body.items : Array.isArray(r.body) ? r.body : []) : [];
   state.availableModels = items
-    .filter(m => {
-      if (m.runtime_driver !== "openai_api") return false;
-      if (m.enabled === false) return false;
-      return parseSurfaces(m.surface_allowlist).includes("lorecore");
-    })
+    .filter(m => m.runtime_driver === "openai_api" && m.enabled !== false && parseSurfaces(m.surface_allowlist).includes("lorecore"))
     .map(m => ({ alias: m.alias || m.name, label: m.name || m.alias }));
   renderModelSelector();
 }
@@ -125,8 +120,7 @@ function renderModelSelector() {
           <label class="model-check-item ${state.selectedModels.includes(m.alias) ? "model-check-item--active" : ""}">
             <input type="checkbox" class="model-mcb" value="${escHtml(m.alias)}" ${state.selectedModels.includes(m.alias) ? "checked" : ""} />
             ${escHtml(m.label)}
-          </label>
-        `).join("")}
+          </label>`).join("")}
       </div>`;
     qsa(".model-mcb").forEach(cb => cb.addEventListener("change", () => {
       if (cb.checked && !state.selectedModels.includes(cb.value)) state.selectedModels.push(cb.value);
@@ -140,50 +134,51 @@ function renderModelSelector() {
 // ── Session list ──────────────────────────────────────────────────────────────
 function renderSessionList() {
   const el = qs("#sessionList"); if (!el) return;
+  // Update free chat button active state
+  const freeBtn = qs("#freeChatBtn");
+  if (freeBtn) {
+    freeBtn.classList.toggle("session-item--active", state.freeMode);
+  }
   if (!state.sessions.length) {
     el.innerHTML = `<div class="lib-placeholder">No sessions yet.</div>`;
     setChip("#sessionChip", "—", "status-chip--warn"); return;
   }
-  el.innerHTML = state.sessions.map(s => `
-    <button class="session-item ${s.id === state.selectedSessionId && !state.freeMode ? "session-item--active" : ""}"
-      type="button" data-session-id="${escHtml(s.id)}">
-      <div class="session-item-title">${escHtml(s.title)}</div>
-      <div class="session-item-sub">${escHtml(s.excerpt || s.bookId ? "📚 " + (state.books.find(b=>b.id===s.bookId)?.title||s.bookId) : "General")}</div>
-    </button>
-  `).join("");
+  el.innerHTML = state.sessions.map(s => {
+    const bookName = s.bookId ? (state.books.find(b => b.id === s.bookId)?.title || s.bookId) : null;
+    const isActive = !state.freeMode && s.id === state.selectedSessionId;
+    return `
+      <button class="session-item ${isActive ? "session-item--active" : ""}"
+        type="button" data-session-id="${escHtml(s.id)}">
+        <div class="session-item-title">${escHtml(s.title)}</div>
+        <div class="session-item-sub">${bookName ? "📚 " + escHtml(bookName) : escHtml(s.excerpt || "General")}</div>
+      </button>`;
+  }).join("");
   setChip("#sessionChip", `${state.sessions.length}`, "status-chip--good");
-
-  // Update free chat button active state
-  const freeBtn = qs("#freeChatBtn");
-  if (freeBtn) freeBtn.classList.toggle("session-item--active", state.freeMode);
 }
 
 function selectSession(sessionId, freeMode = false) {
   state.freeMode = freeMode;
   state.selectedSessionId = sessionId;
-  state.messages = [];
 
   if (freeMode) {
-    // Free chat — no book context
     state.selectedBookId = null;
-    updateScopeChip();
-    renderBookList();
+    state.messages = [];
     clearEntityData();
     renderActiveTab();
     renderChapterList();
   } else {
     const session = state.sessions.find(s => s.id === sessionId);
     if (session?.messages?.length) state.messages = session.messages;
-    // If session is tied to a book, auto-select that book
     if (session?.bookId && session.bookId !== state.selectedBookId) {
       state.selectedBookId = session.bookId;
       renderBookList();
       loadBookEntities(session.bookId);
     }
-    updateScopeChip();
   }
 
+  updateScopeChip();
   renderSessionList();
+  renderBookList();
   renderChatFeed();
   updateContextStrip();
 }
@@ -214,29 +209,36 @@ function renderBookList() {
 }
 
 function selectBook(id) {
+  // Toggle: clicking active book goes back to free mode
+  if (id === state.selectedBookId && !state.freeMode) {
+    selectSession(FREE_SESSION_ID, true);
+    return;
+  }
+
   state.selectedBookId = id;
   state.freeMode = false;
   state.activeChapterId = null;
   state.activeEntity = null;
   clearEntityData();
-  renderBookList();
   closeEntityEditor();
   closeChapterEditor();
+  renderBookList();
   updateScopeChip();
   updateContextStrip();
 
-  // Find or create a session for this book
-  const existing = state.sessions.find(s => s.bookId === id || s.id.includes(id.toLowerCase()));
+  // Use existing session for this book or default
+  const existing = state.sessions.find(s => s.bookId === id);
   if (existing) {
-    selectSession(existing.id, false);
+    state.selectedSessionId = existing.id;
+    if (existing.messages?.length) state.messages = existing.messages;
   } else {
-    // Use the default lorecore session but with book context
     state.selectedSessionId = FREE_SESSION_ID;
-    renderSessionList();
-    renderChatFeed();
+    state.messages = [];
   }
 
-  if (id) loadBookEntities(id);
+  renderSessionList();
+  renderChatFeed();
+  loadBookEntities(id);
 }
 
 function clearEntityData() {
@@ -275,13 +277,26 @@ function switchTab(tab) {
   if (tab === "chapters") renderChapterList(); else renderEntityList(tab);
   updateQcLabel(tab);
 }
-function renderActiveTab() { const tab = state.activeEntityTab; if (tab === "chapters") renderChapterList(); else renderEntityList(tab); }
-function getList(tab) { return { characters: state.characters, worlds: state.worlds, scenes: state.scenes, drafts: state.drafts, notes: state.notes }[tab] || []; }
+function renderActiveTab() {
+  const tab = state.activeEntityTab;
+  if (tab === "chapters") renderChapterList(); else renderEntityList(tab);
+}
+function getList(tab) {
+  return { characters: state.characters, worlds: state.worlds, scenes: state.scenes, drafts: state.drafts, notes: state.notes }[tab] || [];
+}
 
 function renderEntityList(tab) {
   const el = qs("#entityList"); if (!el) return;
+  // No book selected — show prompt regardless of data
+  if (state.freeMode || !state.selectedBookId) {
+    el.innerHTML = `<div class="lib-placeholder muted">Select a book to load ${tab}.</div>`;
+    return;
+  }
   const items = getList(tab);
-  if (!items.length) { el.innerHTML = `<div class="lib-placeholder muted">${state.selectedBookId ? `No ${tab} yet.` : "Select a book."}</div>`; return; }
+  if (!items.length) {
+    el.innerHTML = `<div class="lib-placeholder muted">No ${tab} yet. Press + New.</div>`;
+    return;
+  }
   el.innerHTML = items.map(item => `
     <button class="entity-card ${state.activeEntity?.data?.id === item.id ? "entity-card--active" : ""}"
       type="button" data-entity-tab="${escHtml(tab)}" data-entity-id="${escHtml(item.id)}">
@@ -293,15 +308,16 @@ function renderEntityList(tab) {
 
 // ── Entity editor ─────────────────────────────────────────────────────────────
 const ENTITY_PANEL_FIELDS = {
-  character: [ {id:"ep_name",label:"Name",type:"input"},{id:"ep_role",label:"Role",type:"input"},{id:"ep_desc",label:"Description",type:"textarea"},{id:"ep_traits",label:"Key traits",type:"input"},{id:"ep_arc",label:"Arc",type:"textarea"},{id:"ep_voice",label:"Voice",type:"input"} ],
-  world:     [ {id:"ep_name",label:"Name",type:"input"},{id:"ep_desc",label:"Description",type:"textarea"},{id:"ep_tone",label:"Tone / genre",type:"input"},{id:"ep_rules",label:"World rules",type:"textarea"},{id:"ep_factions",label:"Factions",type:"textarea"} ],
-  scene:     [ {id:"ep_name",label:"Title",type:"input"},{id:"ep_desc",label:"Description",type:"textarea"},{id:"ep_pov",label:"POV",type:"input"},{id:"ep_beats",label:"Beats",type:"textarea"},{id:"ep_outcome",label:"Outcome",type:"input"} ],
-  draft:     [ {id:"ep_name",label:"Title",type:"input"},{id:"ep_desc",label:"Content",type:"textarea"} ],
-  note:      [ {id:"ep_name",label:"Title",type:"input"},{id:"ep_desc",label:"Content",type:"textarea"} ],
+  character: [{id:"ep_name",label:"Name",type:"input"},{id:"ep_role",label:"Role",type:"input"},{id:"ep_desc",label:"Description",type:"textarea"},{id:"ep_traits",label:"Key traits",type:"input"},{id:"ep_arc",label:"Arc",type:"textarea"},{id:"ep_voice",label:"Voice",type:"input"}],
+  world:     [{id:"ep_name",label:"Name",type:"input"},{id:"ep_desc",label:"Description",type:"textarea"},{id:"ep_tone",label:"Tone / genre",type:"input"},{id:"ep_rules",label:"World rules",type:"textarea"},{id:"ep_factions",label:"Factions",type:"textarea"}],
+  scene:     [{id:"ep_name",label:"Title",type:"input"},{id:"ep_desc",label:"Description",type:"textarea"},{id:"ep_pov",label:"POV",type:"input"},{id:"ep_beats",label:"Beats",type:"textarea"},{id:"ep_outcome",label:"Outcome",type:"input"}],
+  draft:     [{id:"ep_name",label:"Title",type:"input"},{id:"ep_desc",label:"Content",type:"textarea"}],
+  note:      [{id:"ep_name",label:"Title",type:"input"},{id:"ep_desc",label:"Content",type:"textarea"}],
 };
 function tabToSingular(tab) { return tab.replace(/s$/,""); }
 
 function openEntityEditor(tab, item, isNew = false) {
+  if (state.freeMode || !state.selectedBookId) { showToast("Select a book first", "warn"); return; }
   const singular = tabToSingular(tab);
   state.activeEntity = { type: singular, data: item, isNew };
   qs("#entityEditorEyebrow").textContent = singular.charAt(0).toUpperCase() + singular.slice(1);
@@ -313,10 +329,11 @@ function openEntityEditor(tab, item, isNew = false) {
     </label>`).join("");
   if (item) {
     const set = (id, v) => { const el = qs(`#${id}`); if (el && v != null) el.value = Array.isArray(v) ? v.join(", ") : v; };
-    set("ep_name", item.title || item.raw?.name || ""); set("ep_desc", item.description || item.raw?.summary || "");
-    set("ep_role", item.raw?.role || ""); set("ep_traits", item.raw?.traits || ""); set("ep_arc", item.raw?.arc || "");
-    set("ep_voice", item.raw?.voice || ""); set("ep_tone", item.raw?.tone || ""); set("ep_rules", item.raw?.rules || "");
-    set("ep_factions", item.raw?.factions || ""); set("ep_pov", item.raw?.pov || ""); set("ep_beats", item.raw?.beats || item.raw?.beat_notes || ""); set("ep_outcome", item.raw?.outcome || "");
+    set("ep_name", item.title||item.raw?.name||""); set("ep_desc", item.description||item.raw?.summary||"");
+    set("ep_role", item.raw?.role||""); set("ep_traits", item.raw?.traits||""); set("ep_arc", item.raw?.arc||"");
+    set("ep_voice", item.raw?.voice||""); set("ep_tone", item.raw?.tone||""); set("ep_rules", item.raw?.rules||"");
+    set("ep_factions", item.raw?.factions||""); set("ep_pov", item.raw?.pov||"");
+    set("ep_beats", item.raw?.beats||item.raw?.beat_notes||""); set("ep_outcome", item.raw?.outcome||"");
   }
   qs("#extractStatus").style.display = "none";
   qs("#entityEditorEmpty").style.display = "none";
@@ -367,7 +384,9 @@ async function saveEntity() {
 // ── Chapters ──────────────────────────────────────────────────────────────────
 function renderChapterList() {
   const el = qs("#chapterList"); if (!el) return;
-  if (!state.selectedBookId) { el.innerHTML = `<div class="lib-placeholder muted">Select a book.</div>`; return; }
+  if (state.freeMode || !state.selectedBookId) {
+    el.innerHTML = `<div class="lib-placeholder muted">Select a book.</div>`; return;
+  }
   if (!state.chapters.length) { el.innerHTML = `<div class="lib-placeholder muted">No chapters yet.</div>`; return; }
   el.innerHTML = state.chapters.map((ch, i) => `
     <button class="chapter-item ${ch.id === state.activeChapterId ? "chapter-item--active" : ""}" type="button" data-chapter-id="${escHtml(ch.id)}">
@@ -378,6 +397,7 @@ function renderChapterList() {
       </div>
     </button>`).join("");
 }
+
 function openChapter(id) {
   const ch = state.chapters.find(c => c.id === id); if (!ch) return;
   state.activeChapterId = id; renderChapterList();
@@ -418,7 +438,10 @@ async function saveChapter() {
   if (statusEl) statusEl.textContent = `Saved · ${new Date().toLocaleTimeString()}`;
   renderChapterList(); showToast("Chapter saved", "good");
 }
-function navigateChapter(dir) { const idx = state.chapters.findIndex(c => c.id === state.activeChapterId); const next = state.chapters[idx + dir]; if (next) openChapter(next.id); }
+function navigateChapter(dir) {
+  const idx = state.chapters.findIndex(c => c.id === state.activeChapterId);
+  const next = state.chapters[idx + dir]; if (next) openChapter(next.id);
+}
 
 // ── Quick create ──────────────────────────────────────────────────────────────
 const QC_FIELDS = {
@@ -431,15 +454,17 @@ const QC_FIELDS = {
 };
 const QC_ROUTES = { characters:"/api/lorecore/characters", worlds:"/api/lorecore/worlds", scenes:"/api/lorecore/scenes", chapters:"/api/lorecore/chapters", drafts:null, notes:null };
 function updateQcLabel(tab) { const el = qs("#qcLabel"); if (el) el.textContent = `New ${tabToSingular(tab)}`; }
+
 function openQuickCreate() {
+  if (state.freeMode || !state.selectedBookId) { showToast("Select a book first", "warn"); return; }
   const tab = state.activeEntityTab; updateQcLabel(tab);
-  const defs = QC_FIELDS[tab] || [];
-  qs("#qcFields").innerHTML = defs.map(f => `
+  qs("#qcFields").innerHTML = (QC_FIELDS[tab]||[]).map(f => `
     <label class="inline-field" style="margin-bottom:6px;"><span class="soft">${escHtml(f.label)}</span>
       ${f.type==="textarea" ? `<textarea class="textarea" id="${f.id}" placeholder="${escHtml(f.p||"")}" rows="2"></textarea>` : `<input class="input" id="${f.id}" placeholder="${escHtml(f.p||"")}" />`}
     </label>`).join("");
   qs("#quickCreatePanel").style.display = "block";
 }
+
 async function quickCreate() {
   const tab = state.activeEntityTab;
   const get = id => qs(`#${id}`)?.value.trim() || "";
@@ -476,8 +501,9 @@ async function extractFromChat(type) {
   if (type === "chapter") { set("chapterTitleInput", data.title||""); set("chapterContent", data.content||""); updateWordCount(); }
   else {
     set("ep_name", data.name||data.title||""); set("ep_desc", data.description||data.summary||"");
-    set("ep_role", data.role||""); set("ep_traits", data.traits||""); set("ep_arc", data.arc||""); set("ep_voice", data.voice||"");
-    set("ep_tone", data.tone||""); set("ep_rules", data.rules||""); set("ep_factions", data.factions||""); set("ep_pov", data.pov||""); set("ep_beats", data.beats||""); set("ep_outcome", data.outcome||"");
+    set("ep_role", data.role||""); set("ep_traits", data.traits||""); set("ep_arc", data.arc||"");
+    set("ep_voice", data.voice||""); set("ep_tone", data.tone||""); set("ep_rules", data.rules||"");
+    set("ep_factions", data.factions||""); set("ep_pov", data.pov||""); set("ep_beats", data.beats||""); set("ep_outcome", data.outcome||"");
     if (qs("#entityEditorTitle") && (data.name||data.title)) qs("#entityEditorTitle").textContent = data.name||data.title;
   }
   if (statusEl) statusEl.textContent = "✓ Filled from conversation. Review and save.";
@@ -488,7 +514,8 @@ async function extractFromChat(type) {
 function renderChatFeed() {
   const feed = qs("#chatFeed"); if (!feed) return;
   if (!state.messages.length) {
-    feed.innerHTML = `<div class="chat-placeholder"><div class="chat-placeholder-icon">📖</div><div class="chat-placeholder-title">LoreCore thinking room</div><div class="muted" style="font-size:13px;">Select a model${state.freeMode ? " — no book context (free chat)" : " — book: " + (state.books.find(b=>b.id===state.selectedBookId)?.title||"none")}.</div></div>`;
+    const bookName = !state.freeMode && state.selectedBookId ? state.books.find(b=>b.id===state.selectedBookId)?.title : null;
+    feed.innerHTML = `<div class="chat-placeholder"><div class="chat-placeholder-icon">📖</div><div class="chat-placeholder-title">LoreCore thinking room</div><div class="muted" style="font-size:13px;">${bookName ? `Book: ${escHtml(bookName)}` : "Free chat — no book context"}</div></div>`;
     return;
   }
   feed.innerHTML = state.messages.map(msg => {
@@ -549,17 +576,19 @@ async function loadOverview() {
   if (!r.ok) { setChip("#libraryStatusChip","Failed","status-chip--warn"); showToast("Overview failed","warn"); return; }
   const ov = r.body || {};
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
-  const rawSessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]);
-  state.sessions = rawSessions.map(normalizeSession);
-  if (ov.chat_session?.messages?.length && !state.messages.length) state.messages = ov.chat_session.messages.map(normalizeMsg);
-  if (!state.selectedBookId && state.books.length && !state.freeMode) state.selectedBookId = state.books[0].id;
+  state.sessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]).map(normalizeSession);
+  if (ov.chat_session?.messages?.length && !state.messages.length && state.freeMode) {
+    state.messages = ov.chat_session.messages.map(normalizeMsg);
+  }
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
   renderSessionList();
   updateScopeChip();
   updateContextStrip();
   renderChatFeed();
-  if (state.selectedBookId && !state.freeMode) await loadBookEntities(state.selectedBookId);
+  renderActiveTab();
+  renderChapterList();
+  renderEntityCounts();
 }
 
 async function createBook() {
@@ -596,15 +625,19 @@ async function exportLore() {
 function updateContextStrip() {
   const book = state.books.find(b => b.id === state.selectedBookId);
   const set = (id, v) => { const el = qs(id); if (el) el.textContent = v; };
-  set("#ctxBook",    state.freeMode ? "Free chat" : (book?.title || "None"));
+  set("#ctxBook", state.freeMode ? "Free chat" : (book?.title || "None"));
   set("#ctxSession", state.selectedSessionId || "—");
-  set("#ctxMode",    state.chatMode);
-  set("#ctxModels",  state.selectedModels.join(", ") || "—");
+  set("#ctxMode", state.chatMode);
+  set("#ctxModels", state.selectedModels.join(", ") || "—");
 }
 
 function renderEntityCounts() {
   const box = qs("#entityCountBox"); if (!box) return;
-  box.innerHTML = `<strong>${state.books.length} books</strong><span>${state.characters.length} characters · ${state.worlds.length} worlds · ${state.scenes.length} scenes · ${state.chapters.length} chapters · ${state.drafts.length} drafts · ${state.notes.length} notes</span>`;
+  if (state.freeMode || !state.selectedBookId) {
+    box.innerHTML = `<strong>${state.books.length} books</strong><span>Select a book to see counts.</span>`;
+    return;
+  }
+  box.innerHTML = `<strong>${state.books.find(b=>b.id===state.selectedBookId)?.title||"Book"}</strong><span>${state.characters.length} characters · ${state.worlds.length} worlds · ${state.scenes.length} scenes · ${state.chapters.length} chapters · ${state.drafts.length} drafts · ${state.notes.length} notes</span>`;
 }
 
 // ── Drag resize ───────────────────────────────────────────────────────────────
@@ -612,17 +645,13 @@ function initDragResize() {
   const handle = qs("#chatResizeHandle");
   const feed = qs("#chatFeed");
   if (!handle || !feed) return;
-
   const KEY = "lorecore_chat_height";
   const saved = parseInt(localStorage.getItem(KEY));
   if (saved > 80 && saved < 900) { feed.style.minHeight = saved + "px"; feed.style.maxHeight = saved + "px"; }
-
   let dragging = false, startY = 0, startH = 0;
-
   handle.addEventListener("mousedown", e => {
     dragging = true; startY = e.clientY; startH = feed.getBoundingClientRect().height;
-    document.body.style.cursor = "ns-resize"; document.body.style.userSelect = "none";
-    e.preventDefault();
+    document.body.style.cursor = "ns-resize"; document.body.style.userSelect = "none"; e.preventDefault();
   });
   document.addEventListener("mousemove", e => {
     if (!dragging) return;
@@ -635,8 +664,7 @@ function initDragResize() {
     localStorage.setItem(KEY, Math.round(feed.getBoundingClientRect().height));
   });
   handle.addEventListener("touchstart", e => {
-    dragging = true; startY = e.touches[0].clientY; startH = feed.getBoundingClientRect().height;
-    e.preventDefault();
+    dragging = true; startY = e.touches[0].clientY; startH = feed.getBoundingClientRect().height; e.preventDefault();
   }, { passive: false });
   document.addEventListener("touchmove", e => {
     if (!dragging) return;
@@ -651,42 +679,24 @@ function initDragResize() {
 
 // ── Events ────────────────────────────────────────────────────────────────────
 function bindEvents() {
-  // Free chat
   qs("#freeChatBtn")?.addEventListener("click", () => selectSession(FREE_SESSION_ID, true));
-
-  // Session list
   qs("#sessionList")?.addEventListener("click", e => {
-    const btn = e.target.closest("[data-session-id]");
-    if (btn) selectSession(btn.dataset.sessionId, false);
+    const btn = e.target.closest("[data-session-id]"); if (btn) selectSession(btn.dataset.sessionId, false);
   });
-
-  // New session
   qs("#newSessionBtn")?.addEventListener("click", async () => {
-    // Create a new lorecore session by calling overview with no book
     const r = await api("/api/lorecore/overview");
-    if (r.ok) {
-      const threads = normalizeList(r.body, ["chat_threads"]);
-      state.sessions = threads.map(normalizeSession);
-      renderSessionList();
-      showToast("Sessions refreshed", "good");
-    }
+    if (r.ok) { state.sessions = normalizeList(r.body, ["chat_threads"]).map(normalizeSession); renderSessionList(); showToast("Sessions refreshed","good"); }
   });
 
-  // Book list
   qs("#bookList")?.addEventListener("click", e => {
-    const btn = e.target.closest("[data-book-id]");
-    if (btn) selectBook(btn.dataset.bookId);
+    const btn = e.target.closest("[data-book-id]"); if (btn) selectBook(btn.dataset.bookId);
   });
-
-  // New book
   qs("#newBookToggleBtn")?.addEventListener("click", () => { qs("#newBookForm").style.display="block"; qs("#newBookToggleBtn").style.display="none"; });
   qs("#cancelNewBookBtn")?.addEventListener("click", () => { qs("#newBookForm").style.display="none"; qs("#newBookToggleBtn").style.display="block"; });
   qs("#saveNewBookBtn")?.addEventListener("click", createBook);
 
-  // Tabs
   qs("#libTabs")?.addEventListener("click", e => { const btn = e.target.closest(".lib-tab"); if (btn) switchTab(btn.dataset.tab); });
 
-  // Entity list
   qs("#entityList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-entity-tab][data-entity-id]"); if (!btn) return;
     const item = getList(btn.dataset.entityTab).find(x => x.id === btn.dataset.entityId);
@@ -696,7 +706,6 @@ function bindEvents() {
   qs("#closeEntityBtn")?.addEventListener("click", closeEntityEditor);
   qs("#extractEntityBtn")?.addEventListener("click", () => extractFromChat(state.activeEntity?.type||"character"));
 
-  // Chapter
   qs("#chapterList")?.addEventListener("click", e => { const btn = e.target.closest("[data-chapter-id]"); if (btn) openChapter(btn.dataset.chapterId); });
   qs("#saveChapterBtn")?.addEventListener("click", saveChapter);
   qs("#prevChapterBtn")?.addEventListener("click", () => navigateChapter(-1));
@@ -704,19 +713,16 @@ function bindEvents() {
   qs("#chapterContent")?.addEventListener("input", updateWordCount);
   qs("#extractChapterBtn")?.addEventListener("click", () => extractFromChat("chapter"));
 
-  // Quick create
   qs("#libNewBtn")?.addEventListener("click", openQuickCreate);
   qs("#closeQcBtn")?.addEventListener("click", () => qs("#quickCreatePanel").style.display="none");
   qs("#qcCreateBtn")?.addEventListener("click", quickCreate);
 
-  // Extract panel
   qs("#openExtractBtn")?.addEventListener("click", () => {
     const type = qs("#extractTypeSelect")?.value||"character";
     if (type==="chapter") { switchTab("chapters"); extractFromChat("chapter"); }
     else { switchTab(type+"s"); openEntityEditor(type+"s", null, true); }
   });
 
-  // Mode cards
   qs("#modeCards")?.addEventListener("click", e => {
     const card = e.target.closest(".mode-card"); if (!card) return;
     state.chatMode = card.dataset.mode;
@@ -725,11 +731,9 @@ function bindEvents() {
     renderModelSelector(); updateContextStrip();
   });
 
-  // Send
   qs("#sendBtn")?.addEventListener("click", sendMessage);
   qs("#messageInput")?.addEventListener("keydown", e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
 
-  // Pipeline
   qs("#runStageBtn")?.addEventListener("click", runStage);
   qs("#exportBtn")?.addEventListener("click", exportLore);
   qs("#refreshBtn")?.addEventListener("click", loadOverview);
