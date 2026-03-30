@@ -22,11 +22,8 @@ const state = {
   dirty: false,
   modelChanges: {},
   apiKeys: {},
-  // Per-model reasoning config: { alias: { mode: "preset"|"custom", preset: "chat", krlLayers: [], customLayerIds: [] } }
   modelReasoning: {},
-  // Custom layer library: [{ id, name, content }]
   customLayers: [],
-  // Which custom layer is expanded for editing: { alias_layerId }
   expandedLayers: new Set(),
 };
 
@@ -66,7 +63,6 @@ async function api(path, opts = {}) {
   } catch (e) { return { ok: false, status: 0, error: String(e) }; }
 }
 
-// ── Load ──────────────────────────────────────────────────────────────────────
 async function loadAll() {
   setChip("#globalStatusChip", "Loading", "status-chip--warn");
   const [modelsR, settingsR] = await Promise.all([
@@ -85,7 +81,6 @@ async function loadAll() {
       const keyMatch = notes.match(/api_key=(\S+)/);
       if (keyMatch && keyMatch[1] !== "ollama") state.apiKeys[m.provider] = keyMatch[1];
     });
-    // Load reasoning config
     state.modelReasoning = settingsR.body.model_reasoning || {};
     state.customLayers = settingsR.body.custom_layers || [];
   }
@@ -93,7 +88,6 @@ async function loadAll() {
   setChip("#globalStatusChip", "Saved", "status-chip--good");
 }
 
-// ── Render all ────────────────────────────────────────────────────────────────
 function renderAll() {
   renderRoster();
   renderDefaults();
@@ -112,7 +106,6 @@ function groupByProvider(models) {
   return groups;
 }
 
-// ── Roster ────────────────────────────────────────────────────────────────────
 function renderRoster() {
   const container = qs("#providerGroups"); if (!container) return;
   const groups = groupByProvider(state.models);
@@ -206,12 +199,10 @@ function parseSurfaces(val) {
   try { return JSON.parse(val || "[]"); } catch { return []; }
 }
 
-// ── Defaults ──────────────────────────────────────────────────────────────────
 function renderDefaults() {
   const s = state.settings;
   const modeEl = qs("#defaultMode");
   if (modeEl && s.default_home_mode) modeEl.value = s.default_home_mode;
-
   const container = qs("#defaultModelsList"); if (!container) return;
   const defaults = s.default_models || [];
   container.innerHTML = state.models.map(m => `
@@ -230,7 +221,6 @@ function renderDefaults() {
   });
 }
 
-// ── Policies ──────────────────────────────────────────────────────────────────
 function renderPolicies() {
   const p = state.settings.model_panel_policies || {};
   const i = p.interactive || {};
@@ -250,11 +240,9 @@ function renderPolicies() {
   set("pol_rounds", prod.panel_rounds ?? 2);
 }
 
-// ── Reasoning ─────────────────────────────────────────────────────────────────
 function renderReasoning() {
   const container = qs("#reasoningList"); if (!container) return;
 
-  // Custom layer library at top
   const libraryHtml = `
     <div class="custom-layer-library">
       <div class="custom-layer-library-head">
@@ -264,31 +252,25 @@ function renderReasoning() {
         </div>
         <button class="button button--small button--primary" id="addCustomLayerBtn">+ New layer</button>
       </div>
-      <div id="customLayerLibraryList">
-        ${renderCustomLayerLibrary()}
-      </div>
+      <div id="customLayerLibraryList">${renderCustomLayerLibrary()}</div>
     </div>
     <div class="reasoning-divider"></div>
   `;
 
-  // Per-model rows
   const modelsHtml = state.models.map(m => {
     const cfg = state.modelReasoning[m.alias] || { mode: "none", preset: "", krlLayers: [], customLayerIds: [] };
     const isCustom = cfg.mode === "custom";
     const isPreset = cfg.mode === "preset";
     const isNone = !isCustom && !isPreset;
-
     const activeKrl = isPreset
       ? (KRL_PRESETS[cfg.preset] || cfg.krlLayers || [])
       : (!isCustom ? (cfg.krlLayers || []) : []);
-
     return `
       <div class="reasoning-row" data-alias="${escHtml(m.alias)}">
         <div class="reasoning-model-info">
           <div class="reasoning-model-name">${escHtml(m.name || m.alias)}</div>
           <div class="reasoning-model-provider">${escHtml(m.provider)} · ${escHtml(m.alias)}</div>
         </div>
-
         <div class="reasoning-mode-col">
           <select class="select reasoning-preset" data-alias="${escHtml(m.alias)}">
             <option value="none" ${isNone ? "selected" : ""}>None</option>
@@ -300,18 +282,25 @@ function renderReasoning() {
             <option value="custom" ${isCustom ? "selected" : ""}>Custom layers</option>
           </select>
         </div>
-
         <div class="reasoning-layers-col">
           ${isCustom
             ? renderCustomAssignment(m.alias, cfg.customLayerIds || [])
-            : renderKrlChips(m.alias, activeKrl, isNone)
-          }
+            : renderKrlChips(m.alias, activeKrl, isNone)}
         </div>
       </div>`;
   }).join("");
 
   container.innerHTML = libraryHtml + modelsHtml;
   bindReasoningEvents();
+
+  // Bind Apply button here — it's in the static HTML above #reasoningList
+  // Remove old listener first to avoid duplicates, then re-add
+  const applyBtn = qs("#applyReasoningBtn");
+  if (applyBtn) {
+    const fresh = applyBtn.cloneNode(true);
+    applyBtn.parentNode.replaceChild(fresh, applyBtn);
+    fresh.addEventListener("click", saveReasoningOnly);
+  }
 }
 
 function renderCustomLayerLibrary() {
@@ -321,7 +310,7 @@ function renderCustomLayerLibrary() {
   return state.customLayers.map(layer => `
     <div class="custom-layer-def" data-layer-id="${escHtml(layer.id)}">
       <div class="custom-layer-def-header">
-        <span class="custom-layer-name-tag" data-layer-id="${escHtml(layer.id)}">${escHtml(layer.name)}</span>
+        <span class="custom-layer-name-tag">${escHtml(layer.name)}</span>
         <div class="button-row">
           <button class="button button--small toggle-layer-def-btn" data-layer-id="${escHtml(layer.id)}">Edit</button>
           <button class="button button--small button--danger delete-layer-def-btn" data-layer-id="${escHtml(layer.id)}">✕</button>
@@ -334,7 +323,7 @@ function renderCustomLayerLibrary() {
         </label>
         <label class="inline-field">
           <span class="soft">Prompt content</span>
-          <textarea class="textarea layer-content-input" data-layer-id="${escHtml(layer.id)}" rows="6" placeholder="Write the full prompt text for this layer. This gets injected into the system prompt when this model is used in chat.">${escHtml(layer.content)}</textarea>
+          <textarea class="textarea layer-content-input" data-layer-id="${escHtml(layer.id)}" rows="6" placeholder="Write the full prompt text for this layer.">${escHtml(layer.content)}</textarea>
         </label>
         <div class="button-row" style="margin-top:8px;">
           <button class="button button--small save-layer-def-btn" data-layer-id="${escHtml(layer.id)}">Save layer</button>
@@ -356,8 +345,6 @@ function renderKrlChips(alias, activeLayers, disabled = false) {
 function renderCustomAssignment(alias, activeIds) {
   const assigned = state.customLayers.filter(l => activeIds.includes(l.id));
   const unassigned = state.customLayers.filter(l => !activeIds.includes(l.id));
-  const expandKey = `${alias}`;
-
   return `
     <div class="custom-assignment">
       <div class="custom-assigned-chips">
@@ -380,25 +367,21 @@ function renderCustomAssignment(alias, activeIds) {
             ${unassigned.map(l => `<option value="${escHtml(l.id)}">${escHtml(l.name)}</option>`).join("")}
           </select>
         ` : ""}
-        ${!state.customLayers.length ? `<span class="muted" style="font-size:12px;">No custom layers defined yet. Create one in the library above.</span>` : ""}
+        ${!state.customLayers.length ? `<span class="muted" style="font-size:12px;">No custom layers defined yet.</span>` : ""}
       </div>
     </div>`;
 }
 
-// ── Reasoning events ──────────────────────────────────────────────────────────
 function bindReasoningEvents() {
-  // Add new custom layer
   qs("#addCustomLayerBtn")?.addEventListener("click", () => {
     const newLayer = { id: uid(), name: "New layer", content: "" };
     state.customLayers.push(newLayer);
     markDirty();
     renderReasoning();
-    // Auto-expand the new layer
     const body = qs(`#layer-def-body-${newLayer.id}`);
     if (body) body.style.display = "block";
   });
 
-  // Toggle layer def edit
   qsa(".toggle-layer-def-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.layerId;
@@ -407,7 +390,6 @@ function bindReasoningEvents() {
     });
   });
 
-  // Save layer def
   qsa(".save-layer-def-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.layerId;
@@ -419,17 +401,15 @@ function bindReasoningEvents() {
       if (contentEl) layer.content = contentEl.value;
       markDirty();
       renderReasoning();
-      showToast("Layer saved", "good");
+      showToast("Layer saved — press Apply to persist", "good");
     });
   });
 
-  // Delete layer def
   qsa(".delete-layer-def-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.layerId;
       if (!confirm("Delete this layer? It will be removed from all model assignments.")) return;
       state.customLayers = state.customLayers.filter(l => l.id !== id);
-      // Remove from all model assignments
       Object.values(state.modelReasoning).forEach(cfg => {
         cfg.customLayerIds = (cfg.customLayerIds || []).filter(lid => lid !== id);
       });
@@ -438,14 +418,12 @@ function bindReasoningEvents() {
     });
   });
 
-  // Preset selector
   qsa(".reasoning-preset").forEach(sel => {
     sel.addEventListener("change", () => {
       const alias = sel.dataset.alias;
       const val = sel.value;
       if (!state.modelReasoning[alias]) state.modelReasoning[alias] = { mode: "none", preset: "", krlLayers: [], customLayerIds: [] };
       const cfg = state.modelReasoning[alias];
-
       if (val === "none") {
         cfg.mode = "none"; cfg.preset = ""; cfg.krlLayers = [];
       } else if (val === "custom") {
@@ -456,23 +434,19 @@ function bindReasoningEvents() {
         cfg.krlLayers = KRL_PRESETS[presetKey] || [];
       }
       markDirty();
-      // Re-render just the layers col for this row
       const row = qs(`.reasoning-row[data-alias="${CSS.escape(alias)}"]`);
       if (row) {
         const col = row.querySelector(".reasoning-layers-col");
         if (col) {
-          if (cfg.mode === "custom") {
-            col.innerHTML = renderCustomAssignment(alias, cfg.customLayerIds || []);
-          } else {
-            col.innerHTML = renderKrlChips(alias, cfg.krlLayers || [], cfg.mode === "none");
-          }
+          col.innerHTML = cfg.mode === "custom"
+            ? renderCustomAssignment(alias, cfg.customLayerIds || [])
+            : renderKrlChips(alias, cfg.krlLayers || [], cfg.mode === "none");
           bindCustomAssignmentEvents(col, alias);
         }
       }
     });
   });
 
-  // KRL chip toggles
   qsa(".layer-chip:not(.layer-chip--dim)").forEach(chip => {
     chip.addEventListener("click", () => {
       const alias = chip.dataset.alias;
@@ -489,7 +463,6 @@ function bindReasoningEvents() {
     });
   });
 
-  // Custom assignment events
   qsa(".reasoning-row").forEach(row => {
     const alias = row.dataset.alias;
     const col = row.querySelector(".reasoning-layers-col");
@@ -498,27 +471,23 @@ function bindReasoningEvents() {
 }
 
 function bindCustomAssignmentEvents(col, alias) {
-  // Toggle expand inline editor
   qsa(".toggle-custom-expand", col).forEach(chip => {
     chip.addEventListener("click", () => {
       const layerId = chip.dataset.layerId;
-      const editorId = `custom-expand-${alias}-${layerId}`;
-      const editor = qs(`#${editorId}`);
+      const editor = qs(`#custom-expand-${alias}-${layerId}`);
       if (editor) editor.style.display = editor.style.display === "none" ? "block" : "none";
     });
   });
 
-  // Save inline layer edit
   qsa(".save-inline-layer-btn", col).forEach(btn => {
     btn.addEventListener("click", () => {
       const layerId = btn.dataset.layerId;
       const layer = state.customLayers.find(l => l.id === layerId);
       const editor = qs(`.inline-layer-editor[data-layer-id="${layerId}"]`, col);
-      if (layer && editor) { layer.content = editor.value; markDirty(); showToast("Layer updated", "good"); }
+      if (layer && editor) { layer.content = editor.value; markDirty(); showToast("Layer updated — press Apply to persist", "good"); }
     });
   });
 
-  // Unassign layer
   qsa(".unassign-layer-btn", col).forEach(btn => {
     btn.addEventListener("click", () => {
       const layerId = btn.dataset.layerId;
@@ -536,7 +505,6 @@ function bindCustomAssignmentEvents(col, alias) {
     });
   });
 
-  // Assign layer from dropdown
   qsa(".assign-layer-select", col).forEach(sel => {
     sel.addEventListener("change", () => {
       const layerId = sel.value;
@@ -566,7 +534,6 @@ function renderCounts() {
   ).join("") + `<div style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px;">Total active: ${state.models.filter(m => m.enabled).length}</div>`;
 }
 
-// ── Roster events ─────────────────────────────────────────────────────────────
 function bindRosterEvents() {
   qsa(".model-enabled-toggle").forEach(cb => {
     cb.addEventListener("change", () => {
@@ -657,7 +624,6 @@ function bindRosterEvents() {
   });
 }
 
-// ── Add provider ──────────────────────────────────────────────────────────────
 function bindProviderForm() {
   qs("#addProviderBtn")?.addEventListener("click", () => {
     const form = qs("#addProviderForm");
@@ -680,11 +646,31 @@ function bindProviderForm() {
     const form = qs("#addProviderForm");
     if (form) form.style.display = "none";
     ["np_id","np_name","np_url","np_key"].forEach(id => { const el = qs(`#${id}`); if (el) el.value = ""; });
-    showToast(`Provider ${name} added — now add models to it`, "good");
+    showToast(`Provider ${name} added`, "good");
   });
 }
 
-// ── Save all ──────────────────────────────────────────────────────────────────
+async function saveReasoningOnly() {
+  const btn = qs("#applyReasoningBtn");
+  if (btn) { btn.textContent = "Applying…"; btn.disabled = true; }
+
+  const payload = {
+    ...state.settings,
+    model_reasoning: state.modelReasoning,
+    custom_layers: state.customLayers,
+  };
+
+  const r = await api("/api/settings", { method: "PUT", body: { values: payload } });
+
+  if (btn) { btn.textContent = "Apply reasoning changes"; btn.disabled = false; }
+
+  if (!r.ok) { showToast(`Apply failed: ${r.status}`, "warn"); return; }
+
+  state.settings = { ...state.settings, model_reasoning: state.modelReasoning, custom_layers: state.customLayers };
+  setChip("#globalStatusChip", "Saved", "status-chip--good");
+  showToast("Reasoning changes applied", "good");
+}
+
 async function saveAll() {
   setChip("#globalStatusChip", "Saving…", "status-chip--warn");
   let ok = true;
@@ -732,7 +718,6 @@ async function saveAll() {
   if (ok) showToast("All changes saved", "good");
 }
 
-// ── Nav + init ────────────────────────────────────────────────────────────────
 function bindNav() {
   qsa(".snav-item").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -762,4 +747,8 @@ function init() {
   loadAll();
 }
 
-document.addEventListener("DOMContentLoaded", init);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
