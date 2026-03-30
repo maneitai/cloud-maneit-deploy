@@ -55,7 +55,6 @@
         <div class="lib-placeholder">Loading…</div>
       </div>
 
-      <!-- New book -->
       <div id="newBookForm" class="new-book-form" style="display:none;">
         <div class="eyebrow" style="margin-bottom:8px;">New book</div>
         <input class="input" id="newBookTitle" placeholder="Title" style="margin-bottom:6px;" />
@@ -89,8 +88,8 @@
             </button>
           </div>
           <div class="model-selector">
-            <div class="eyebrow" style="margin-bottom:5px;">Models</div>
-            <div id="modelList" class="model-list">
+            <div class="eyebrow" style="margin-bottom:5px;">Model</div>
+            <div id="modelSelectorWrap">
               <div class="muted" style="font-size:12px;">Loading…</div>
             </div>
           </div>
@@ -107,14 +106,14 @@
           <div class="chat-placeholder">
             <div class="chat-placeholder-icon">📖</div>
             <div class="chat-placeholder-title">LoreCore thinking room</div>
-            <div class="muted" style="font-size:13px;">Select models and a session to start. Book context optional.</div>
+            <div class="muted" style="font-size:13px;">Select a model and session to start.</div>
           </div>
         </div>
 
         <!-- Input -->
         <div class="chat-input-area">
           <textarea class="textarea chat-textarea" id="messageInput"
-            placeholder="Think out loud. Build characters, worlds, plot. Ctrl+Enter to send." rows="3"></textarea>
+            placeholder="Think out loud. Enter to send, Shift+Enter for newline." rows="3"></textarea>
           <div class="chat-input-actions">
             <span class="muted" id="chatStatusText" style="font-size:12px;"></span>
             <button class="button button--primary" id="sendBtn" type="button">Send</button>
@@ -122,10 +121,9 @@
         </div>
       </div>
 
-      <!-- ── Library section — unified tabbed space ── -->
+      <!-- ── Library section ── -->
       <div class="library-section" id="librarySection">
 
-        <!-- Tab bar -->
         <div class="lib-tab-bar">
           <div class="lib-tabs" id="libTabs">
             <button class="lib-tab lib-tab--active" data-tab="characters">Characters</button>
@@ -141,19 +139,15 @@
           </div>
         </div>
 
-        <!-- Tab content -->
         <div class="lib-content" id="libContent">
 
-          <!-- Characters / Worlds / Scenes / Drafts / Notes — entity view -->
           <div id="tabEntity" class="tab-pane tab-pane--active">
             <div class="entity-columns">
-              <!-- List -->
               <div class="entity-list-col">
                 <div id="entityList" class="entity-list">
                   <div class="lib-placeholder muted">Select a book to load entities.</div>
                 </div>
               </div>
-              <!-- Editor -->
               <div class="entity-editor-col" id="entityEditorCol">
                 <div class="entity-editor-empty" id="entityEditorEmpty">
                   <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">
@@ -179,16 +173,13 @@
             </div>
           </div>
 
-          <!-- Chapters — chapter view -->
           <div id="tabChapters" class="tab-pane" style="display:none;">
             <div class="chapter-columns">
-              <!-- Chapter list -->
               <div class="chapter-list-col">
                 <div id="chapterList" class="chapter-list">
                   <div class="lib-placeholder muted">Select a book.</div>
                 </div>
               </div>
-              <!-- Chapter editor -->
               <div class="chapter-editor-col">
                 <div id="chapterEditorEmpty" class="chapter-editor-empty">
                   <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">
@@ -208,8 +199,7 @@
                       <button class="button button--small button--primary" id="saveChapterBtn" type="button">Save</button>
                     </div>
                   </div>
-                  <textarea class="textarea chapter-content" id="chapterContent"
-                    placeholder="Write here…"></textarea>
+                  <textarea class="textarea chapter-content" id="chapterContent" placeholder="Write here…"></textarea>
                   <div class="chapter-footer">
                     <span class="muted" id="chapterSaveStatus" style="font-size:11px;"></span>
                     <span class="muted" id="wordCountDetail" style="font-size:11px;"></span>
@@ -221,7 +211,6 @@
 
         </div>
 
-        <!-- Quick create panel — shown when + New pressed -->
         <div id="quickCreatePanel" class="quick-create-panel" style="display:none;">
           <div class="qc-header">
             <span class="eyebrow" id="qcLabel">New entity</span>
@@ -300,33 +289,12 @@
           <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open extract panel</button>
         </article>
 
-        <article class="card card--compact">
-          <div class="eyebrow">Backend routes</div>
-          <ul class="rule-list">
-            <li><code>GET /api/lorecore/overview</code> ✓</li>
-            <li><code>POST /api/lorecore/sessions/{id}/messages</code> ✓</li>
-            <li><code>POST /api/lorecore/books</code> ✓</li>
-            <li><code>PUT /api/lorecore/books/{id}</code> ✓</li>
-            <li><code>POST /api/lorecore/books/{id}/run-stage</code> ✓</li>
-            <li><code>GET /api/lorecore/drafts</code> ✓</li>
-            <li><code>GET /api/lorecore/notes</code> ✓</li>
-            <li><code>POST /api/lorecore/worlds</code> ✓</li>
-            <li><code>POST /api/lorecore/characters</code> ✓</li>
-            <li><code>POST /api/lorecore/scenes</code> ✓</li>
-            <li><code>POST /api/lorecore/exports</code> ✓</li>
-            <li><code>POST/PUT /api/lorecore/chapters</code> — pending</li>
-            <li><code>PUT characters/worlds/scenes/{id}</code> — pending</li>
-            <li><code>POST /api/lorecore/extract</code> — pending</li>
-          </ul>
-        </article>
-
       </div>
     </aside>
   </div>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
 <script>
   (function () {
     try {
