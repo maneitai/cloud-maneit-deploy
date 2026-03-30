@@ -16,7 +16,7 @@
       <div class="header-copy">
         <div class="eyebrow">PM</div>
         <h1>LoreCore</h1>
-        <p>Creative thinking room · Story library · Chapter editor · Pipeline</p>
+        <p>Creative thinking room · Story library · Chapter editor</p>
       </div>
     </div>
     <nav class="global-nav" aria-label="Primary">
@@ -33,9 +33,8 @@
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
     <div class="header-actions">
-      <span class="chip">Books</span>
-      <span class="chip">Chapters</span>
-      <span class="chip">Discussion</span>
+      <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+      <button class="button button--small" id="exportBtn" type="button">Export</button>
     </div>
   </header>
 
@@ -44,42 +43,49 @@
     <!-- ══ LEFT RAIL ══ -->
     <aside class="panel panel-left">
 
-      <!-- Chat history -->
-      <div class="left-section">
-        <div class="section-title">
+      <!-- CHAT HISTORY — top of left rail -->
+      <div class="left-block">
+        <div class="left-block-head">
           <div>
             <div class="eyebrow">Chat</div>
-            <h2>History</h2>
+            <div class="left-block-title">History</div>
           </div>
           <span class="status-chip status-chip--warn" id="sessionChip">—</span>
         </div>
-        <select class="select session-list" id="sessionSelect" size="5">
-          <option value="">No session</option>
-        </select>
-        <div class="button-row" style="margin-top:6px;">
-          <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
-          <button class="button button--small" id="exportBtn" type="button">Export</button>
+
+        <!-- Free chat option always at top -->
+        <button class="session-item session-item--free" id="freeChatBtn" type="button">
+          <div class="session-item-title">🌐 Free chat</div>
+          <div class="session-item-sub">No book context</div>
+        </button>
+
+        <div id="sessionList" class="session-list">
+          <div class="lib-placeholder">Loading…</div>
         </div>
+
+        <button class="button button--small" id="newSessionBtn" type="button" style="width:100%;margin-top:6px;">+ New session</button>
       </div>
 
       <div class="left-divider"></div>
 
-      <!-- Books library -->
-      <div class="left-section">
-        <div class="section-title">
+      <!-- BOOKS — bottom of left rail -->
+      <div class="left-block left-block--grow">
+        <div class="left-block-head">
           <div>
             <div class="eyebrow">Library</div>
-            <h2>Books</h2>
+            <div class="left-block-title">Books</div>
           </div>
           <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
         </div>
+
         <div id="bookList" class="book-list">
           <div class="lib-placeholder">Loading…</div>
         </div>
+
         <div id="newBookForm" class="new-book-form" style="display:none;">
           <div class="eyebrow" style="margin-bottom:8px;">New book</div>
           <input class="input" id="newBookTitle" placeholder="Title" style="margin-bottom:6px;" />
-          <input class="input" id="newBookStatus" placeholder="Phase: outline / draft / revision…" style="margin-bottom:6px;" />
+          <input class="input" id="newBookStatus" placeholder="Phase: outline / draft…" style="margin-bottom:6px;" />
           <textarea class="textarea" id="newBookDesc" placeholder="Description" rows="2" style="margin-bottom:8px;"></textarea>
           <div class="button-row">
             <button class="button" id="cancelNewBookBtn" type="button">Cancel</button>
@@ -94,55 +100,64 @@
     <!-- ══ CENTER ══ -->
     <main class="panel panel-center">
 
-      <!-- ── Chat section ── -->
-      <div class="chat-section">
-        <div class="chat-controls">
-          <div class="mode-cards" id="modeCards">
-            <button class="mode-card mode-card--active" data-mode="single">
-              <span class="mode-icon">◉</span><span class="mode-label">Single</span>
-            </button>
-            <button class="mode-card" data-mode="parallel">
-              <span class="mode-icon">⊞</span><span class="mode-label">Parallel</span>
-            </button>
-            <button class="mode-card" data-mode="discussion">
-              <span class="mode-icon">⬡</span><span class="mode-label">Discussion</span>
-            </button>
+      <!-- ── Chat controls bar ── -->
+      <div class="chat-controls-bar">
+        <div class="mode-cards" id="modeCards">
+          <button class="mode-card mode-card--active" data-mode="single">
+            <span class="mode-icon">◉</span><span class="mode-label">Single</span>
+          </button>
+          <button class="mode-card" data-mode="parallel">
+            <span class="mode-icon">⊞</span><span class="mode-label">Parallel</span>
+          </button>
+          <button class="mode-card" data-mode="discussion">
+            <span class="mode-icon">⬡</span><span class="mode-label">Discussion</span>
+          </button>
+        </div>
+
+        <div class="model-selector-wrap">
+          <div class="eyebrow" style="margin-bottom:4px;">Model</div>
+          <div id="modelSelectorWrap">
+            <div class="muted" style="font-size:12px;">Loading…</div>
           </div>
-          <div class="model-selector">
-            <div class="eyebrow" style="margin-bottom:5px;">Model</div>
-            <div id="modelSelectorWrap">
-              <div class="muted" style="font-size:12px;">Loading…</div>
-            </div>
-          </div>
-          <div class="book-scope-row">
+        </div>
+
+        <div class="ctx-strip">
+          <div class="ctx-item">
             <span class="soft">Book</span>
-            <span class="status-chip status-chip--warn" id="libScopeChip">No book</span>
+            <span class="status-chip" id="libScopeChip">Free chat</span>
           </div>
-        </div>
-
-        <div class="chat-feed" id="chatFeed">
-          <div class="chat-placeholder">
-            <div class="chat-placeholder-icon">📖</div>
-            <div class="chat-placeholder-title">LoreCore thinking room</div>
-            <div class="muted" style="font-size:13px;">Select a model and session to start.</div>
-          </div>
-        </div>
-
-        <!-- Drag handle -->
-        <div id="chatResizeHandle" class="chat-resize-handle" title="Drag to resize chat"></div>
-
-        <div class="chat-input-area">
-          <textarea class="textarea chat-textarea" id="messageInput"
-            placeholder="Think out loud. Enter to send, Shift+Enter for newline." rows="3"></textarea>
-          <div class="chat-input-actions">
-            <span class="muted" id="chatStatusText" style="font-size:12px;"></span>
-            <button class="button button--primary" id="sendBtn" type="button">Send</button>
+          <div class="ctx-item">
+            <span class="soft">Session</span>
+            <strong id="ctxSession" class="ctx-val">—</strong>
           </div>
         </div>
       </div>
 
-      <!-- ── Library section ── -->
+      <!-- ── Chat feed ── -->
+      <div class="chat-feed" id="chatFeed">
+        <div class="chat-placeholder">
+          <div class="chat-placeholder-icon">📖</div>
+          <div class="chat-placeholder-title">LoreCore thinking room</div>
+          <div class="muted" style="font-size:13px;">Select a model. Optionally select a book for context.</div>
+        </div>
+      </div>
+
+      <!-- ── Drag handle ── -->
+      <div id="chatResizeHandle" class="chat-resize-handle" title="Drag to resize"></div>
+
+      <!-- ── Input ── -->
+      <div class="chat-input-area">
+        <textarea class="textarea chat-textarea" id="messageInput"
+          placeholder="Think out loud. Enter to send, Shift+Enter for newline." rows="3"></textarea>
+        <div class="chat-input-actions">
+          <span class="muted" id="chatStatusText" style="font-size:12px;"></span>
+          <button class="button button--primary" id="sendBtn" type="button">Send</button>
+        </div>
+      </div>
+
+      <!-- ── Library tabs + content ── -->
       <div class="library-section" id="librarySection">
+
         <div class="lib-tab-bar">
           <div class="lib-tabs" id="libTabs">
             <button class="lib-tab lib-tab--active" data-tab="characters">Characters</button>
@@ -159,6 +174,7 @@
 
         <div class="lib-content" id="libContent">
 
+          <!-- Entity tabs -->
           <div id="tabEntity" class="tab-pane tab-pane--active">
             <div class="entity-columns">
               <div class="entity-list-col">
@@ -166,11 +182,9 @@
                   <div class="lib-placeholder muted">Select a book to load entities.</div>
                 </div>
               </div>
-              <div class="entity-editor-col" id="entityEditorCol">
-                <div class="entity-editor-empty" id="entityEditorEmpty">
-                  <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">
-                    Select an entity to edit, or press + New.
-                  </div>
+              <div class="entity-editor-col">
+                <div id="entityEditorEmpty" class="entity-editor-empty">
+                  <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">Select an entity or press + New.</div>
                 </div>
                 <div id="entityEditorActive" style="display:none;">
                   <div class="entity-editor-header">
@@ -191,6 +205,7 @@
             </div>
           </div>
 
+          <!-- Chapter tab -->
           <div id="tabChapters" class="tab-pane" style="display:none;">
             <div class="chapter-columns">
               <div class="chapter-list-col">
@@ -200,9 +215,7 @@
               </div>
               <div class="chapter-editor-col">
                 <div id="chapterEditorEmpty" class="chapter-editor-empty">
-                  <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">
-                    Select a chapter, or press + New.
-                  </div>
+                  <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">Select a chapter or press + New.</div>
                 </div>
                 <div id="chapterEditorActive" style="display:none;flex-direction:column;gap:10px;">
                   <div class="chapter-editor-header">
@@ -244,19 +257,16 @@
 
     <!-- ══ RIGHT RAIL ══ -->
     <aside class="panel panel-right">
-      <div class="section-title">
-        <div>
-          <div class="eyebrow">Right rail</div>
-          <h2>Pipeline</h2>
-        </div>
+      <div class="right-block-head">
+        <div class="eyebrow">Right rail</div>
+        <div class="left-block-title">Pipeline</div>
         <span class="status-chip status-chip--warn" id="pipelineStatusChip">Idle</span>
       </div>
-      <div class="stack stack--md">
+      <div class="stack--md">
         <article class="card card--compact">
           <div class="eyebrow">Active context</div>
           <div class="context-rows">
             <div class="context-row"><span class="soft">Book</span><strong id="ctxBook">—</strong></div>
-            <div class="context-row"><span class="soft">Session</span><strong id="ctxSession">—</strong></div>
             <div class="context-row"><span class="soft">Mode</span><strong id="ctxMode">single</strong></div>
             <div class="context-row"><span class="soft">Models</span><strong id="ctxModels">—</strong></div>
           </div>
@@ -288,7 +298,7 @@
         </article>
         <article class="card card--compact">
           <div class="eyebrow">Extract from chat</div>
-          <p class="muted" style="font-size:12px;margin-bottom:8px;">Select type then use Extract from chat in the entity or chapter editor.</p>
+          <p class="muted" style="font-size:12px;margin-bottom:8px;">Use Extract from chat in the entity or chapter editor.</p>
           <label class="inline-field">
             <span class="soft">Extract as</span>
             <select class="select" id="extractTypeSelect">
@@ -303,6 +313,7 @@
         </article>
       </div>
     </aside>
+
   </div>
 </div>
 
