@@ -43,29 +43,52 @@
 
     <!-- ══ LEFT RAIL ══ -->
     <aside class="panel panel-left">
-      <div class="section-title">
-        <div>
-          <div class="eyebrow">Library</div>
-          <h2>Books</h2>
+
+      <!-- Chat history -->
+      <div class="left-section">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Chat</div>
+            <h2>History</h2>
+          </div>
+          <span class="status-chip status-chip--warn" id="sessionChip">—</span>
         </div>
-        <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
-      </div>
-
-      <div id="bookList" class="book-list">
-        <div class="lib-placeholder">Loading…</div>
-      </div>
-
-      <div id="newBookForm" class="new-book-form" style="display:none;">
-        <div class="eyebrow" style="margin-bottom:8px;">New book</div>
-        <input class="input" id="newBookTitle" placeholder="Title" style="margin-bottom:6px;" />
-        <input class="input" id="newBookStatus" placeholder="Phase: outline / draft / revision…" style="margin-bottom:6px;" />
-        <textarea class="textarea" id="newBookDesc" placeholder="Description" rows="2" style="margin-bottom:8px;"></textarea>
-        <div class="button-row">
-          <button class="button" id="cancelNewBookBtn" type="button">Cancel</button>
-          <button class="button button--primary" id="saveNewBookBtn" type="button">Create</button>
+        <select class="select session-list" id="sessionSelect" size="5">
+          <option value="">No session</option>
+        </select>
+        <div class="button-row" style="margin-top:6px;">
+          <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+          <button class="button button--small" id="exportBtn" type="button">Export</button>
         </div>
       </div>
-      <button class="button" id="newBookToggleBtn" type="button" style="width:100%;margin-top:8px;">+ New book</button>
+
+      <div class="left-divider"></div>
+
+      <!-- Books library -->
+      <div class="left-section">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Library</div>
+            <h2>Books</h2>
+          </div>
+          <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
+        </div>
+        <div id="bookList" class="book-list">
+          <div class="lib-placeholder">Loading…</div>
+        </div>
+        <div id="newBookForm" class="new-book-form" style="display:none;">
+          <div class="eyebrow" style="margin-bottom:8px;">New book</div>
+          <input class="input" id="newBookTitle" placeholder="Title" style="margin-bottom:6px;" />
+          <input class="input" id="newBookStatus" placeholder="Phase: outline / draft / revision…" style="margin-bottom:6px;" />
+          <textarea class="textarea" id="newBookDesc" placeholder="Description" rows="2" style="margin-bottom:8px;"></textarea>
+          <div class="button-row">
+            <button class="button" id="cancelNewBookBtn" type="button">Cancel</button>
+            <button class="button button--primary" id="saveNewBookBtn" type="button">Create</button>
+          </div>
+        </div>
+        <button class="button" id="newBookToggleBtn" type="button" style="width:100%;margin-top:8px;">+ New book</button>
+      </div>
+
     </aside>
 
     <!-- ══ CENTER ══ -->
@@ -73,8 +96,6 @@
 
       <!-- ── Chat section ── -->
       <div class="chat-section">
-
-        <!-- Mode + model controls -->
         <div class="chat-controls">
           <div class="mode-cards" id="modeCards">
             <button class="mode-card mode-card--active" data-mode="single">
@@ -93,15 +114,12 @@
               <div class="muted" style="font-size:12px;">Loading…</div>
             </div>
           </div>
-          <div class="session-controls">
-            <select class="select" id="sessionSelect"><option value="">No session</option></select>
-            <span class="status-chip status-chip--warn" id="sessionChip">—</span>
-            <button class="button" id="refreshBtn" type="button">Refresh</button>
-            <button class="button" id="exportBtn" type="button">Export</button>
+          <div class="book-scope-row">
+            <span class="soft">Book</span>
+            <span class="status-chip status-chip--warn" id="libScopeChip">No book</span>
           </div>
         </div>
 
-        <!-- Feed -->
         <div class="chat-feed" id="chatFeed">
           <div class="chat-placeholder">
             <div class="chat-placeholder-icon">📖</div>
@@ -110,7 +128,9 @@
           </div>
         </div>
 
-        <!-- Input -->
+        <!-- Drag handle -->
+        <div id="chatResizeHandle" class="chat-resize-handle" title="Drag to resize chat"></div>
+
         <div class="chat-input-area">
           <textarea class="textarea chat-textarea" id="messageInput"
             placeholder="Think out loud. Enter to send, Shift+Enter for newline." rows="3"></textarea>
@@ -123,7 +143,6 @@
 
       <!-- ── Library section ── -->
       <div class="library-section" id="librarySection">
-
         <div class="lib-tab-bar">
           <div class="lib-tabs" id="libTabs">
             <button class="lib-tab lib-tab--active" data-tab="characters">Characters</button>
@@ -134,7 +153,6 @@
             <button class="lib-tab" data-tab="notes">Notes</button>
           </div>
           <div class="lib-tab-actions">
-            <span class="status-chip status-chip--warn" id="libScopeChip">No book</span>
             <button class="button button--small" id="libNewBtn" type="button">+ New</button>
           </div>
         </div>
@@ -233,9 +251,7 @@
         </div>
         <span class="status-chip status-chip--warn" id="pipelineStatusChip">Idle</span>
       </div>
-
       <div class="stack stack--md">
-
         <article class="card card--compact">
           <div class="eyebrow">Active context</div>
           <div class="context-rows">
@@ -245,7 +261,6 @@
             <div class="context-row"><span class="soft">Models</span><strong id="ctxModels">—</strong></div>
           </div>
         </article>
-
         <article class="card card--compact">
           <div class="eyebrow">Run stage</div>
           <label class="inline-field" style="margin-top:8px;">
@@ -265,14 +280,12 @@
             <strong>Result</strong><span id="stageResultText"></span>
           </div>
         </article>
-
         <article class="card card--compact">
           <div class="eyebrow">Counts</div>
           <div class="preview-box" id="entityCountBox">
             <strong>—</strong><span>Loading…</span>
           </div>
         </article>
-
         <article class="card card--compact">
           <div class="eyebrow">Extract from chat</div>
           <p class="muted" style="font-size:12px;margin-bottom:8px;">Select type then use Extract from chat in the entity or chapter editor.</p>
@@ -288,7 +301,6 @@
           </label>
           <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open extract panel</button>
         </article>
-
       </div>
     </aside>
   </div>
