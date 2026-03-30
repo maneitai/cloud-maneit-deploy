@@ -4,195 +4,225 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Settings</title>
-  <meta name="description" content="Provider registry, cloud control, API keys, role-class routing policy, and model plus layer matching for Maneit." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
-  <div class="page-shell">
-    <header class="page-header">
-      <div class="brand">
-        <div class="brand-mark">PM</div>
-        <div class="header-copy">
-          <div class="eyebrow">PM</div>
-          <h1>Settings</h1>
-          <p>Provider registry and cloud control for Ollama, enterprise APIs, API keys, routing policy, and model plus layer matching.</p>
-        </div>
-      </div>
+<div class="page-shell">
 
-      <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link" href="../">Home</a>
-        <a class="nav-link" href="../projects/">Projects</a>
-        <a class="nav-link" href="../pipelines/">Pipelines</a>
-        <a class="nav-link" href="../agent-factory/">Agent Factory</a>
-        <a class="nav-link" href="../appcreator/">AppCreator</a>
-        <a class="nav-link" href="../portalcreator/">PortalCreator</a>
-        <a class="nav-link" href="../research-core/">Research Core</a>
-        <a class="nav-link" href="../lorecore/">LoreCore</a>
-        <a class="nav-link" href="../game-designer/">Game Designer</a>
-        <a class="nav-link" href="../state/">State</a>
-        <a class="nav-link nav-link--active" href="../settings/">Settings</a>
-      </nav>
-
-      <div class="header-actions">
-        <span class="chip">Provider registry</span>
-        <span class="chip">Cloud control</span>
-        <span class="chip">Keys + routing</span>
-      </div>
-    </header>
-
-    <div class="settings-topbar">
-      <div class="page-title">
-        <h2>Provider + Cloud Control</h2>
-        <p>Settings owns providers, API keys, cloud and enterprise policy, and model plus layer matching. State stays local runtime only. Pipelines stays pipeline composition only. Agent Factory stays reasoning layer creation only.</p>
-      </div>
-      <div class="button-row">
-        <button class="button" id="saveProfileBtn" type="button">Save provider profile</button>
-        <button class="button" id="testProvidersBtn" type="button">Refresh inventory</button>
-        <button class="button" id="reloadInventoryBtn" type="button">Reload runtime profiles</button>
-        <button class="button button--primary" id="syncAliasesBtn" type="button">Build service plan</button>
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">PM</div>
+      <div class="header-copy">
+        <div class="eyebrow">PM</div>
+        <h1>Settings</h1>
+        <p>Cloud model roster · API keys · Chat defaults · Panel policies · Reasoning layers</p>
       </div>
     </div>
+    <nav class="global-nav" aria-label="Primary">
+      <a class="nav-link" href="../">Home</a>
+      <a class="nav-link" href="../projects/">Projects</a>
+      <a class="nav-link" href="../pipelines/">Pipelines</a>
+      <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+      <a class="nav-link" href="../appcreator/">AppCreator</a>
+      <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+      <a class="nav-link" href="../research-core/">Research Core</a>
+      <a class="nav-link" href="../lorecore/">LoreCore</a>
+      <a class="nav-link" href="../game-designer/">Game Designer</a>
+      <a class="nav-link" href="../state/">State</a>
+      <a class="nav-link nav-link--active" href="../settings/">Settings</a>
+    </nav>
+    <div class="header-actions">
+      <span class="status-chip status-chip--warn" id="globalStatusChip">Loading</span>
+      <button class="button button--primary" id="saveAllBtn" type="button">Save all changes</button>
+    </div>
+  </header>
 
-    <section class="hero-grid">
-      <article class="panel metric-card">
-        <div class="stat-label">Provider Mode</div>
-        <div class="stat-value" id="statProviderMode">Hybrid</div>
-        <div class="chip-row">
-          <div class="chip good">Local + cloud</div>
+  <div class="settings-layout">
+
+    <!-- LEFT NAV -->
+    <nav class="settings-nav panel">
+      <div class="eyebrow" style="margin-bottom:10px;">Sections</div>
+      <button class="snav-item snav-item--active" data-section="roster">
+        <span class="snav-icon">⬡</span> Cloud models
+      </button>
+      <button class="snav-item" data-section="defaults">
+        <span class="snav-icon">◉</span> Chat defaults
+      </button>
+      <button class="snav-item" data-section="policies">
+        <span class="snav-icon">⊞</span> Panel policies
+      </button>
+      <button class="snav-item" data-section="reasoning">
+        <span class="snav-icon">◈</span> Reasoning layers
+      </button>
+      <div class="snav-divider"></div>
+      <div class="snav-counts" id="snavCounts"></div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="settings-main">
+
+      <!-- ══ ROSTER ══ -->
+      <section class="settings-section active" id="section-roster">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Cloud models</div>
+            <h2>Model roster</h2>
+            <p class="muted">Only models listed here appear in Home and LoreCore chat. Local models are managed in State. Grouped by provider.</p>
+          </div>
+          <button class="button button--primary" id="addProviderBtn" type="button">+ Add provider</button>
         </div>
-      </article>
 
-      <article class="panel metric-card">
-        <div class="stat-label">Configured Keys</div>
-        <div class="stat-value" id="statConfiguredKeys">0</div>
-        <div class="chip-row">
-          <div class="chip good">Masked storage</div>
+        <!-- Add provider form -->
+        <div id="addProviderForm" class="inset-form" style="display:none;">
+          <div class="eyebrow" style="margin-bottom:10px;">New provider</div>
+          <div class="form-grid-3">
+            <label class="inline-field">
+              <span class="soft">Provider ID</span>
+              <input class="input" id="np_id" placeholder="e.g. anthropic" />
+            </label>
+            <label class="inline-field">
+              <span class="soft">Display name</span>
+              <input class="input" id="np_name" placeholder="Anthropic" />
+            </label>
+            <label class="inline-field">
+              <span class="soft">Base URL</span>
+              <input class="input" id="np_url" placeholder="https://api.anthropic.com/v1" />
+            </label>
+            <label class="inline-field">
+              <span class="soft">API key</span>
+              <input class="input" id="np_key" type="password" placeholder="sk-ant-..." />
+            </label>
+            <label class="inline-field">
+              <span class="soft">Driver</span>
+              <select class="select" id="np_driver">
+                <option value="openai_api">openai_api (default)</option>
+                <option value="anthropic_api">anthropic_api</option>
+                <option value="google_api">google_api</option>
+              </select>
+            </label>
+          </div>
+          <div class="button-row" style="margin-top:12px;">
+            <button class="button" id="cancelProviderBtn" type="button">Cancel</button>
+            <button class="button button--primary" id="saveProviderBtn" type="button">Add provider</button>
+          </div>
         </div>
-      </article>
 
-      <article class="panel metric-card">
-        <div class="stat-label">Enabled Providers</div>
-        <div class="stat-value" id="statEnabledProviders">0</div>
-        <div class="chip-row">
-          <div class="chip">Registry-backed</div>
+        <!-- Provider groups -->
+        <div id="providerGroups"></div>
+      </section>
+
+      <!-- ══ DEFAULTS ══ -->
+      <section class="settings-section" id="section-defaults">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Chat defaults</div>
+            <h2>Default chat behaviour</h2>
+          </div>
         </div>
-      </article>
-
-      <article class="panel metric-card">
-        <div class="stat-label">Cloud Eligible Roles</div>
-        <div class="stat-value" id="statCloudEligibleRoles">0</div>
-        <div class="chip-row">
-          <div class="chip warn">Heavy only</div>
+        <div class="card">
+          <div class="field-grid">
+            <label class="inline-field">
+              <span class="soft">Default chat mode</span>
+              <select class="select" id="defaultMode">
+                <option value="single">Single — one model responds</option>
+                <option value="parallel">Parallel — all selected models respond</option>
+                <option value="discussion">Discussion — lead + support models</option>
+              </select>
+            </label>
+            <div class="inline-field">
+              <span class="soft">Default models (pre-selected in chat)</span>
+              <div id="defaultModelsList" class="check-grid"></div>
+            </div>
+          </div>
         </div>
-      </article>
-    </section>
+      </section>
 
-    <section class="main-layout">
-      <div class="stack">
-        <article class="panel">
-          <div class="section-title">
-            <h3>Provider Registry</h3>
-            <span>What providers exist and whether they are allowed to take work</span>
+      <!-- ══ POLICIES ══ -->
+      <section class="settings-section" id="section-policies">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Panel policies</div>
+            <h2>Interactive + production behaviour</h2>
           </div>
-          <div class="registry-list" id="providerRegistry"></div>
-        </article>
+        </div>
+        <div class="policy-grid">
+          <div class="card">
+            <div class="eyebrow" style="margin-bottom:12px;">Interactive (chat panels)</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Reserved hot slots</span>
+                <input class="input" type="number" id="pol_hot" min="0" max="8" value="1" />
+              </label>
+              <label class="inline-field">
+                <span class="soft">Max active support models</span>
+                <input class="input" type="number" id="pol_support" min="0" max="8" value="2" />
+              </label>
+              <label class="inline-field">
+                <span class="soft">Max selected participants</span>
+                <input class="input" type="number" id="pol_participants" min="1" max="16" value="8" />
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="pol_diversity" />
+                <span>Require family diversity</span>
+              </label>
+            </div>
+          </div>
+          <div class="card">
+            <div class="eyebrow" style="margin-bottom:12px;">Production (pipeline panels)</div>
+            <div class="field-grid">
+              <label class="checkbox-row">
+                <input type="checkbox" id="pol_quality" checked />
+                <span>Quality over speed</span>
+              </label>
+              <label class="inline-field">
+                <span class="soft">Max loaded total</span>
+                <input class="input" type="number" id="pol_loaded" min="1" max="10" value="3" />
+              </label>
+              <label class="inline-field">
+                <span class="soft">Minimum distinct families</span>
+                <input class="input" type="number" id="pol_families" min="1" max="6" value="3" />
+              </label>
+              <label class="checkbox-row">
+                <input type="checkbox" id="pol_longjobs" checked />
+                <span>Allow long-running jobs</span>
+              </label>
+              <label class="inline-field">
+                <span class="soft">Panel rounds</span>
+                <input class="input" type="number" id="pol_rounds" min="1" max="5" value="2" />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <article class="panel">
-          <div class="section-title">
-            <h3>API Keys + Secrets</h3>
-            <span>Masked credential fields for cloud and enterprise providers</span>
+      <!-- ══ REASONING ══ -->
+      <section class="settings-section" id="section-reasoning">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">Reasoning layers</div>
+            <h2>Per-model KRL v3 layer assignment</h2>
+            <p class="muted">Select which KRL v3 reasoning layers are injected when each model is used in chat. Stored in Settings and applied at runtime.</p>
           </div>
-          <div class="secrets-grid" id="secretsGrid"></div>
-          <div class="footer-note">This page is where you configure access. State should never become a secret-management surface.</div>
-        </article>
+        </div>
+        <div id="reasoningList"></div>
+      </section>
 
-        <article class="panel">
-          <div class="section-title">
-            <h3>Role-Class Provider Policy</h3>
-            <span>Which providers are preferred or allowed for each role class</span>
-          </div>
-          <div class="policy-list" id="policyList"></div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Model + Layer Matching</h3>
-            <span>Recommended provider and reasoning layer pairing by role family</span>
-          </div>
-          <div class="matching-list" id="matchingList"></div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Cloud Alias Mapping</h3>
-            <span>Alias remains the role contract, not the provider model name</span>
-          </div>
-          <div class="alias-list" id="aliasList"></div>
-        </article>
-      </div>
-
-      <aside class="stack">
-        <article class="panel">
-          <div class="section-title">
-            <h3>Provider Census</h3>
-            <span>At-a-glance availability</span>
-          </div>
-          <div class="chip-row" id="providerCensus"></div>
-          <div class="footer-note">You should be able to glance here and know what is connected, configured, or blocked without reading the whole page.</div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Integration Guardrails</h3>
-            <span>Rules that stop provider sprawl</span>
-          </div>
-          <div class="chip-row">
-            <div class="chip">Alias is role contract</div>
-            <div class="chip">No direct model-name routing</div>
-            <div class="chip">Cloud use must be explicit</div>
-            <div class="chip good">Heavy roles only by policy</div>
-            <div class="chip">Secrets stay in Settings</div>
-          </div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Live Provider Trace</h3>
-            <span>Connection and sync feedback</span>
-          </div>
-          <div class="live-log" id="providerTrace"></div>
-        </article>
-
-        <article class="panel">
-          <div class="section-title">
-            <h3>Cloud Runtime Controls</h3>
-            <span>Provider-facing alias management</span>
-          </div>
-          <div class="cloud-runtime-list" id="cloudRuntimeList"></div>
-        </article>
-      </aside>
-    </section>
+    </main>
   </div>
+</div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <script>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script>
   (function(){
     try {
-      const params = new URLSearchParams(window.location.search);
-      const apiBase = params.get('apiBase');
-      if (apiBase) {
-        const normalized = apiBase.replace(/\/+$/, '');
-        window.PM_API_BASE = normalized;
-        localStorage.setItem('PM_API_BASE', normalized);
-      } else {
-        const saved = localStorage.getItem('PM_API_BASE');
-        if (saved) window.PM_API_BASE = saved;
-      }
-    } catch (error) {}
+      const p = new URLSearchParams(window.location.search);
+      const b = p.get('apiBase');
+      if (b) { window.PM_API_BASE = b.replace(/\/+$/,''); localStorage.setItem('PM_API_BASE', window.PM_API_BASE); }
+      else { const s = localStorage.getItem('PM_API_BASE'); if (s) window.PM_API_BASE = s; }
+    } catch {}
   })();
-  </script>
-  <script type="module" src="page.js"></script>
+</script>
+<script type="module" src="page.js"></script>
 </body>
 </html>
