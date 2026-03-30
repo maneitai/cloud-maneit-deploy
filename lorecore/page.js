@@ -58,7 +58,6 @@ function normalizeBook(raw, i = 0) {
   };
 }
 
-// Normalize a raw message from backend — handles both {role,content} and {type,text} shapes
 function normalizeMsg(raw) {
   return {
     role: raw?.role || raw?.type || "message",
@@ -74,6 +73,7 @@ function normalizeSession(raw, i = 0) {
   return {
     id: raw?.session_public_id || raw?.public_id || raw?.id || `session_${i}`,
     title: raw?.title || raw?.name || raw?.label || `Session ${i+1}`,
+    excerpt: raw?.excerpt || "",
     messages: msgs,
     raw,
   };
@@ -626,27 +626,18 @@ async function sendMessage() {
   const allMsgs = Array.isArray(body?.messages) ? body.messages : [];
 
   if (allMsgs.length) {
-    // Backend returns {type, text, model} shape
-    // Find all messages after the last user message
     const reversedIdx = [...allMsgs].reverse().findIndex(m => (m.role || m.type) === "user");
     const newMsgs = reversedIdx >= 0 ? allMsgs.slice(allMsgs.length - reversedIdx) : allMsgs.slice(-1);
     const assistantMsgs = newMsgs.filter(m => (m.role || m.type) === "assistant");
-
     if (assistantMsgs.length) {
       assistantMsgs.forEach(m => state.messages.push({
-        role: "assistant",
-        model: m.model || "assistant",
+        role: "assistant", model: m.model || "assistant",
         content: m.content || m.text || "",
       }));
     } else {
-      // Fallback: last message regardless of type
       const last = allMsgs[allMsgs.length - 1];
       const lastContent = last?.content || last?.text || "";
-      if (lastContent) state.messages.push({
-        role: "assistant",
-        model: last?.model || "assistant",
-        content: lastContent,
-      });
+      if (lastContent) state.messages.push({ role: "assistant", model: last?.model || "assistant", content: lastContent });
     }
   } else {
     const reply = body?.content || body?.text || body?.response || "";
@@ -685,11 +676,11 @@ async function loadOverview() {
 function renderSessionSelect() {
   const sel = qs("#sessionSelect"); if (!sel) return;
   if (!state.sessions.length) {
-    sel.innerHTML = `<option value="">No session</option>`;
+    sel.innerHTML = `<option value="">No sessions</option>`;
     setChip("#sessionChip","No session","status-chip--warn"); return;
   }
   sel.innerHTML = state.sessions.map(s =>
-    `<option value="${escHtml(s.id)}">${escHtml(s.title)}</option>`
+    `<option value="${escHtml(s.id)}" ${s.id === state.selectedSessionId ? "selected" : ""}>${escHtml(s.title)}</option>`
   ).join("");
   const targetId = state.selectedSessionId || state.sessions[0].id;
   sel.value = targetId;
@@ -764,7 +755,10 @@ function initDragResize() {
 
   const STORAGE_KEY = "lorecore_chat_height";
   const saved = parseInt(localStorage.getItem(STORAGE_KEY));
-  if (saved && saved > 80 && saved < 800) feed.style.minHeight = feed.style.maxHeight = saved + "px";
+  if (saved && saved > 80 && saved < 900) {
+    feed.style.minHeight = saved + "px";
+    feed.style.maxHeight = saved + "px";
+  }
 
   let dragging = false, startY = 0, startH = 0;
 
@@ -779,9 +773,9 @@ function initDragResize() {
 
   document.addEventListener("mousemove", e => {
     if (!dragging) return;
-    const delta = e.clientY - startY;
-    const newH = Math.max(120, Math.min(800, startH + delta));
-    feed.style.minHeight = feed.style.maxHeight = newH + "px";
+    const newH = Math.max(120, Math.min(900, startH + (e.clientY - startY)));
+    feed.style.minHeight = newH + "px";
+    feed.style.maxHeight = newH + "px";
   });
 
   document.addEventListener("mouseup", () => {
@@ -789,11 +783,10 @@ function initDragResize() {
     dragging = false;
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
-    const h = parseInt(feed.style.minHeight);
-    if (h) localStorage.setItem(STORAGE_KEY, h);
+    const h = feed.getBoundingClientRect().height;
+    localStorage.setItem(STORAGE_KEY, Math.round(h));
   });
 
-  // Touch support
   handle.addEventListener("touchstart", e => {
     dragging = true;
     startY = e.touches[0].clientY;
@@ -803,16 +796,15 @@ function initDragResize() {
 
   document.addEventListener("touchmove", e => {
     if (!dragging) return;
-    const delta = e.touches[0].clientY - startY;
-    const newH = Math.max(120, Math.min(800, startH + delta));
-    feed.style.minHeight = feed.style.maxHeight = newH + "px";
+    const newH = Math.max(120, Math.min(900, startH + (e.touches[0].clientY - startY)));
+    feed.style.minHeight = newH + "px";
+    feed.style.maxHeight = newH + "px";
   }, { passive: true });
 
   document.addEventListener("touchend", () => {
     if (!dragging) return;
     dragging = false;
-    const h = parseInt(feed.style.minHeight);
-    if (h) localStorage.setItem(STORAGE_KEY, h);
+    localStorage.setItem(STORAGE_KEY, Math.round(feed.getBoundingClientRect().height));
   });
 }
 
@@ -882,6 +874,7 @@ function bindEvents() {
     updateContextStrip();
   });
 
+  // Session select — list box
   qs("#sessionSelect")?.addEventListener("change", e => {
     state.selectedSessionId = e.target.value || null;
     const session = state.sessions.find(s => s.id === state.selectedSessionId);
@@ -890,12 +883,8 @@ function bindEvents() {
   });
 
   qs("#sendBtn")?.addEventListener("click", sendMessage);
-
   qs("#messageInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
   });
 
   qs("#runStageBtn")?.addEventListener("click", runStage);
