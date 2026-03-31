@@ -69,13 +69,33 @@
     .panel-right   { grid-area: right; }
     .calendar-panel { grid-area: cal; }
 
-    /* chat thread fills available height */
+    /* chat thread — resizable */
     .home-chat-card { display: flex; flex-direction: column; }
     .chat-thread {
-      flex: 1;
       min-height: 340px;
       max-height: 520px;
       overflow-y: auto;
+    }
+
+    /* drag handle */
+    #chatResizeHandle {
+      width: 100%;
+      height: 8px;
+      cursor: ns-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 4px 0;
+      opacity: 0.4;
+      transition: opacity 0.15s;
+    }
+    #chatResizeHandle:hover { opacity: 1; }
+    #chatResizeHandle::before {
+      content: "";
+      width: 40px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--muted, #8ea0b5);
     }
 
     /* ── 1650px — drop right rail below center ── */
@@ -252,6 +272,8 @@
               <p>Select an existing chat or create a new one to begin.</p>
             </div>
           </div>
+
+          <div id="chatResizeHandle" title="Drag to resize chat"></div>
 
           <div class="composer-box">
             <div class="soft composer-note">Enter sends · Shift+Enter new line</div>
