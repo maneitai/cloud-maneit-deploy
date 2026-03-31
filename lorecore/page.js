@@ -134,11 +134,8 @@ function renderModelSelector() {
 // ── Session list ──────────────────────────────────────────────────────────────
 function renderSessionList() {
   const el = qs("#sessionList"); if (!el) return;
-  // Update free chat button active state
   const freeBtn = qs("#freeChatBtn");
-  if (freeBtn) {
-    freeBtn.classList.toggle("session-item--active", state.freeMode);
-  }
+  if (freeBtn) freeBtn.classList.toggle("session-item--active", state.freeMode);
   if (!state.sessions.length) {
     el.innerHTML = `<div class="lib-placeholder">No sessions yet.</div>`;
     setChip("#sessionChip", "—", "status-chip--warn"); return;
@@ -159,7 +156,6 @@ function renderSessionList() {
 function selectSession(sessionId, freeMode = false) {
   state.freeMode = freeMode;
   state.selectedSessionId = sessionId;
-
   if (freeMode) {
     state.selectedBookId = null;
     state.messages = [];
@@ -175,7 +171,6 @@ function selectSession(sessionId, freeMode = false) {
       loadBookEntities(session.bookId);
     }
   }
-
   updateScopeChip();
   renderSessionList();
   renderBookList();
@@ -186,8 +181,7 @@ function selectSession(sessionId, freeMode = false) {
 function updateScopeChip() {
   const chip = qs("#libScopeChip"); if (!chip) return;
   if (state.freeMode || !state.selectedBookId) {
-    chip.textContent = "Free chat";
-    chip.className = "status-chip";
+    chip.textContent = "Free chat"; chip.className = "status-chip";
   } else {
     const b = state.books.find(x => x.id === state.selectedBookId);
     chip.textContent = b ? b.title : "No book";
@@ -209,12 +203,10 @@ function renderBookList() {
 }
 
 function selectBook(id) {
-  // Toggle: clicking active book goes back to free mode
   if (id === state.selectedBookId && !state.freeMode) {
     selectSession(FREE_SESSION_ID, true);
     return;
   }
-
   state.selectedBookId = id;
   state.freeMode = false;
   state.activeChapterId = null;
@@ -225,8 +217,6 @@ function selectBook(id) {
   renderBookList();
   updateScopeChip();
   updateContextStrip();
-
-  // Use existing session for this book or default
   const existing = state.sessions.find(s => s.bookId === id);
   if (existing) {
     state.selectedSessionId = existing.id;
@@ -235,7 +225,6 @@ function selectBook(id) {
     state.selectedSessionId = FREE_SESSION_ID;
     state.messages = [];
   }
-
   renderSessionList();
   renderChatFeed();
   loadBookEntities(id);
@@ -287,7 +276,6 @@ function getList(tab) {
 
 function renderEntityList(tab) {
   const el = qs("#entityList"); if (!el) return;
-  // No book selected — show prompt regardless of data
   if (state.freeMode || !state.selectedBookId) {
     el.innerHTML = `<div class="lib-placeholder muted">Select a book to load ${tab}.</div>`;
     return;
@@ -397,7 +385,6 @@ function renderChapterList() {
       </div>
     </button>`).join("");
 }
-
 function openChapter(id) {
   const ch = state.chapters.find(c => c.id === id); if (!ch) return;
   state.activeChapterId = id; renderChapterList();
@@ -534,20 +521,16 @@ async function sendMessage() {
   if (!state.selectedModels.length) { showToast("Select a model first", "warn"); return; }
   const content = qs("#messageInput")?.value.trim() || "";
   if (!content) return;
-
   const book = state.books.find(b => b.id === state.selectedBookId);
   const payload = { prompt: content, mode: state.chatMode, selected_models: state.selectedModels };
   if (!state.freeMode && state.selectedBookId) payload.book_public_id = state.selectedBookId;
   if (!state.freeMode && book?.libraryId) payload.library_public_id = book.libraryId;
-
   state.messages.push({ role: "user", content, model: "" });
   qs("#messageInput").value = "";
   renderChatFeed();
   const st = qs("#chatStatusText"); if (st) st.textContent = "Sending…";
-
   const r = await api(`/api/lorecore/sessions/${encodeURIComponent(state.selectedSessionId)}/messages`, { method:"POST", body:payload });
   if (!r.ok) { if (st) st.textContent = "Send failed"; showToast("Send failed","warn"); return; }
-
   const body = r.body;
   const allMsgs = Array.isArray(body?.messages) ? body.messages : [];
   if (allMsgs.length) {
@@ -577,9 +560,10 @@ async function loadOverview() {
   const ov = r.body || {};
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
   state.sessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]).map(normalizeSession);
-  if (ov.chat_session?.messages?.length && !state.messages.length && state.freeMode) {
-    state.messages = ov.chat_session.messages.map(normalizeMsg);
-  }
+
+  // DO NOT populate characters/worlds/scenes from overview — they are library-wide.
+  // Entity data only loads when a specific book is selected via loadBookEntities().
+
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
   renderSessionList();
@@ -589,6 +573,32 @@ async function loadOverview() {
   renderActiveTab();
   renderChapterList();
   renderEntityCounts();
+}
+
+async function createNewSession() {
+  const btn = qs("#newSessionBtn");
+  if (btn) btn.disabled = true;
+  const r = await api("/api/chat-sessions", {
+    method: "POST",
+    body: {
+      surface: "lorecore",
+      title: "New session",
+      summary: "LoreCore creative writing thread",
+      mode: state.chatMode || "single",
+      selected_models: state.selectedModels,
+    }
+  });
+  if (btn) btn.disabled = false;
+  if (!r.ok) { showToast("Create session failed", "warn"); return; }
+  const session = normalizeSession(r.body);
+  state.sessions.unshift(session);
+  state.messages = [];
+  state.freeMode = false;
+  state.selectedSessionId = session.id;
+  renderSessionList();
+  renderChatFeed();
+  updateContextStrip();
+  showToast("New session created", "good");
 }
 
 async function createBook() {
@@ -683,10 +693,8 @@ function bindEvents() {
   qs("#sessionList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-session-id]"); if (btn) selectSession(btn.dataset.sessionId, false);
   });
-  qs("#newSessionBtn")?.addEventListener("click", async () => {
-    const r = await api("/api/lorecore/overview");
-    if (r.ok) { state.sessions = normalizeList(r.body, ["chat_threads"]).map(normalizeSession); renderSessionList(); showToast("Sessions refreshed","good"); }
-  });
+  // New session — creates a real session via API
+  qs("#newSessionBtn")?.addEventListener("click", createNewSession);
 
   qs("#bookList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-book-id]"); if (btn) selectBook(btn.dataset.bookId);
