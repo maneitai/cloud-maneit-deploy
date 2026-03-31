@@ -8,6 +8,7 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
   <style>
+    /* ── Multi-select dropdown ── */
     .multi-select-wrapper { position: relative; }
     .multi-select-trigger {
       width: 100%;
@@ -53,15 +54,14 @@
     .multi-select-option label { cursor: pointer; flex: 1; }
     .multi-select-empty { padding: 8px 10px; font-size: 0.82rem; color: var(--text-muted, #64748b); }
 
-    /* ── 3-lane home layout ── */
+    /* ── Home layout — 3 columns at 1440p ── */
     .home-layout {
       display: grid;
-      grid-template-columns: 220px 1fr 260px;
-      grid-template-rows: 1fr auto;
+      grid-template-columns: 290px 1fr 340px;
       grid-template-areas:
         "left  center right"
         "cal   cal    cal";
-      gap: var(--gap, 16px);
+      gap: 16px;
       align-items: start;
     }
     .panel-left    { grid-area: left; }
@@ -76,6 +76,29 @@
       min-height: 340px;
       max-height: 520px;
       overflow-y: auto;
+    }
+
+    /* ── 1650px — drop right rail below center ── */
+    @media (max-width: 1650px) {
+      .home-layout {
+        grid-template-columns: 280px 1fr;
+        grid-template-areas:
+          "left  center"
+          "left  right"
+          "cal   cal";
+      }
+    }
+
+    /* ── 1180px — single column ── */
+    @media (max-width: 1180px) {
+      .home-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "left"
+          "center"
+          "right"
+          "cal";
+      }
     }
   </style>
 </head>
@@ -190,7 +213,7 @@
           </article>
         </section>
 
-        <article class="card card--compact" style="margin-bottom: var(--gap, 12px);">
+        <article class="card card--compact" style="margin-bottom: 12px;">
           <div class="eyebrow">Model selection</div>
           <div class="field-grid field-grid--triple">
             <label class="inline-field">
