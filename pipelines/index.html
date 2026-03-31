@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Pipelines</title>
-  <meta name="description" content="Canonical workflow graph for stages, branches, verifier chains, handoffs, and portal projections." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
@@ -16,10 +15,9 @@
         <div class="header-copy">
           <div class="eyebrow">PM</div>
           <h1>Pipelines</h1>
-          <p>Canonical workflow graph for stage logic, verifier chains, branches, handoffs, and downstream portal projections.</p>
+          <p>Canonical workflow graph — drag nodes, connect ports, assign models, inspect stages.</p>
         </div>
       </div>
-
       <nav class="global-nav" aria-label="Primary">
         <a class="nav-link" href="../">Home</a>
         <a class="nav-link" href="../projects/">Projects</a>
@@ -33,11 +31,10 @@
         <a class="nav-link" href="../state/">State</a>
         <a class="nav-link" href="../settings/">Settings</a>
       </nav>
-
       <div class="header-actions">
         <span class="chip">Node graph</span>
         <span class="chip">Role-driven</span>
-        <span class="chip">Inspector-based overrides</span>
+        <span class="chip">Model-assigned</span>
       </div>
     </header>
 
@@ -46,21 +43,23 @@
         <div class="eyebrow">Surface contract</div>
         <strong>Pipelines is the canonical workflow graph</strong>
       </div>
-      <div class="banner-note">Build the workflow here. Do not hide orchestration logic in portals or runtime pages.</div>
+      <div class="banner-note">Build workflow here. Drag nodes. Connect ports. Assign models. Click an edge to remove it.</div>
     </section>
 
     <section class="pipeline-layout">
+
+      <!-- ── LEFT ── -->
       <aside class="panel panel-left">
         <div class="section-title">
           <div>
             <div class="eyebrow">Left rail</div>
             <h2>Spawn + library</h2>
           </div>
-          <span class="status-chip status-chip--good">Canonical flow layer</span>
+          <span class="status-chip status-chip--good">Graph layer</span>
         </div>
 
         <div class="stack stack--md">
-          <article class="card card--compact">
+          <article class="card">
             <div class="eyebrow">Selected pipeline</div>
             <div class="field-grid">
               <label class="inline-field">
@@ -70,13 +69,13 @@
             </div>
           </article>
 
-          <article class="card card--compact">
+          <article class="card">
             <div class="eyebrow">Spawn node</div>
             <div class="field-grid">
               <label class="inline-field">
                 <span class="soft">Role class</span>
                 <select class="select" id="spawnRoleClass">
-                  <option selected>Coder</option>
+                  <option>Coder</option>
                   <option>Planner</option>
                   <option>Verifier</option>
                   <option>Auditor</option>
@@ -84,32 +83,16 @@
                   <option>Branch</option>
                   <option>Handoff</option>
                   <option>Export</option>
-                  <option>Portal Projection</option>
+                  <option>Projection</option>
                 </select>
               </label>
 
               <label class="inline-field">
                 <span class="soft">Subtype</span>
-                <select class="select" id="spawnSubtype">
-                  <option selected>C++ Coder</option>
-                  <option>Python Coder</option>
-                  <option>JS Coder</option>
-                  <option>HTML Coder</option>
-                  <option>CSS Coder</option>
-                  <option>Backend API Coder</option>
-                </select>
+                <select class="select" id="spawnSubtype"></select>
               </label>
 
-              <label class="inline-field">
-                <span class="soft">Profile / model family</span>
-                <select class="select" id="spawnProfile">
-                  <option selected>DeepSeek</option>
-                  <option>Starcoder</option>
-                  <option>Llama</option>
-                  <option>Qwen Coder</option>
-                  <option>Ollama Cloud Heavy Coder</option>
-                </select>
-              </label>
+              <div id="spawnModelWrap"></div>
 
               <div class="button-row">
                 <button class="button button--primary" id="spawnNodeBtn" type="button">Spawn node</button>
@@ -118,7 +101,7 @@
             </div>
           </article>
 
-          <article class="card card--compact">
+          <article class="card">
             <div class="eyebrow">Role library</div>
             <div class="library-list" id="roleLibraryList">
               <button class="library-chip" type="button">Input</button>
@@ -132,71 +115,75 @@
               <button class="library-chip" type="button">Handoff</button>
               <button class="library-chip" type="button">Export</button>
               <button class="library-chip" type="button">Portal Projection</button>
+              <button class="library-chip" type="button">Router</button>
             </div>
           </article>
 
-          <article class="card card--compact">
+          <article class="card">
             <div class="eyebrow">Graph rules</div>
             <ul class="rule-list">
-              <li>Nodes represent roles or stages, not raw models.</li>
-              <li>Agent Factory defines defaults.</li>
-              <li>Pipelines composes and overrides.</li>
-              <li>State runs.</li>
-              <li>Settings decides provider policy.</li>
+              <li>Drag nodes to reposition.</li>
+              <li>Click a port → click another port to connect.</li>
+              <li>Click an edge to remove it.</li>
+              <li>Assign a model to each node via spawn or inspector.</li>
+              <li>Nodes represent roles, not raw models.</li>
             </ul>
           </article>
         </div>
       </aside>
 
+      <!-- ── CENTER ── -->
       <main class="panel panel-center">
         <div class="section-title">
           <div>
             <div class="eyebrow">Center surface</div>
             <h2>Pipeline workbench</h2>
-            <p class="muted">Drag nodes, connect stages, branch explicitly, and keep verifier logic visible. The graph is the truth.</p>
+            <p class="muted">Drag nodes · Click ports to link · Click edges to unlink · Select node to inspect</p>
           </div>
           <div class="button-row">
-            <button class="button" id="togglePortalPreviewBtn" type="button">Toggle portal preview</button>
+            <button class="button" id="togglePortalPreviewBtn" type="button">Toggle portal view</button>
             <button class="button" id="clonePipelineBtn" type="button">Clone pipeline</button>
-            <button class="button button--primary" id="runSelectedPipelineBtn" type="button">Run selected pipeline</button>
+            <button class="button button--primary" id="runSelectedPipelineBtn" type="button">Run pipeline</button>
           </div>
         </div>
 
         <section class="workbench-meta">
           <article class="meta-card">
             <strong>Stages</strong>
-            <span>ordered flow with explicit handoffs</span>
+            <span>ordered flow with handoffs</span>
           </article>
           <article class="meta-card">
             <strong>Verifiers</strong>
-            <span>quality gates per pipeline</span>
+            <span>quality gates per stage</span>
           </article>
           <article class="meta-card">
             <strong>Branches</strong>
-            <span>room for alternate routes</span>
+            <span>alternate routes</span>
           </article>
           <article class="meta-card">
             <strong>Portal map</strong>
-            <span>simplified downstream projections</span>
+            <span>downstream projections</span>
           </article>
         </section>
 
         <div class="workbench-toolbar">
-          <button class="chip-button" type="button">select stage</button>
-          <button class="chip-button" type="button">link nodes</button>
-          <button class="chip-button" type="button">inspect verifier chain</button>
-          <button class="chip-button" type="button">clone before experimentation</button>
-          <button class="chip-button" type="button">preview portal projection</button>
+          <button class="chip-button chip-button--active" data-tool="select" type="button">select stage</button>
+          <button class="chip-button" data-tool="link" type="button">link nodes</button>
+          <button class="chip-button" data-tool="inspect" type="button">inspect selected</button>
+          <button class="chip-button chip-button--danger" data-tool="clear" type="button">clear pipeline</button>
+          <button class="chip-button" data-tool="reset" type="button">reset default</button>
         </div>
 
         <section class="workbench-canvas" id="pipelineCanvas" aria-label="Pipeline graph canvas">
           <div class="canvas-grid"></div>
-
-          <div class="edge edge--1"></div>
-          <div class="edge edge--2"></div>
-          <div class="edge edge--3"></div>
-          <div class="edge edge--4"></div>
-          <div class="edge edge--5"></div>
+          <svg id="edgeSvg" aria-hidden="true">
+            <defs>
+              <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stop-color="rgba(110,231,255,0.6)" />
+                <stop offset="100%" stop-color="rgba(139,92,246,0.6)" />
+              </linearGradient>
+            </defs>
+          </svg>
         </section>
 
         <section class="portal-preview">
@@ -206,115 +193,62 @@
         </section>
       </main>
 
-      <aside class="panel panel-right">
+      <!-- ── RIGHT — Inspector ── -->
+      <aside class="panel panel-right" id="inspectorPanel">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
             <h2>Inspector</h2>
           </div>
-          <span class="status-chip status-chip--warn">Selected stage</span>
+          <span class="status-chip status-chip--warn">Selected node</span>
         </div>
 
         <div class="stack stack--md">
-          <article class="card card--compact">
-            <div class="eyebrow">Selected node</div>
+          <article class="card">
+            <div class="eyebrow">Node</div>
             <strong id="selectedNodeTitle">No node selected</strong>
-            <p class="muted" id="selectedNodeDescription">Select a node to inspect pipeline overrides.</p>
+            <p class="muted" id="selectedNodeDescription" style="margin:6px 0 0;">Select a node to inspect.</p>
           </article>
 
-          <article class="card card--compact">
-            <div class="eyebrow">Agent Factory defaults</div>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Role profile</span>
-                <select class="select" id="inspectorRoleProfile">
-                  <option selected>brief_intake_v1</option>
-                  <option>brief_intake_strict_v2</option>
-                </select>
-              </label>
-
-              <label class="inline-field">
-                <span class="soft">Default reasoning layer</span>
-                <select class="select" id="inspectorReasoningLayer">
-                  <option selected>input_normalizer_v1</option>
-                  <option>structured_router_v1</option>
-                </select>
-              </label>
-
-              <label class="inline-field">
-                <span class="soft">Default output contract</span>
-                <select class="select" id="inspectorOutputContract">
-                  <option selected>raw_brief_payload</option>
-                  <option>normalized_brief_json</option>
-                </select>
-              </label>
-
-              <label class="inline-field">
-                <span class="soft">Default validation gate</span>
-                <select class="select" id="inspectorValidationGate">
-                  <option selected>brief_schema_gate</option>
-                  <option>input_contract_gate</option>
-                </select>
-              </label>
+          <article class="card">
+            <div class="eyebrow">Model assignment</div>
+            <div id="inspectorModelWrap">
+              <span class="soft">Select a node to assign a model.</span>
             </div>
           </article>
 
-          <article class="card card--compact">
-            <div class="eyebrow">Pipeline overrides</div>
+          <article class="card">
+            <div class="eyebrow">Execution settings</div>
             <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Primary model group</span>
-                <select class="select" id="inspectorPrimaryGroup">
-                  <option selected>router-a, router-b, router-c</option>
-                  <option>planner-a, planner-b, planner-c</option>
-                  <option>js-a, js-b, js-c</option>
-                </select>
-              </label>
-
-              <label class="inline-field">
-                <span class="soft">Fallback group</span>
-                <select class="select" id="inspectorFallbackGroup">
-                  <option selected>none</option>
-                  <option>router fallback group</option>
-                  <option>cloud heavy fallback</option>
-                </select>
-              </label>
-
-              <label class="inline-field">
-                <span class="soft">Timeout</span>
-                <select class="select" id="inspectorTimeout">
-                  <option selected>60s</option>
-                  <option>90s</option>
-                  <option>120s</option>
-                </select>
-              </label>
-
               <label class="inline-field">
                 <span class="soft">Quorum rule</span>
                 <select class="select" id="inspectorQuorumRule">
-                  <option selected>single pass</option>
+                  <option>single pass</option>
                   <option>2-of-3</option>
                   <option>3-of-3</option>
                 </select>
               </label>
-
               <label class="inline-field">
-                <span class="soft">Override reasoning layer</span>
-                <select class="select" id="inspectorOverrideReasoning">
-                  <option selected>inherit from Agent Factory</option>
-                  <option>coder_reasoning_v2</option>
-                  <option>strict_verifier_v2</option>
+                <span class="soft">Timeout</span>
+                <select class="select" id="inspectorTimeout">
+                  <option>30s</option>
+                  <option>45s</option>
+                  <option>60s</option>
+                  <option>90s</option>
+                  <option>120s</option>
+                  <option>300s</option>
                 </select>
               </label>
             </div>
           </article>
 
-          <article class="card card--compact">
+          <article class="card">
             <div class="eyebrow">Node notes</div>
             <textarea class="textarea" id="inspectorNotes" placeholder="Operator note, experiment note, or reason for override..."></textarea>
           </article>
         </div>
       </aside>
+
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -326,14 +260,13 @@
       const params = new URLSearchParams(window.location.search);
       const apiBase = params.get('apiBase');
       if (apiBase) {
-        const normalized = apiBase.replace(/\/+$/, '');
-        window.PM_API_BASE = normalized;
-        localStorage.setItem('PM_API_BASE', normalized);
+        window.PM_API_BASE = apiBase.replace(/\/+$/, '');
+        localStorage.setItem('PM_API_BASE', window.PM_API_BASE);
       } else {
         const saved = localStorage.getItem('PM_API_BASE');
         if (saved) window.PM_API_BASE = saved;
       }
-    } catch (error) {}
+    } catch(e) {}
   })();
   </script>
   <script type="module" src="page.js"></script>
