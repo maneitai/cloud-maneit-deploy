@@ -1,378 +1,680 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM — Home</title>
-  <meta name="description" content="Daily-driver AI workspace with compact history, central chat, export, todo and calendar." />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="page.css" />
-  <style>
-    /* ── Multi-select dropdown ── */
-    .multi-select-wrapper { position: relative; }
-    .multi-select-trigger {
-      width: 100%;
-      text-align: left;
-      background: var(--bg-input, #1a1f2e);
-      border: 1px solid var(--border-soft, #2a3044);
-      color: var(--text-main, #e2e8f0);
-      padding: 6px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.85rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .multi-select-trigger:hover { border-color: var(--accent, #6366f1); }
-    .multi-select-dropdown {
-      display: none;
-      position: absolute;
-      top: calc(100% + 4px);
-      left: 0;
-      right: 0;
-      z-index: 200;
-      background: var(--bg-panel, #141824);
-      border: 1px solid var(--border-soft, #2a3044);
-      border-radius: 6px;
-      max-height: 220px;
-      overflow-y: auto;
-      padding: 4px 0;
-    }
-    .multi-select-dropdown.is-open { display: block; }
-    .multi-select-option {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      font-size: 0.82rem;
-      cursor: pointer;
-      color: var(--text-main, #e2e8f0);
-    }
-    .multi-select-option:hover { background: var(--bg-hover, #1e2436); }
-    .multi-select-option input[type="checkbox"] { margin: 0; cursor: pointer; }
-    .multi-select-option label { cursor: pointer; flex: 1; }
-    .multi-select-empty { padding: 8px 10px; font-size: 0.82rem; color: var(--text-muted, #64748b); }
+:root {
+  --bg: #071019;
+  --bg-2: #0b1520;
+  --panel: rgba(11, 21, 32, 0.92);
+  --panel-2: rgba(15, 27, 40, 0.94);
+  --border: rgba(255,255,255,0.08);
+  --text: #eaf2fb;
+  --muted: #8ea0b5;
+  --accent: #6ee7ff;
+  --accent-2: #8b5cf6;
+  --good: #34d399;
+  --warn: #fbbf24;
+  --bad: #fb7185;
+  --shadow: 0 18px 60px rgba(0,0,0,0.35);
+  --radius: 20px;
+  --chip: rgba(255,255,255,0.05);
+}
 
-    /* ── Home layout — 3 columns at 1440p ── */
-    .home-layout {
-      display: grid;
-      grid-template-columns: 290px 1fr 340px;
-      grid-template-areas:
-        "left  center right"
-        "cal   cal    cal";
-      gap: 16px;
-      align-items: start;
-    }
-    .panel-left    { grid-area: left; }
-    .panel-center  { grid-area: center; }
-    .panel-right   { grid-area: right; }
-    .calendar-panel { grid-area: cal; }
+* {
+  box-sizing: border-box;
+}
 
-    /* chat thread — resizable */
-    .home-chat-card { display: flex; flex-direction: column; }
-    .chat-thread {
-      min-height: 340px;
-      max-height: 520px;
-      overflow-y: auto;
-    }
+html {
+  color-scheme: dark;
+}
 
-    /* drag handle */
-    #chatResizeHandle {
-      width: 100%;
-      height: 8px;
-      cursor: ns-resize;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 4px 0;
-      opacity: 0.4;
-      transition: opacity 0.15s;
-    }
-    #chatResizeHandle:hover { opacity: 1; }
-    #chatResizeHandle::before {
-      content: "";
-      width: 40px;
-      height: 3px;
-      border-radius: 999px;
-      background: var(--muted, #8ea0b5);
-    }
+body {
+  margin: 0;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top right, rgba(139,92,246,0.16), transparent 28%),
+    radial-gradient(circle at top left, rgba(110,231,255,0.12), transparent 22%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
 
-    /* ── 1650px — drop right rail below center ── */
-    @media (max-width: 1650px) {
-      .home-layout {
-        grid-template-columns: 280px 1fr;
-        grid-template-areas:
-          "left  center"
-          "left  right"
-          "cal   cal";
-      }
-    }
+.page-shell {
+  width: min(1840px, calc(100vw - 32px));
+  margin: 18px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-    /* ── 1180px — single column ── */
-    @media (max-width: 1180px) {
-      .home-layout {
-        grid-template-columns: 1fr;
-        grid-template-areas:
-          "left"
-          "center"
-          "right"
-          "cal";
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="page-shell">
-    <header class="page-header">
-      <div class="brand">
-        <div class="brand-mark">PM</div>
-        <div class="header-copy">
-          <div class="eyebrow">PM</div>
-          <h1>Home</h1>
-          <p>Daily-driver chat surface — history left, chat centre, export and todos right, calendar bottom.</p>
-        </div>
-      </div>
+.page-header,
+.panel,
+.surface-banner {
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
 
-      <nav class="global-nav" aria-label="Primary">
-        <a class="nav-link nav-link--active" href="./">Home</a>
-        <a class="nav-link" href="./projects/">Projects</a>
-        <a class="nav-link" href="./pipelines/">Pipelines</a>
-        <a class="nav-link" href="./agent-factory/">Agent Factory</a>
-        <a class="nav-link" href="./appcreator/">AppCreator</a>
-        <a class="nav-link" href="./portalcreator/">PortalCreator</a>
-        <a class="nav-link" href="./research-core/">Research Core</a>
-        <a class="nav-link" href="./lorecore/">LoreCore</a>
-        <a class="nav-link" href="./game-designer/">Game Designer</a>
-        <a class="nav-link" href="./state/">State</a>
-        <a class="nav-link" href="./settings/">Settings</a>
-      </nav>
+.page-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 20px;
+}
 
-      <div class="header-actions">
-        <span class="chip">Daily driver</span>
-        <span class="chip">Chat-first</span>
-        <span class="chip">Continuity-first</span>
-      </div>
-    </header>
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
-    <section class="home-layout">
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  color: #08111f;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: var(--shadow);
+}
 
-      <!-- ── LEFT — chat history ── -->
-      <aside class="panel panel-left">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Left rail</div>
-            <h2>Chats</h2>
-          </div>
-          <span class="status-chip status-chip--good">History</span>
-        </div>
+.header-copy {
+  min-width: 0;
+}
 
-        <div class="stack stack--md">
-          <article class="card card--compact">
-            <div class="eyebrow">Search</div>
-            <label class="inline-field">
-              <span class="soft">Search chats</span>
-              <input class="input" id="chatSearch" placeholder="Search title..." />
-            </label>
-          </article>
+.eyebrow {
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  margin-bottom: 4px;
+}
 
-          <article class="card card--compact">
-            <div class="section-title section-title--tight">
-              <div><div class="eyebrow">Pinned</div></div>
-            </div>
-            <div class="chat-history-list" id="pinnedChatsList"></div>
-          </article>
+.page-header h1,
+.section-title h2,
+.section-title h3 {
+  margin: 0;
+}
 
-          <article class="card card--compact">
-            <div class="section-title section-title--tight">
-              <div><div class="eyebrow">Project folder</div></div>
-            </div>
-            <div class="chat-history-list" id="projectFolderList"></div>
-          </article>
+.page-header p,
+.muted,
+.footer-note,
+.soft {
+  color: var(--muted);
+  line-height: 1.55;
+}
 
-          <article class="card card--compact">
-            <div class="section-title section-title--tight">
-              <div><div class="eyebrow">History</div></div>
-            </div>
-            <div class="chat-history-list" id="chatHistoryList"></div>
-          </article>
-        </div>
-      </aside>
+.page-header p {
+  font-size: 14px;
+  margin: 6px 0 0;
+  max-width: 920px;
+}
 
-      <!-- ── CENTER — chat ── -->
-      <main class="panel panel-center">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Center surface</div>
-            <h2>Home chat</h2>
-            <p class="muted">Single · Multi · Discussion</p>
-          </div>
-          <div class="button-row">
-            <button class="button" id="newChatBtn" type="button">New chat</button>
-            <button class="button" id="branchChatBtn" type="button">Branch</button>
-            <button class="button button--primary" id="pinChatBtn" type="button">Pin / unpin</button>
-          </div>
-        </div>
+.global-nav {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
 
-        <section class="workspace-kpis">
-          <article class="metric-card metric-card--mode is-active" data-mode="single">
-            <span class="soft">Mode</span>
-            <strong>Single</strong>
-          </article>
-          <article class="metric-card metric-card--mode" data-mode="multi">
-            <span class="soft">Mode</span>
-            <strong>Multi</strong>
-          </article>
-          <article class="metric-card metric-card--mode" data-mode="discussion">
-            <span class="soft">Mode</span>
-            <strong>Discussion</strong>
-          </article>
-          <article class="metric-card">
-            <span class="soft">Export target</span>
-            <strong>Projects</strong>
-          </article>
-        </section>
+.nav-link,
+.button,
+.select,
+.input,
+.textarea,
+.history-link {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.03);
+  color: var(--text);
+  text-decoration: none;
+  padding: 10px 12px;
+  font-size: 13px;
+}
 
-        <article class="card card--compact" style="margin-bottom: 12px;">
-          <div class="eyebrow">Model selection</div>
-          <div class="field-grid field-grid--triple">
-            <label class="inline-field">
-              <span class="soft">Single model</span>
-              <select class="select" id="singleModel">
-                <option value="">Loading models...</option>
-              </select>
-            </label>
+.nav-link {
+  font-weight: 700;
+}
 
-            <div class="inline-field">
-              <span class="soft">Multi-model set</span>
-              <div class="multi-select-wrapper">
-                <button class="multi-select-trigger" id="multiModelTrigger" type="button">Select models...</button>
-                <div class="multi-select-dropdown" id="multiModelDropdown"></div>
-              </div>
-            </div>
+.nav-link:hover,
+.nav-link--active,
+.history-link:hover {
+  background: rgba(255,255,255,0.07);
+}
 
-            <div class="inline-field">
-              <span class="soft">Discussion specialists</span>
-              <div class="multi-select-wrapper">
-                <button class="multi-select-trigger" id="discussionTrigger" type="button">Select specialists...</button>
-                <div class="multi-select-dropdown" id="discussionDropdown"></div>
-              </div>
-            </div>
-          </div>
-          <div class="mode-help" id="modeHelpText">
-            <strong>Single:</strong> one selected model answers directly.
-          </div>
-        </article>
+.header-actions,
+.button-row,
+.chip-row,
+.button-grid,
+.todo-add-row,
+.composer-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 
-        <article class="card home-chat-card">
-          <div class="eyebrow">Thread</div>
-          <div class="chat-thread" id="chatThread">
-            <div class="chat-bubble chat-bubble--assistant">
-              <div class="chat-bubble-head">Home daily driver</div>
-              <p>Select an existing chat or create a new one to begin.</p>
-            </div>
-          </div>
+.chip,
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: var(--chip);
+  border: 1px solid rgba(255,255,255,0.04);
+  font-size: 12px;
+  color: var(--text);
+}
 
-          <div id="chatResizeHandle" title="Drag to resize chat"></div>
+.status-chip--good { color: var(--good); }
+.status-chip--warn { color: var(--warn); }
+.status-chip--bad { color: var(--bad); }
 
-          <div class="composer-box">
-            <div class="soft composer-note">Enter sends · Shift+Enter new line</div>
-            <textarea class="textarea composer-textarea" id="composerInput" placeholder="Write here. Multi sends to all selected models. Discussion lets specialists join when relevant."></textarea>
-            <div class="composer-actions">
-              <span class="soft" id="composerStatus">Ready</span>
-              <button class="button button--primary" id="sendBtn" type="button">Send</button>
-            </div>
-          </div>
-        </article>
-      </main>
+.surface-banner {
+  padding: 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
 
-      <!-- ── RIGHT — export + todos ── -->
-      <aside class="panel panel-right">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Right rail</div>
-            <h2>Export + Todos</h2>
-          </div>
-          <span class="status-chip status-chip--warn">Thread support</span>
-        </div>
+.banner-note {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 620px;
+  text-align: right;
+}
 
-        <div class="stack stack--md">
-          <article class="card card--compact">
-            <div class="eyebrow">Export to Projects</div>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Project title</span>
-                <input class="input" id="exportTitle" placeholder="Name the project..." />
-              </label>
+.panel {
+  padding: 18px;
+}
 
-              <div class="inline-field">
-                <span class="soft">Project type</span>
-                <div class="chip-row" id="projectTypeTags">
-                  <button class="button tag-button tag-button--active" type="button" data-tag="App">App</button>
-                  <button class="button tag-button" type="button" data-tag="Web">Web</button>
-                  <button class="button tag-button" type="button" data-tag="Game">Game</button>
-                  <button class="button tag-button" type="button" data-tag="Writing">Writing</button>
-                  <button class="button tag-button" type="button" data-tag="Research">Research</button>
-                  <button class="button tag-button" type="button" data-tag="System">System</button>
-                </div>
-              </div>
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
 
-              <label class="inline-field">
-                <span class="soft">Export note</span>
-                <textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
-              </label>
+.section-title--tight {
+  margin-bottom: 10px;
+}
 
-              <button class="button button--primary" id="exportBtn" type="button">Export to Projects</button>
-            </div>
-          </article>
+.section-title span {
+  color: var(--muted);
+  font-size: 12px;
+}
 
-          <article class="card card--compact">
-            <div class="eyebrow">Todo list</div>
-            <div class="todo-list" id="todoList"></div>
-            <div class="inline-field" style="margin-top: 8px;">
-              <span class="soft">Add todo</span>
-              <div class="todo-add-row">
-                <input class="input" id="todoInput" placeholder="Add a quick todo..." />
-                <button class="button" id="addTodoBtn" type="button">Add</button>
-              </div>
-            </div>
-          </article>
-        </div>
-      </aside>
+.stack {
+  display: grid;
+  gap: 16px;
+}
 
-      <!-- ── BOTTOM — calendar full width ── -->
-      <section class="panel calendar-panel">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Bottom zone</div>
-            <h2>Calendar</h2>
-          </div>
-          <span class="status-chip status-chip--good">Weekly view</span>
-        </div>
-        <div class="calendar-grid" id="calendarGrid"></div>
-      </section>
+.stack--md {
+  gap: 16px;
+}
 
-    </section>
+.card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 18px;
+  padding: 14px;
+}
 
-    <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  </div>
+.card--compact {
+  padding: 14px;
+}
 
-  <script>
-  (function () {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const apiBase = params.get("apiBase");
-      if (apiBase) {
-        const normalized = apiBase.replace(/\/+$/, "");
-        window.PM_API_BASE = normalized;
-        localStorage.setItem("PM_API_BASE", normalized);
-      } else {
-        const saved = localStorage.getItem("PM_API_BASE");
-        if (saved) window.PM_API_BASE = saved;
-      }
-    } catch (error) {}
-  })();
-  </script>
-  <script type="module" src="page.js"></script>
-</body>
-</html>
+.field-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.field-grid--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.inline-field {
+  display: grid;
+  gap: 6px;
+}
+
+.button {
+  cursor: pointer;
+  font-weight: 700;
+  transition: .18s ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  border-color: rgba(110,231,255,0.18);
+}
+
+.button--primary {
+  background: linear-gradient(135deg, rgba(110,231,255,0.18), rgba(139,92,246,0.18));
+  border-color: rgba(110,231,255,0.24);
+}
+
+.workspace-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metric-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+}
+
+.metric-card strong {
+  font-size: 20px;
+}
+
+.metric-card--mode {
+  cursor: pointer;
+  transition: .18s ease;
+}
+
+.metric-card--mode:hover,
+.metric-card--mode.is-active {
+  border-color: rgba(110,231,255,0.24);
+  background: rgba(110,231,255,0.06);
+}
+
+.home-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.mode-help {
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  color: var(--muted);
+  line-height: 1.5;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+/* ── Chat thread ─────────────────────────────────────────────────────────────── */
+
+.chat-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 340px;
+  max-height: 520px;
+  overflow-y: auto;
+  padding: 4px 2px 8px;
+  scroll-behavior: smooth;
+}
+
+/* When JS drag resize takes over, it sets explicit min/max-height inline.
+   The CSS values above are the initial defaults only. */
+
+.chat-bubble {
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.025);
+  line-height: 1.65;
+  font-size: 14px;
+}
+
+.chat-bubble--user {
+  align-self: flex-end;
+  max-width: 72%;
+  background: rgba(110,231,255,0.07);
+  border-color: rgba(110,231,255,0.15);
+}
+
+.chat-bubble--assistant {
+  align-self: flex-start;
+  max-width: 92%;
+  width: 100%;
+}
+
+.chat-bubble-head {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+/* Prose inside assistant bubbles */
+.chat-bubble--assistant p {
+  margin: 0 0 10px;
+  color: var(--text);
+}
+.chat-bubble--assistant p:last-child { margin-bottom: 0; }
+
+.chat-bubble--assistant ul,
+.chat-bubble--assistant ol {
+  margin: 8px 0 10px 0;
+  padding-left: 22px;
+  color: var(--text);
+}
+.chat-bubble--assistant li { margin-bottom: 5px; line-height: 1.6; }
+
+.chat-bubble--assistant strong { color: var(--accent); font-weight: 700; }
+.chat-bubble--assistant em { color: var(--muted); font-style: italic; }
+
+.chat-bubble--assistant h3,
+.chat-bubble--assistant h4 {
+  margin: 14px 0 6px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.chat-bubble--assistant hr {
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  margin: 12px 0;
+}
+
+.chat-bubble--assistant code {
+  background: rgba(110,231,255,0.08);
+  border: 1px solid rgba(110,231,255,0.12);
+  border-radius: 5px;
+  padding: 1px 5px;
+  font-family: "Fira Code", "Cascadia Code", ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.chat-bubble--assistant pre {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 10px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+
+.chat-bubble--assistant pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* User bubble text */
+.chat-bubble--user p {
+  margin: 0;
+  color: var(--text);
+}
+
+/* ── Resize handle ────────────────────────────────────────────────────────────── */
+
+#chatResizeHandle {
+  width: 100%;
+  height: 10px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 0.35;
+  transition: opacity 0.15s;
+}
+#chatResizeHandle:hover { opacity: 1; }
+#chatResizeHandle::before {
+  content: "";
+  width: 48px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--muted);
+}
+
+/* ── Composer ────────────────────────────────────────────────────────────────── */
+
+.chip-row--inside {
+  margin-top: -2px;
+}
+
+.composer-box {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.composer-textarea {
+  min-height: 100px;
+}
+
+/* ── Chat history list ───────────────────────────────────────────────────────── */
+
+.chat-history-list {
+  display: grid;
+  gap: 6px;
+}
+
+.history-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  min-height: 38px;
+  font-weight: 600;
+}
+
+.history-link__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(110,231,255,0.8);
+  flex-shrink: 0;
+}
+
+.history-link__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-link--active {
+  border-color: rgba(110,231,255,0.24);
+  background: rgba(110,231,255,0.06);
+}
+
+.history-link--folder {
+  border-color: rgba(52,211,153,0.18);
+  background: rgba(52,211,153,0.06);
+}
+
+.tag-button {
+  padding-inline: 10px;
+}
+
+.tag-button--active {
+  background: rgba(255,255,255,0.09);
+}
+
+.todo-list {
+  display: grid;
+  gap: 8px;
+}
+
+.todo-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.todo-item input {
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.todo-item__body {
+  display: grid;
+  gap: 4px;
+}
+
+.todo-item__body strong {
+  font-size: 13px;
+}
+
+.todo-item__body span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.calendar-day {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 18px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.calendar-day--today {
+  border-color: rgba(110,231,255,0.24);
+  background: rgba(110,231,255,0.05);
+}
+
+.calendar-day__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.calendar-day__head strong {
+  font-size: 14px;
+}
+
+.calendar-entry {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.calendar-entry--good {
+  border-color: rgba(52,211,153,0.24);
+}
+
+.calendar-entry--warn {
+  border-color: rgba(251,191,36,0.24);
+}
+
+.calendar-entry span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.textarea {
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  background: #0b1520;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  font: inherit;
+}
+
+.textarea--sm {
+  min-height: 88px;
+}
+
+.toast {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 50;
+  min-width: 260px;
+  max-width: 420px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(10, 17, 24, 0.94);
+  color: var(--text);
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: .18s ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.toast.good { border-color: rgba(52,211,153,0.3); }
+.toast.warn { border-color: rgba(251,191,36,0.3); }
+.toast.bad { border-color: rgba(251,113,133,0.3); }
+
+@media (max-width: 1650px) {
+  .page-header {
+    grid-template-columns: 1fr;
+  }
+
+  .global-nav,
+  .header-actions,
+  .button-row,
+  .composer-actions {
+    justify-content: flex-start;
+  }
+
+  .workspace-kpis,
+  .field-grid--triple,
+  .calendar-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1180px) {
+  .page-shell {
+    width: min(100vw - 18px, 1840px);
+  }
+
+  .workspace-kpis,
+  .field-grid--triple,
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .page-header,
+  .surface-banner {
+    display: grid;
+    gap: 12px;
+  }
+
+  .banner-note {
+    text-align: left;
+    max-width: none;
+  }
+}
