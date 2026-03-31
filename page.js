@@ -152,33 +152,22 @@ async function callApi(path, method = "GET", payload = null) {
 
 // ─── Model pool ───────────────────────────────────────────────────────────────
 
-function modelValue(item) {
-  // Value sent to backend — always use alias (stable identifier)
-  return String(item?.alias || item?.name || item?.display_name || item?.service_name || "").trim();
-}
-
-function modelDisplayLabel(item) {
-  // Display label — use name first (human readable), fall back to alias
-  return String(item?.name || item?.alias || item?.display_name || item?.service_name || "").trim();
-}
-
-function isActiveModel(item) {
-  const s = String(item?.runtime_state || item?.state || item?.desired_state || "").toLowerCase();
-  return s === "loaded" || s === "warm" || s === "active" || s === "running";
+function parseSurfaces(val) {
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val || "[]"); } catch { return []; }
 }
 
 function extractModels(modelResponse) {
   const items = Array.isArray(modelResponse?.items) ? modelResponse.items : [];
   return items
     .filter(item => item?.enabled !== false)
-    .filter(item => {
-      const name = modelDisplayLabel(item);
-      return name && !name.toLowerCase().includes("ggml-vocab-");
-    })
+    .filter(item => item?.runtime_driver === "openai_api")
+    .filter(item => parseSurfaces(item?.surface_allowlist).includes("home"))
     .map(item => ({
-      value: modelValue(item),
-      label: modelDisplayLabel(item),
-      active: isActiveModel(item)
+      value: String(item?.alias || item?.name || "").trim(),
+      label: String(item?.name || item?.alias || "").trim(),
+      active: String(item?.runtime_state || "").toLowerCase() === "available"
+        || String(item?.runtime_state || "").toLowerCase() === "loaded",
     }))
     .filter(m => m.value);
 }
@@ -264,18 +253,14 @@ function hydrateModelSelectors() {
 
   const singleEl = qs("#singleModel");
   if (singleEl) {
-    const activeFirst = [
-      ...allModels.filter(m => m.active),
-      ...allModels.filter(m => !m.active)
-    ];
-    singleEl.innerHTML = activeFirst.length
-      ? activeFirst.map(m => `<option value="${escapeHtml(m.value)}">${escapeHtml(m.label)}${m.active ? " ●" : ""}</option>`).join("")
+    singleEl.innerHTML = allModels.length
+      ? allModels.map(m => `<option value="${escapeHtml(m.value)}">${escapeHtml(m.label)}</option>`).join("")
       : `<option value="">No models available</option>`;
-    if (state.singleModel && activeFirst.some(m => m.value === state.singleModel)) {
+    if (state.singleModel && allModels.some(m => m.value === state.singleModel)) {
       singleEl.value = state.singleModel;
-    } else if (activeFirst[0]) {
-      state.singleModel = activeFirst[0].value;
-      singleEl.value = activeFirst[0].value;
+    } else if (allModels[0]) {
+      state.singleModel = allModels[0].value;
+      singleEl.value = allModels[0].value;
     }
   }
 
