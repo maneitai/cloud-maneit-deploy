@@ -316,7 +316,6 @@ function mergeChatIntoCollections(chat) {
   state.chats.pinned = removeById(state.chats.pinned);
   state.chats.projectFolder = removeById(state.chats.projectFolder);
   state.chats.history = removeById(state.chats.history);
-
   if (chat.pinned) {
     state.chats.pinned.unshift(chat);
   } else if (chat.folder === "project" || chat.folder === "projects") {
@@ -340,7 +339,6 @@ async function loadThreadHistory(sessionPublicId) {
   if (!sessionPublicId) return;
   const result = await callApi(`/api/home/sessions/${encodeURIComponent(sessionPublicId)}/live-chat/history`, "GET");
   if (!result.ok) return;
-
   const messages = Array.isArray(result.body?.messages) ? result.body.messages : [];
   threadCache[sessionPublicId] = messages.map(msg => ({
     id: msg.message_public_id || safeId("msg"),
@@ -350,7 +348,6 @@ async function loadThreadHistory(sessionPublicId) {
     mode: msg.mode || "single",
     model: msg.selected_model || msg.selected_worker_name || ""
   }));
-
   renderThread();
 }
 
@@ -365,7 +362,6 @@ function renderHistorySection(targetId, items, isFolder = false) {
   if (!root) return;
   const searchValue = (qs("#chatSearch")?.value || "").trim().toLowerCase();
   const filtered = items.filter(item => !searchValue || item.title.toLowerCase().includes(searchValue));
-
   root.innerHTML = filtered.map(item => {
     const activeClass = item.id === state.selectedChatId ? " history-link--active" : "";
     const folderClass = isFolder ? " history-link--folder" : "";
@@ -376,7 +372,6 @@ function renderHistorySection(targetId, items, isFolder = false) {
       </a>
     `;
   }).join("");
-
   qsa(".history-link", root).forEach(link => {
     link.addEventListener("click", async e => {
       e.preventDefault();
@@ -441,7 +436,6 @@ function renderThread() {
   const root = qs("#chatThread");
   if (!root) return;
   const thread = getCurrentThread();
-
   if (!thread.length) {
     root.innerHTML = `
       <div class="chat-bubble chat-bubble--assistant">
@@ -451,28 +445,12 @@ function renderThread() {
     `;
     return;
   }
-
   root.innerHTML = thread.map(message => {
-    const roleClass = message.role === "user"
-      ? "chat-bubble chat-bubble--user"
-      : "chat-bubble chat-bubble--assistant";
-
-    const headLabel = message.role === "user"
-      ? "User"
-      : (message.head || message.model || "Assistant");
-
-    const bodyHtml = message.role === "user"
-      ? `<p>${escapeHtml(message.text)}</p>`
-      : renderMarkdown(message.text);
-
-    return `
-      <div class="${roleClass}">
-        <div class="chat-bubble-head">${escapeHtml(headLabel)}</div>
-        ${bodyHtml}
-      </div>
-    `;
+    const roleClass = message.role === "user" ? "chat-bubble chat-bubble--user" : "chat-bubble chat-bubble--assistant";
+    const headLabel = message.role === "user" ? "User" : (message.head || message.model || "Assistant");
+    const bodyHtml = message.role === "user" ? `<p>${escapeHtml(message.text)}</p>` : renderMarkdown(message.text);
+    return `<div class="${roleClass}"><div class="chat-bubble-head">${escapeHtml(headLabel)}</div>${bodyHtml}</div>`;
   }).join("");
-
   root.scrollTop = root.scrollHeight;
 }
 
@@ -491,7 +469,6 @@ function renderTodos() {
       <button class="button" data-remove-todo="${escapeHtml(todo.id)}" type="button" style="padding:2px 8px;font-size:0.75rem;flex-shrink:0;">✕</button>
     </div>
   `).join("");
-
   qsa('input[type="checkbox"][data-todo-id]', root).forEach(input => {
     input.addEventListener("change", () => {
       const todo = state.todos.find(t => t.id === input.getAttribute("data-todo-id"));
@@ -500,11 +477,9 @@ function renderTodos() {
       saveState();
     });
   });
-
   qsa("[data-remove-todo]", root).forEach(btn => {
     btn.addEventListener("click", () => {
-      const todoId = btn.getAttribute("data-remove-todo");
-      state.todos = state.todos.filter(t => t.id !== todoId);
+      state.todos = state.todos.filter(t => t.id !== btn.getAttribute("data-remove-todo"));
       saveState();
       renderTodos();
     });
@@ -521,12 +496,7 @@ function renderCalendar() {
       if (item.tone === "good") toneClass = " calendar-entry--good";
       if (item.tone === "warn") toneClass = " calendar-entry--warn";
       const subLabel = item.tone === "good" ? "Focus block" : item.tone === "warn" ? "Attention" : "Planned";
-      return `
-        <div class="calendar-entry${toneClass}">
-          <strong>${escapeHtml(item.title)}</strong>
-          <span>${escapeHtml(subLabel)}</span>
-        </div>
-      `;
+      return `<div class="calendar-entry${toneClass}"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(subLabel)}</span></div>`;
     }).join("");
     return `
       <article class="${dayClass}">
@@ -566,6 +536,59 @@ function renderAll() {
   renderSelectedChatTitleIntoExport();
 }
 
+// ─── Drag resize ─────────────────────────────────────────────────────────────
+
+function initDragResize() {
+  const handle = qs("#chatResizeHandle");
+  const thread = qs("#chatThread");
+  if (!handle || !thread) return;
+  const KEY = "home_chat_height";
+  const saved = parseInt(localStorage.getItem(KEY));
+  if (saved > 80 && saved < 1200) {
+    thread.style.minHeight = saved + "px";
+    thread.style.maxHeight = saved + "px";
+  }
+  let dragging = false, startY = 0, startH = 0;
+  handle.addEventListener("mousedown", e => {
+    dragging = true;
+    startY = e.clientY;
+    startH = thread.getBoundingClientRect().height;
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+  });
+  document.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const h = Math.max(120, Math.min(1200, startH + (e.clientY - startY)));
+    thread.style.minHeight = h + "px";
+    thread.style.maxHeight = h + "px";
+  });
+  document.addEventListener("mouseup", () => {
+    if (!dragging) return;
+    dragging = false;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+    localStorage.setItem(KEY, Math.round(thread.getBoundingClientRect().height));
+  });
+  handle.addEventListener("touchstart", e => {
+    dragging = true;
+    startY = e.touches[0].clientY;
+    startH = thread.getBoundingClientRect().height;
+    e.preventDefault();
+  }, { passive: false });
+  document.addEventListener("touchmove", e => {
+    if (!dragging) return;
+    const h = Math.max(120, Math.min(1200, startH + (e.touches[0].clientY - startY)));
+    thread.style.minHeight = h + "px";
+    thread.style.maxHeight = h + "px";
+  }, { passive: true });
+  document.addEventListener("touchend", () => {
+    if (!dragging) return;
+    dragging = false;
+    localStorage.setItem(KEY, Math.round(thread.getBoundingClientRect().height));
+  });
+}
+
 // ─── Bindings ─────────────────────────────────────────────────────────────────
 
 function bindModeCards() {
@@ -582,10 +605,7 @@ function bindModeCards() {
 }
 
 function bindSelectors() {
-  qs("#singleModel")?.addEventListener("change", e => {
-    state.singleModel = e.target.value;
-    saveState();
-  });
+  qs("#singleModel")?.addEventListener("change", e => { state.singleModel = e.target.value; saveState(); });
   qs("#chatSearch")?.addEventListener("input", renderHistory);
   bindDropdownToggle("multiModelTrigger", "multiModelDropdown");
   bindDropdownToggle("discussionTrigger", "discussionDropdown");
@@ -606,23 +626,13 @@ function bindTodoControls() {
     const input = qs("#todoInput");
     const value = (input?.value || "").trim();
     if (!value) { showToast("Write a todo first", "warn"); return; }
-
-    state.todos.unshift({
-      id: safeId("todo"),
-      title: value,
-      detail: "",
-      done: false
-    });
+    state.todos.unshift({ id: safeId("todo"), title: value, detail: "", done: false });
     if (input) input.value = "";
     saveState();
     renderTodos();
   });
-
   qs("#todoInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      qs("#addTodoBtn")?.click();
-    }
+    if (e.key === "Enter") { e.preventDefault(); qs("#addTodoBtn")?.click(); }
   });
 }
 
@@ -634,10 +644,7 @@ function bindChatButtons() {
       setBusy(false);
       showToast("New chat created", "good");
       await loadThreadHistory(publicId);
-    } catch {
-      setBusy(false);
-      showToast("New chat failed", "warn");
-    }
+    } catch { setBusy(false); showToast("New chat failed", "warn"); }
   });
 
   qs("#branchChatBtn")?.addEventListener("click", async () => {
@@ -650,26 +657,16 @@ function bindChatButtons() {
       setBusy(false);
       showToast("Branch created", "good");
       await loadThreadHistory(publicId);
-    } catch {
-      setBusy(false);
-      showToast("Branch failed", "warn");
-    }
+    } catch { setBusy(false); showToast("Branch failed", "warn"); }
   });
 
   qs("#pinChatBtn")?.addEventListener("click", async () => {
     if (!state.selectedChatId) { showToast("No active chat", "warn"); return; }
     const current = getChatById(state.selectedChatId);
     if (!current) { showToast("Chat not found", "warn"); return; }
-
     const newPinned = !current.pinned;
-    const result = await callApi(
-      `/api/chat-sessions/${encodeURIComponent(state.selectedChatId)}`,
-      "PATCH",
-      { pinned: newPinned }
-    );
-
+    const result = await callApi(`/api/chat-sessions/${encodeURIComponent(state.selectedChatId)}`, "PATCH", { pinned: newPinned });
     if (!result.ok) { showToast("Pin failed", "warn"); return; }
-
     current.pinned = newPinned;
     mergeChatIntoCollections(current);
     saveState();
@@ -691,7 +688,6 @@ function bindExportButton() {
     const note = (qs("#exportNote")?.value || "").trim();
     if (!title) { showToast("Add a project title first", "warn"); return; }
     if (!state.selectedChatId) { showToast("No active chat session", "warn"); return; }
-
     setBusy(true, "Exporting...");
     const result = await callApi("/api/home/exports", "POST", {
       title,
@@ -702,7 +698,6 @@ function bindExportButton() {
       mode: state.mode
     });
     setBusy(false);
-
     if (!result.ok) { showToast("Export failed", "warn"); return; }
     showToast("Export created", "good");
   });
@@ -720,11 +715,9 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
     clone_from_public_id: cloneFromPublicId
   });
   if (!result.ok) throw new Error("Could not create chat session");
-
   const body = result.body || {};
   const publicId = body.public_id || body.session_public_id || body.id;
   if (!publicId) throw new Error("Missing session_public_id from backend");
-
   const chat = normalizeChatItem({ ...body, public_id: publicId, title: body.title || title });
   mergeChatIntoCollections(chat);
   state.selectedChatId = publicId;
@@ -737,13 +730,10 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
 async function refreshChatSessions() {
   const result = await callApi("/api/chat-sessions?surface=home", "GET");
   if (!result.ok) { showToast("Could not load chat sessions", "warn"); return false; }
-
   const items = Array.isArray(result.body?.items) ? result.body.items.map(normalizeChatItem) : [];
   state.chats = { pinned: [], projectFolder: [], history: [] };
   items.forEach(mergeChatIntoCollections);
-
   if (!state.selectedChatId && items[0]) state.selectedChatId = items[0].id;
-
   if (!items.length) {
     try {
       state.selectedChatId = await createChatSession({ title: "Home chat" });
@@ -754,7 +744,6 @@ async function refreshChatSessions() {
       return false;
     }
   }
-
   saveState();
   renderAll();
   return true;
@@ -767,17 +756,11 @@ async function sendCurrentMessage() {
   const text = (input?.value || "").trim();
   if (!text) { showToast("Write something first", "warn"); return; }
   if (!state.selectedChatId) { showToast("No active chat session", "warn"); return; }
-
   const selectedModels = normalizeSelectedModels();
   if (!selectedModels.length) { showToast("No models selected", "warn"); return; }
 
   if (!threadCache[state.selectedChatId]) threadCache[state.selectedChatId] = [];
-  threadCache[state.selectedChatId].push({
-    id: safeId("msg"),
-    role: "user",
-    head: "User",
-    text
-  });
+  threadCache[state.selectedChatId].push({ id: safeId("msg"), role: "user", head: "User", text });
   renderThread();
   if (input) input.value = "";
 
@@ -790,12 +773,7 @@ async function sendCurrentMessage() {
   setBusy(false);
 
   if (!result.ok) {
-    threadCache[state.selectedChatId].push({
-      id: safeId("msg"),
-      role: "assistant",
-      head: "Error",
-      text: "Message failed to send to backend."
-    });
+    threadCache[state.selectedChatId].push({ id: safeId("msg"), role: "assistant", head: "Error", text: "Message failed to send to backend." });
     renderThread();
     showToast("Send failed", "warn");
     return;
@@ -838,6 +816,7 @@ function init() {
   bindChatButtons();
   bindSendButton();
   bindExportButton();
+  initDragResize();
   bootstrapHome();
 }
 
