@@ -561,8 +561,8 @@ async function loadOverview() {
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
   state.sessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]).map(normalizeSession);
 
-  // DO NOT populate characters/worlds/scenes from overview — they are library-wide.
-  // Entity data only loads when a specific book is selected via loadBookEntities().
+  // DO NOT populate characters/worlds/scenes from overview — library-wide data.
+  // Entity data only loads when a book is selected via loadBookEntities().
 
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
@@ -583,21 +583,24 @@ async function createNewSession() {
     body: {
       surface: "lorecore",
       title: "New session",
-      summary: "LoreCore creative writing thread",
+      summary: "LoreCore writing thread",
       mode: state.chatMode || "single",
       selected_models: state.selectedModels,
     }
   });
   if (btn) btn.disabled = false;
   if (!r.ok) { showToast("Create session failed", "warn"); return; }
-  const session = normalizeSession(r.body);
-  state.sessions.unshift(session);
-  state.messages = [];
-  state.freeMode = false;
-  state.selectedSessionId = session.id;
-  renderSessionList();
-  renderChatFeed();
-  updateContextStrip();
+  const newId = r.body?.public_id;
+  // Reload overview so session list is authoritative
+  await loadOverview();
+  if (newId) {
+    state.freeMode = false;
+    state.selectedSessionId = newId;
+    state.messages = [];
+    renderSessionList();
+    renderChatFeed();
+    updateContextStrip();
+  }
   showToast("New session created", "good");
 }
 
@@ -693,7 +696,6 @@ function bindEvents() {
   qs("#sessionList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-session-id]"); if (btn) selectSession(btn.dataset.sessionId, false);
   });
-  // New session — creates a real session via API
   qs("#newSessionBtn")?.addEventListener("click", createNewSession);
 
   qs("#bookList")?.addEventListener("click", e => {
