@@ -309,12 +309,13 @@ body {
 .chat-thread {
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
   gap: 10px;
   min-height: 340px;
   max-height: 520px;
   overflow-y: auto;
+  overflow-anchor: none;
   padding: 4px 2px 8px;
-  scroll-behavior: smooth;
 }
 
 /* When JS drag resize takes over, it sets explicit min/max-height inline.
