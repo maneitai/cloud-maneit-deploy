@@ -150,6 +150,112 @@ async function callApi(path, method = "GET", payload = null) {
   }
 }
 
+// ─── File upload ──────────────────────────────────────────────────────────────
+
+async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("file", file);
+  try {
+    const response = await fetch(`${PM_API_BASE}/api/home/upload`, {
+      method: "POST",
+      body: formData
+    });
+    if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
+    return await response.json();
+  } catch (error) {
+    throw new Error(String(error));
+  }
+}
+
+function renderUploadPill(filename, state = "uploading") {
+  const pill = qs("#uploadPill");
+  if (!pill) return;
+  const icons = { uploading: "⏳", done: "📎", error: "❌" };
+  pill.innerHTML = `<span>${icons[state] || "📎"} ${escapeHtml(filename)}</span>${state !== "uploading" ? '<button id="uploadPillClose" type="button">✕</button>' : ""}`;
+  pill.style.display = "flex";
+  qs("#uploadPillClose")?.addEventListener("click", clearUploadPill);
+}
+
+function clearUploadPill() {
+  const pill = qs("#uploadPill");
+  if (pill) { pill.style.display = "none"; pill.innerHTML = ""; }
+}
+
+function setDropZoneActive(active) {
+  const composer = qs("#composerArea");
+  if (composer) composer.classList.toggle("drop-active", active);
+}
+
+async function handleFileUpload(file) {
+  if (!file) return;
+
+  // Ensure we have a session
+  if (!state.selectedChatId) {
+    try {
+      await createChatSession({ title: file.name });
+    } catch {
+      showToast("No active chat — create one first", "warn");
+      return;
+    }
+  }
+
+  renderUploadPill(file.name, "uploading");
+  setBusy(true, `Uploading ${file.name}…`);
+
+  let result;
+  try {
+    result = await uploadFile(file);
+  } catch (err) {
+    setBusy(false);
+    renderUploadPill(file.name, "error");
+    showToast("Upload failed", "warn");
+    return;
+  }
+
+  setBusy(false);
+  renderUploadPill(file.name, "done");
+  showToast(`Uploaded: ${file.name}`, "good");
+
+  // Auto-send the analysis prompt
+  const prompt = result.analysis_prompt || `File '${file.name}' uploaded. Please analyse it.`;
+  const input = qs("#composerInput");
+  if (input) input.value = prompt;
+  await sendCurrentMessage();
+  clearUploadPill();
+}
+
+function bindDropZone() {
+  const composer = qs("#composerArea");
+  const fileInput = qs("#fileUploadInput");
+  const uploadBtn = qs("#uploadBtn");
+
+  if (!composer) return;
+
+  // Drag events on the whole composer area
+  composer.addEventListener("dragenter", e => { e.preventDefault(); setDropZoneActive(true); });
+  composer.addEventListener("dragover",  e => { e.preventDefault(); setDropZoneActive(true); });
+  composer.addEventListener("dragleave", e => {
+    // Only deactivate if leaving the composer entirely
+    if (!composer.contains(e.relatedTarget)) setDropZoneActive(false);
+  });
+  composer.addEventListener("drop", e => {
+    e.preventDefault();
+    setDropZoneActive(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFileUpload(file);
+  });
+
+  // Click-to-upload button
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files?.[0];
+      if (file) handleFileUpload(file);
+      fileInput.value = "";
+    });
+  }
+}
+
 // ─── Model pool ───────────────────────────────────────────────────────────────
 
 function parseSurfaces(val) {
@@ -441,6 +547,7 @@ function renderThread() {
       <div class="chat-bubble chat-bubble--assistant">
         <div class="chat-bubble-head">Home daily driver</div>
         <p>Select an existing chat or create a new one to begin.</p>
+        <p style="color:var(--muted,#7da8d0);font-size:13px;margin-top:8px;">💡 Drag a file onto the composer below to upload and analyse it.</p>
       </div>
     `;
     return;
@@ -816,6 +923,7 @@ function init() {
   bindChatButtons();
   bindSendButton();
   bindExportButton();
+  bindDropZone();
   initDragResize();
   bootstrapHome();
 }
