@@ -679,3 +679,88 @@ body {
     max-width: none;
   }
 }
+
+/* ── File upload drop zone ── */
+#composerArea {
+  position: relative;
+  transition: outline 0.12s ease, background 0.12s ease;
+}
+
+#composerArea.drop-active {
+  outline: 2px dashed rgba(110, 231, 255, 0.5);
+  outline-offset: 2px;
+  background: rgba(110, 231, 255, 0.04);
+}
+
+#composerArea.drop-active::after {
+  content: "Drop file to upload & analyse";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(110, 231, 255, 0.8);
+  pointer-events: none;
+  background: rgba(7, 16, 25, 0.55);
+  border-radius: inherit;
+  z-index: 10;
+}
+
+#uploadPill {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: rgba(110, 231, 255, 0.07);
+  border: 1px solid rgba(110, 231, 255, 0.2);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #b8d4f0;
+  margin-bottom: 6px;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+#uploadPill span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+#uploadPillClose {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 2px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+#uploadPillClose:hover { color: var(--text); }
+
+#uploadBtn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  padding: 6px 9px;
+  transition: 0.12s ease;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+#uploadBtn:hover {
+  border-color: rgba(110, 231, 255, 0.3);
+  color: var(--text);
+  background: rgba(110, 231, 255, 0.05);
+}
+
+#fileUploadInput { display: none; }
