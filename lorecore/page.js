@@ -20,6 +20,28 @@ const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
 const escHtml = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
 function wordCount(t) { return (t||"").trim().split(/\s+/).filter(Boolean).length; }
 
+function renderMarkdown(text) {
+  if (!text) return "";
+  let t = escHtml(text);
+  t = t.replace(/```[\s\S]*?```/g, m => {
+    const inner = m.slice(3, -3).replace(/^[a-z]*\n/, "");
+    return `<pre><code>${inner}</code></pre>`;
+  });
+  t = t.replace(/`([^`]+)`/g, "<code>$1</code>");
+  t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  t = t.replace(/\*(.+?)\*/g, "<em>$1</em>");
+  t = t.replace(/((?:^[ \t]*[\*\-] .+\n?)+)/gm, block => {
+    const items = block.trim().split("\n").map(line => `<li>${line.replace(/^[ \t]*[\*\-] /, "")}</li>`).join("");
+    return `<ul>${items}</ul>`;
+  });
+  t = t.replace(/((?:^[ \t]*\d+\. .+\n?)+)/gm, block => {
+    const items = block.trim().split("\n").map(line => `<li>${line.replace(/^[ \t]*\d+\. /, "")}</li>`).join("");
+    return `<ol>${items}</ol>`;
+  });
+  t = t.replace(/\n{2,}/g, "</p><p>").replace(/\n/g, "<br>");
+  return `<p>${t}</p>`;
+}
+
 function showToast(msg, tone = "good") {
   const t = qs("#toast"); if (!t) return;
   t.textContent = msg; t.className = `toast ${tone} is-visible`;
@@ -56,17 +78,16 @@ function normalizeMsg(raw) {
   return {
     role: raw?.role || raw?.type || "message",
     content: raw?.content || raw?.text || "",
-    model: raw?.model || "",
+    model: raw?.selected_model || raw?.selected_worker_name || raw?.model || "",
   };
 }
 function normalizeSession(raw, i = 0) {
-  const msgs = Array.isArray(raw?.messages) ? raw.messages.map(normalizeMsg) : [];
   return {
     id: raw?.session_public_id || raw?.public_id || raw?.id || `session_${i}`,
     title: raw?.title || raw?.name || `Session ${i+1}`,
     excerpt: raw?.excerpt || "",
     bookId: raw?.book_public_id || null,
-    messages: msgs,
+    messages: [],  // never use embedded messages — always fetch from API
     raw,
   };
 }
@@ -131,6 +152,16 @@ function renderModelSelector() {
   }
 }
 
+// ── Session history fetch ─────────────────────────────────────────────────────
+async function loadSessionHistory(sessionId) {
+  if (!sessionId || sessionId === FREE_SESSION_ID) return;
+  const r = await api(`/api/home/sessions/${encodeURIComponent(sessionId)}/live-chat/history`);
+  if (!r.ok) return;
+  const messages = Array.isArray(r.body?.messages) ? r.body.messages : [];
+  state.messages = messages.map(normalizeMsg);
+  renderChatFeed();
+}
+
 // ── Session list ──────────────────────────────────────────────────────────────
 function renderSessionList() {
   const el = qs("#sessionList"); if (!el) return;
@@ -153,7 +184,7 @@ function renderSessionList() {
   setChip("#sessionChip", `${state.sessions.length}`, "status-chip--good");
 }
 
-function selectSession(sessionId, freeMode = false) {
+async function selectSession(sessionId, freeMode = false) {
   state.freeMode = freeMode;
   state.selectedSessionId = sessionId;
   if (freeMode) {
@@ -162,20 +193,26 @@ function selectSession(sessionId, freeMode = false) {
     clearEntityData();
     renderActiveTab();
     renderChapterList();
+    updateScopeChip();
+    renderSessionList();
+    renderBookList();
+    renderChatFeed();
+    updateContextStrip();
   } else {
     const session = state.sessions.find(s => s.id === sessionId);
-    if (session?.messages?.length) state.messages = session.messages;
     if (session?.bookId && session.bookId !== state.selectedBookId) {
       state.selectedBookId = session.bookId;
       renderBookList();
       loadBookEntities(session.bookId);
     }
+    updateScopeChip();
+    renderSessionList();
+    renderBookList();
+    state.messages = [];
+    renderChatFeed(); // show loading state
+    updateContextStrip();
+    await loadSessionHistory(sessionId);
   }
-  updateScopeChip();
-  renderSessionList();
-  renderBookList();
-  renderChatFeed();
-  updateContextStrip();
 }
 
 function updateScopeChip() {
@@ -220,13 +257,15 @@ function selectBook(id) {
   const existing = state.sessions.find(s => s.bookId === id);
   if (existing) {
     state.selectedSessionId = existing.id;
-    if (existing.messages?.length) state.messages = existing.messages;
+    state.messages = [];
+    renderChatFeed();
+    loadSessionHistory(existing.id);
   } else {
     state.selectedSessionId = FREE_SESSION_ID;
     state.messages = [];
+    renderChatFeed();
   }
   renderSessionList();
-  renderChatFeed();
   loadBookEntities(id);
 }
 
@@ -509,9 +548,11 @@ function renderChatFeed() {
     const role = msg?.role || msg?.type || "message";
     const content = msg?.content || msg?.text || "";
     const isUser = role === "user";
-    return `<div class="chat-msg ${isUser?"chat-msg--user":"chat-msg--assistant"}">
-      <div class="chat-msg-role">${escHtml(msg.model && !isUser ? msg.model : role)}</div>
-      <div class="chat-msg-content">${escHtml(content)}</div>
+    const headLabel = isUser ? "User" : (msg.model || "Assistant");
+    const bodyHtml = isUser ? `<p>${escHtml(content)}</p>` : renderMarkdown(content);
+    return `<div class="chat-msg ${isUser ? "chat-msg--user" : "chat-msg--assistant"}">
+      <div class="chat-msg-role">${escHtml(headLabel)}</div>
+      <div class="chat-msg-content">${bodyHtml}</div>
     </div>`;
   }).join("");
   feed.scrollTop = feed.scrollHeight;
@@ -538,11 +579,11 @@ async function sendMessage() {
     const newMsgs = reversedIdx >= 0 ? allMsgs.slice(allMsgs.length - reversedIdx) : allMsgs.slice(-1);
     const assistantMsgs = newMsgs.filter(m => (m.role||m.type) === "assistant");
     if (assistantMsgs.length) {
-      assistantMsgs.forEach(m => state.messages.push({ role:"assistant", model:m.model||"assistant", content:m.content||m.text||"" }));
+      assistantMsgs.forEach(m => state.messages.push({ role:"assistant", model:m.selected_model||m.model||"assistant", content:m.content||m.text||"" }));
     } else {
       const last = allMsgs[allMsgs.length-1];
       const lc = last?.content||last?.text||"";
-      if (lc) state.messages.push({ role:"assistant", model:last?.model||"assistant", content:lc });
+      if (lc) state.messages.push({ role:"assistant", model:last?.selected_model||last?.model||"assistant", content:lc });
     }
   } else {
     const reply = body?.content||body?.text||body?.response||"";
@@ -560,9 +601,6 @@ async function loadOverview() {
   const ov = r.body || {};
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
   state.sessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]).map(normalizeSession);
-
-  // DO NOT populate characters/worlds/scenes from overview — library-wide data.
-  // Entity data only loads when a book is selected via loadBookEntities().
 
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
@@ -591,7 +629,6 @@ async function createNewSession() {
   if (btn) btn.disabled = false;
   if (!r.ok) { showToast("Create session failed", "warn"); return; }
   const newId = r.body?.public_id;
-  // Reload overview so session list is authoritative
   await loadOverview();
   if (newId) {
     state.freeMode = false;
