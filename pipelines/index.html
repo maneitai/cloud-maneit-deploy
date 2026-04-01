@@ -16,7 +16,7 @@
       <div class="header-copy">
         <div class="eyebrow">PM</div>
         <h1>Pipelines</h1>
-        <p>Build workflow graphs · Assign models · Connect ports · Save to surface</p>
+        <p>Build multi-agent workflow graphs · Assign models · Connect ports · Save to surface</p>
       </div>
     </div>
     <nav class="global-nav" aria-label="Primary">
@@ -33,45 +33,46 @@
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
     <div class="header-actions">
-      <span class="chip">Node graph</span>
+      <span class="chip">Multi-agent</span>
       <span class="chip">Role-driven</span>
-      <span class="chip">Model-assigned</span>
+      <span class="chip">Quorum logic</span>
     </div>
   </header>
 
   <section class="surface-banner panel">
     <div>
       <div class="eyebrow">Surface contract</div>
-      <strong>Pipelines is the canonical workflow graph</strong>
+      <strong>Pipelines — canonical multi-agent workflow graph</strong>
     </div>
-    <div class="banner-note">Drag nodes · Click ports to link · Click edges to unlink · Assign models · Save to surface</div>
+    <div class="banner-note">Click roles to spawn · Drag to position · Click ports to link · Click edges to remove · Scroll to zoom · Space+drag to pan</div>
   </section>
 
   <section class="pipeline-layout">
 
-    <!-- ── LEFT ── -->
+    <!-- ── LEFT RAIL ── -->
     <aside class="panel panel-left">
       <div class="section-title">
-        <div><div class="eyebrow">Left rail</div><h2>Spawn + library</h2></div>
+        <div><div class="eyebrow">Left rail</div><h2>Build + library</h2></div>
         <span class="status-chip status-chip--good">Graph layer</span>
       </div>
       <div class="stack">
 
+        <!-- Pipeline type -->
         <article class="card">
           <div class="eyebrow" style="margin-bottom:10px;">Pipeline type</div>
           <div class="type-pills" id="pipelineTypePicker"></div>
         </article>
 
+        <!-- Save pipeline -->
         <article class="card">
           <div class="eyebrow" style="margin-bottom:10px;">Save pipeline</div>
-          <div class="field-grid">
-            <div class="save-row">
-              <input class="input" id="pipelineTitleInput" placeholder="Pipeline name…" />
-              <button class="button button--primary" id="savePipelineBtn" type="button" disabled>Save</button>
-            </div>
+          <div class="save-row">
+            <input class="input" id="pipelineTitleInput" placeholder="Pipeline name…" />
+            <button class="button button--primary" id="savePipelineBtn" type="button" disabled>Save</button>
           </div>
         </article>
 
+        <!-- Load pipeline -->
         <article class="card">
           <div class="eyebrow" style="margin-bottom:10px;">Saved pipelines</div>
           <div class="field-grid">
@@ -83,55 +84,23 @@
           </div>
         </article>
 
+        <!-- Role library -->
         <article class="card">
-          <div class="eyebrow" style="margin-bottom:10px;">Spawn node</div>
-          <div class="field-grid">
-            <label class="inline-field">
-              <span class="soft">Role class</span>
-              <select class="select" id="spawnRoleClass">
-                <option>Coder</option><option>Planner</option><option>Verifier</option>
-                <option>Auditor</option><option>Router</option><option>Branch</option>
-                <option>Handoff</option><option>Export</option><option>Projection</option>
-              </select>
-            </label>
-            <label class="inline-field">
-              <span class="soft">Subtype</span>
-              <select class="select" id="spawnSubtype"></select>
-            </label>
-            <div id="spawnModelWrap"></div>
-            <div class="button-row">
-              <button class="button button--primary" id="spawnNodeBtn" type="button">Spawn node</button>
-              <button class="button" id="spawnBranchBtn" type="button">+ Branch</button>
-            </div>
-          </div>
+          <div class="eyebrow" style="margin-bottom:10px;">Role library — click to spawn</div>
+          <div id="roleLibraryContainer"></div>
         </article>
 
+        <!-- Graph rules -->
         <article class="card">
-          <div class="eyebrow" style="margin-bottom:10px;">Role library</div>
-          <div class="library-list">
-            <button class="library-chip" type="button">Input</button>
-            <button class="library-chip" type="button">Planner</button>
-            <button class="library-chip" type="button">Python Generator</button>
-            <button class="library-chip" type="button">C++ Generator</button>
-            <button class="library-chip" type="button">JS Generator</button>
-            <button class="library-chip" type="button">Verifier</button>
-            <button class="library-chip" type="button">Auditor</button>
-            <button class="library-chip" type="button">Branch</button>
-            <button class="library-chip" type="button">Handoff</button>
-            <button class="library-chip" type="button">Export</button>
-            <button class="library-chip" type="button">Portal Projection</button>
-            <button class="library-chip" type="button">Router</button>
-          </div>
-        </article>
-
-        <article class="card">
-          <div class="eyebrow" style="margin-bottom:8px;">Graph rules</div>
+          <div class="eyebrow" style="margin-bottom:8px;">Canvas controls</div>
           <ul class="rule-list">
+            <li>Click a role above to spawn a node.</li>
             <li>Drag nodes to reposition.</li>
-            <li>Click a port → click another port to connect.</li>
+            <li>Click port → click another port to connect.</li>
             <li>Click an edge to remove it.</li>
-            <li>Assign a model per node via spawn or inspector.</li>
-            <li>Save pipeline to make it available on the target surface.</li>
+            <li>Mouse wheel to zoom · Space+drag to pan.</li>
+            <li>Assign model per node in inspector.</li>
+            <li>Spawn multiple copies of any role for quorum verification.</li>
           </ul>
         </article>
 
@@ -144,42 +113,45 @@
         <div>
           <div class="eyebrow">Center surface</div>
           <h2>Pipeline workbench</h2>
-          <p class="muted">Drag nodes · Click ports to link · Click edges to unlink</p>
+          <p class="muted">Click roles to spawn · Drag · Connect ports · Scroll to zoom · Space+drag to pan</p>
         </div>
         <div class="button-row">
-          <button class="button" id="togglePortalPreviewBtn" type="button">Toggle portal view</button>
-          <button class="button" id="clonePipelineBtn2" style="display:none;">Clone</button>
+          <button class="button" id="togglePortalPreviewBtn" type="button">Portal view</button>
         </div>
       </div>
-
-      <section class="workbench-meta">
-        <article class="meta-card"><strong>Stages</strong><span>ordered flow with handoffs</span></article>
-        <article class="meta-card"><strong>Verifiers</strong><span>quality gates per stage</span></article>
-        <article class="meta-card"><strong>Branches</strong><span>alternate routes</span></article>
-        <article class="meta-card"><strong>Portal map</strong><span>downstream projections</span></article>
-      </section>
 
       <div class="workbench-toolbar">
         <button class="chip-button chip-button--active" data-tool="select" type="button">select</button>
         <button class="chip-button" data-tool="link" type="button">link nodes</button>
         <button class="chip-button" data-tool="inspect" type="button">inspect</button>
         <button class="chip-button chip-button--danger" data-tool="clear" type="button">clear</button>
-        <button class="chip-button" data-tool="reset" type="button">reset default</button>
+        <button class="chip-button" data-tool="reset" type="button">reset</button>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOutBtn" title="Zoom out">−</button>
+          <span class="zoom-label" id="zoomLabel">100%</span>
+          <button class="zoom-btn" id="zoomInBtn" title="Zoom in">+</button>
+          <button class="zoom-btn" id="zoomResetBtn" title="Reset zoom">⊙</button>
+          <button class="zoom-btn" id="fitBtn" title="Fit to screen">⊡</button>
+        </div>
       </div>
 
       <section class="workbench-canvas" id="pipelineCanvas" aria-label="Pipeline graph">
-        <div class="canvas-grid"></div>
-        <svg id="edgeSvg" aria-hidden="true">
-          <defs>
-            <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="rgba(110,231,255,0.65)" />
-              <stop offset="100%" stop-color="rgba(139,92,246,0.65)" />
-            </linearGradient>
-          </defs>
-        </svg>
+        <div id="canvasWorld">
+          <svg id="edgeSvg" aria-hidden="true">
+            <defs>
+              <linearGradient id="edgeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stop-color="rgba(110,231,255,0.65)" />
+                <stop offset="100%" stop-color="rgba(139,92,246,0.65)" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="canvas-hint" id="canvasHint">
+          Click any role in the left rail to spawn a node
+        </div>
       </section>
 
-      <section class="portal-preview" id="portalPreview">
+      <section class="portal-preview">
         <div class="eyebrow">Portal view</div>
         <strong>Portal representation preview</strong>
         <span class="portal-tag">PortalCreator</span>
@@ -190,19 +162,21 @@
     <aside class="panel panel-right" id="inspectorPanel">
       <div class="section-title">
         <div><div class="eyebrow">Right rail</div><h2>Inspector</h2></div>
-        <span class="status-chip status-chip--warn">Selected node</span>
+        <span class="status-chip status-chip--warn">Node</span>
       </div>
       <div class="stack">
 
         <article class="card">
-          <div class="eyebrow">Node</div>
+          <div class="eyebrow">Selected node</div>
           <strong id="selectedNodeTitle">No node selected</strong>
           <p class="muted" id="selectedNodeDesc" style="margin:4px 0 0;font-size:12px;">Select a node to inspect.</p>
         </article>
 
         <article class="card">
           <div class="eyebrow" style="margin-bottom:10px;">Model</div>
-          <div id="inspectorModelWrap"><span class="soft" style="font-size:12px;">Select a node to assign a model.</span></div>
+          <div id="inspectorModelWrap">
+            <span class="soft" style="font-size:12px;">Select a node to assign a model.</span>
+          </div>
         </article>
 
         <article class="card">
@@ -211,7 +185,11 @@
             <label class="inline-field">
               <span class="soft">Quorum rule</span>
               <select class="select" id="inspectorQuorumRule">
-                <option>single pass</option><option>2-of-3</option><option>3-of-3</option>
+                <option>single pass</option>
+                <option>2-of-3</option>
+                <option>3-of-3</option>
+                <option>majority</option>
+                <option>unanimous</option>
               </select>
             </label>
             <label class="inline-field">
@@ -226,7 +204,7 @@
 
         <article class="card">
           <div class="eyebrow" style="margin-bottom:8px;">Notes</div>
-          <textarea class="textarea" id="inspectorNotes" placeholder="Operator note or override reason…"></textarea>
+          <textarea class="textarea" id="inspectorNotes" placeholder="Operator note, override reason, or test instruction…"></textarea>
         </article>
 
       </div>
@@ -240,10 +218,10 @@
 <script>
 (function(){
   try {
-    const params = new URLSearchParams(window.location.search);
-    const apiBase = params.get('apiBase');
-    if (apiBase) { window.PM_API_BASE = apiBase.replace(/\/+$/, ''); localStorage.setItem('PM_API_BASE', window.PM_API_BASE); }
-    else { const saved = localStorage.getItem('PM_API_BASE'); if (saved) window.PM_API_BASE = saved; }
+    const p = new URLSearchParams(window.location.search);
+    const b = p.get("apiBase");
+    if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+    else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
   } catch(e) {}
 })();
 </script>
