@@ -1,14 +1,103 @@
-const PM_PIPELINES_KEY = "PM_PIPELINES_V5";
+const PM_PIPELINES_KEY = "PM_PIPELINES_V6";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Role taxonomy ─────────────────────────────────────────────────────────────
+
+const ROLE_GROUPS = [
+  {
+    group: "Orchestration",
+    roles: [
+      { title: "Project Manager",   type: "planner",    desc: "Owns the overall job. Distributes work, tracks progress, resolves conflicts." },
+      { title: "Planner",           type: "planner",    desc: "Breaks down the brief into structured tasks with clear handoffs." },
+      { title: "Task Distributor",  type: "planner",    desc: "Assigns tasks to downstream workers. Routes by capability." },
+      { title: "Router",            type: "planner",    desc: "Routes output to the correct next stage based on content or condition." },
+      { title: "Dispatcher",        type: "planner",    desc: "Schedules and fires off parallel worker lanes." },
+      { title: "Branch",            type: "branch",     desc: "Explicit branch — alternate path triggered by condition." },
+      { title: "Merge",             type: "planner",    desc: "Merges outputs from parallel lanes into a single coherent result." },
+    ]
+  },
+  {
+    group: "Research",
+    roles: [
+      { title: "Scout",             type: "input",      desc: "Initial broad search. Identifies relevant domains and sources." },
+      { title: "Web Crawler",       type: "input",      desc: "Deep web search and page fetching. Returns structured source material." },
+      { title: "Database Miner",    type: "input",      desc: "Targets specific databases, archives, or structured data sources." },
+      { title: "Source Validator",  type: "verifier",   desc: "Checks source credibility, provenance, and reliability." },
+      { title: "Citation Tracker",  type: "verifier",   desc: "Tracks citation chains and cross-references between sources." },
+      { title: "Comparator",        type: "auditor",    desc: "Compares findings across multiple scouts. Surfaces agreements and conflicts." },
+      { title: "Contradiction Finder", type: "auditor", desc: "Specifically hunts for contradictions and inconsistencies in source material." },
+    ]
+  },
+  {
+    group: "Analysis",
+    roles: [
+      { title: "Analyst",           type: "planner",    desc: "Deep analysis of gathered material. Builds structured insights." },
+      { title: "Pattern Detector",  type: "planner",    desc: "Identifies recurring patterns, themes, and structures across sources." },
+      { title: "Evidence Weigher",  type: "verifier",   desc: "Assigns confidence levels to claims. Separates strong evidence from speculation." },
+      { title: "Cross Referencer",  type: "verifier",   desc: "Cross-references findings against known facts and other sources." },
+    ]
+  },
+  {
+    group: "Code",
+    roles: [
+      { title: "Python Coder",      type: "coder",      desc: "Python implementation. General purpose, data, scripting, backend." },
+      { title: "JS Coder",          type: "coder",      desc: "JavaScript/TypeScript. Frontend, Node.js, tooling." },
+      { title: "C++ Coder",         type: "coder",      desc: "C++ implementation. Performance-critical, systems, game engine." },
+      { title: "HTML Coder",        type: "coder",      desc: "HTML/CSS markup and structure." },
+      { title: "Backend API Coder", type: "coder",      desc: "API design and implementation. REST, FastAPI, Express." },
+      { title: "Test Writer",       type: "verifier",   desc: "Writes tests for code output. Unit, integration, regression." },
+      { title: "Code Reviewer",     type: "auditor",    desc: "Reviews code for correctness, security, style, and edge cases." },
+      { title: "Resolver",          type: "planner",    desc: "Resolves conflicts between coder outputs. Picks or merges best result." },
+    ]
+  },
+  {
+    group: "Verification",
+    roles: [
+      { title: "Verifier",          type: "verifier",   desc: "General purpose verification. Checks output against spec and contract." },
+      { title: "Fact Checker",      type: "verifier",   desc: "Checks factual claims against sources. Flags unsupported assertions." },
+      { title: "Canon Auditor",     type: "auditor",    desc: "Checks output against established canon, rules, or constraints." },
+      { title: "Quality Gate",      type: "verifier",   desc: "Hard pass/fail gate. Output must meet criteria to proceed." },
+      { title: "Strict Auditor",    type: "auditor",    desc: "Final audit before promotion. Applies maximum scrutiny." },
+    ]
+  },
+  {
+    group: "Synthesis",
+    roles: [
+      { title: "Synthesizer",       type: "planner",    desc: "Combines multiple verified outputs into a coherent whole." },
+      { title: "Report Builder",    type: "projection", desc: "Builds a structured report from synthesis output." },
+      { title: "Dossier Writer",    type: "projection", desc: "Produces a research dossier with provenance and confidence levels." },
+      { title: "Summary Writer",    type: "projection", desc: "Writes concise summaries of complex findings." },
+    ]
+  },
+  {
+    group: "Creative",
+    roles: [
+      { title: "Lore Writer",       type: "coder",      desc: "Generates lore-consistent creative content." },
+      { title: "World Builder",     type: "planner",    desc: "Builds consistent world details, geography, factions, rules." },
+      { title: "Scene Writer",      type: "coder",      desc: "Writes scenes with correct POV, tone, and beat structure." },
+      { title: "Game Designer",     type: "planner",    desc: "Game mechanics, balance, progression, and system design." },
+      { title: "Dialogue Writer",   type: "coder",      desc: "Character dialogue with voice consistency." },
+    ]
+  },
+  {
+    group: "Output",
+    roles: [
+      { title: "Formatter",         type: "projection", desc: "Formats output to required spec, schema, or style." },
+      { title: "Exporter",          type: "projection", desc: "Packages output for delivery to downstream surface." },
+      { title: "Training Pack Builder", type: "projection", desc: "Structures output as training data for model improvement." },
+      { title: "Eval Pack Builder", type: "projection", desc: "Structures output as evaluation dataset." },
+    ]
+  },
+];
+
+const ALL_ROLES = ROLE_GROUPS.flatMap(g => g.roles.map(r => ({ ...r, group: g.group })));
 
 const PIPELINE_TYPES = [
-  { id: "research",        label: "Research",         portal: "research-core",  color: "#6ee7ff" },
-  { id: "appcreation",     label: "App Creation",     portal: "appcreator",     color: "#b3ffd8" },
-  { id: "portalcreation",  label: "Portal Creation",  portal: "portalcreator",  color: "#d4b8ff" },
-  { id: "creativewriting", label: "Creative Writing",  portal: "lorecore",       color: "#ffd0dc" },
-  { id: "gamedesign",      label: "Game Design",      portal: "game-designer",  color: "#ffe49f" },
+  { id: "research",        label: "Research",        color: "#6ee7ff", portal: "research-core"  },
+  { id: "appcreation",     label: "App Creation",    color: "#b3ffd8", portal: "appcreator"     },
+  { id: "portalcreation",  label: "Portal Creation", color: "#d4b8ff", portal: "portalcreator"  },
+  { id: "creativewriting", label: "Creative Writing", color: "#ffd0dc", portal: "lorecore"      },
+  { id: "gamedesign",      label: "Game Design",     color: "#ffe49f", portal: "game-designer"  },
 ];
 
 const TYPE_COLORS = {
@@ -21,43 +110,10 @@ const TYPE_COLORS = {
   projection: { badge: "#bfe0ff", bg: "rgba(96,165,250,0.16)"  },
 };
 
-const SUBTYPE_MAP = {
-  Coder:      ["C++ Coder","Python Coder","JS Coder","HTML Coder","Backend API Coder"],
-  Planner:    ["Structured Planner","Chapter Planner","Research Planner","Game Planner"],
-  Verifier:   ["Strict Verifier","Compile Verifier","Contract Verifier","Canon Verifier"],
-  Auditor:    ["Audit Writer","Policy Auditor","Release Auditor"],
-  Router:     ["Task Router","Provider Router","Stage Router"],
-  Branch:     ["Fallback Branch","Quorum Split","Failure Branch"],
-  Handoff:    ["Portal Handoff","Worker Handoff"],
-  Export:     ["Bundle Export","Artifact Export"],
-  Projection: ["Projects Projection","PortalCreator Projection","AppCreator Projection"],
-};
-
-const ROLE_TYPE_MAP = {
-  Coder:"coder", Planner:"planner", Verifier:"verifier", Auditor:"auditor",
-  Router:"planner", Branch:"branch", Handoff:"branch", Export:"projection", Projection:"projection",
-};
-
-const NODE_W = 210;
+const NODE_W = 200;
 const NODE_H = 120;
 
-// ── Default state ─────────────────────────────────────────────────────────────
-
-const DEFAULT_NODES = [
-  { id:"node-input",    title:"Brief Intake",       type:"input",      model:"", x:40,   y:60,  notes:"", quorumRule:"single pass", timeout:"60s" },
-  { id:"node-planner",  title:"Structured Planner", type:"planner",    model:"", x:300,  y:60,  notes:"", quorumRule:"2-of-3",      timeout:"90s" },
-  { id:"node-coder",    title:"C++ Coder",           type:"coder",      model:"", x:560,  y:60,  notes:"", quorumRule:"2-of-3",      timeout:"120s"},
-  { id:"node-verifier", title:"Strict Verifier",     type:"verifier",   model:"", x:820,  y:60,  notes:"", quorumRule:"3-of-3",      timeout:"60s" },
-  { id:"node-auditor",  title:"Audit Node",          type:"auditor",    model:"", x:1080, y:60,  notes:"", quorumRule:"2-of-3",      timeout:"60s" },
-  { id:"node-branch",   title:"Fallback Path",       type:"branch",     model:"", x:300,  y:260, notes:"", quorumRule:"single pass", timeout:"45s" },
-];
-const DEFAULT_EDGES = [
-  { id:"e1", from:"node-input",    to:"node-planner"  },
-  { id:"e2", from:"node-planner",  to:"node-coder"    },
-  { id:"e3", from:"node-coder",    to:"node-verifier" },
-  { id:"e4", from:"node-verifier", to:"node-auditor"  },
-  { id:"e5", from:"node-planner",  to:"node-branch"   },
-];
+// ── State ─────────────────────────────────────────────────────────────────────
 
 function freshState() {
   return {
@@ -67,10 +123,13 @@ function freshState() {
     selectedNodeId: null,
     tool: "select",
     linkSource: null,
+    linkSide: null,
     pipelines: [],
     availableModels: [],
-    nodes: JSON.parse(JSON.stringify(DEFAULT_NODES)),
-    edges: JSON.parse(JSON.stringify(DEFAULT_EDGES)),
+    nodes: [],
+    edges: [],
+    // Canvas pan/zoom
+    panX: 0, panY: 0, zoom: 1,
   };
 }
 
@@ -81,17 +140,20 @@ function loadState() {
     const raw = localStorage.getItem(PM_PIPELINES_KEY);
     if (!raw) return freshState();
     const p = JSON.parse(raw);
-    return { ...freshState(), ...p, tool: "select", linkSource: null,
-      nodes: Array.isArray(p.nodes) ? p.nodes : JSON.parse(JSON.stringify(DEFAULT_NODES)),
-      edges: Array.isArray(p.edges) ? p.edges : JSON.parse(JSON.stringify(DEFAULT_EDGES)),
+    return {
+      ...freshState(), ...p,
+      tool: "select", linkSource: null, linkSide: null,
+      nodes: Array.isArray(p.nodes) ? p.nodes : [],
+      edges: Array.isArray(p.edges) ? p.edges : [],
       pipelines: Array.isArray(p.pipelines) ? p.pipelines : [],
       availableModels: Array.isArray(p.availableModels) ? p.availableModels : [],
+      panX: p.panX || 0, panY: p.panY || 0, zoom: p.zoom || 1,
     };
   } catch { return freshState(); }
 }
 
 function saveState() {
-  const s = { ...state, tool: "select", linkSource: null };
+  const s = { ...state, tool: "select", linkSource: null, linkSide: null };
   localStorage.setItem(PM_PIPELINES_KEY, JSON.stringify(s));
 }
 
@@ -121,45 +183,146 @@ async function callApi(path, method = "GET", payload = null) {
   } catch (e) { return { ok: false, error: String(e) }; }
 }
 
-// ── Model pool ────────────────────────────────────────────────────────────────
-
 function parseSurfaces(val) {
   if (Array.isArray(val)) return val;
   try { return JSON.parse(val || "[]"); } catch { return []; }
 }
 
+// ── Model pool ────────────────────────────────────────────────────────────────
+
 async function loadModels() {
   const r = await callApi("/api/model-pool/models?sync=false");
   if (!r.ok) return;
   const items = Array.isArray(r.body?.items) ? r.body.items : [];
-  // Use home surface allowlist as temporary pool for pipeline
   state.availableModels = items
-    .filter(m => m.enabled !== false && m.runtime_driver === "openai_api" && parseSurfaces(m.surface_allowlist).includes("home"))
+    .filter(m => m.enabled !== false && m.runtime_driver === "openai_api"
+      && parseSurfaces(m.surface_allowlist).includes("home"))
     .map(m => ({ value: m.alias || m.name, label: m.name || m.alias }));
   saveState();
+  renderAll();
 }
 
 function modelOptions(selected = "") {
-  const opts = [`<option value="">— no model —</option>`];
-  state.availableModels.forEach(m => {
-    opts.push(`<option value="${esc(m.value)}" ${m.value === selected ? "selected" : ""}>${esc(m.label)}</option>`);
-  });
-  return opts.join("");
+  return [`<option value="">— no model —</option>`,
+    ...state.availableModels.map(m =>
+      `<option value="${esc(m.value)}" ${m.value === selected ? "selected" : ""}>${esc(m.label)}</option>`)
+  ].join("");
 }
 
-// ── Canvas / geometry ─────────────────────────────────────────────────────────
+// ── Canvas transform ──────────────────────────────────────────────────────────
 
-function portCenter(node, side) {
-  // Absolute position of port center within canvas
-  if (side === "out") return { x: node.x + NODE_W, y: node.y + NODE_H / 2 };
-  return { x: node.x, y: node.y + NODE_H / 2 };
+function applyTransform() {
+  const world = qs("#canvasWorld"); if (!world) return;
+  world.style.transform = `translate(${state.panX}px, ${state.panY}px) scale(${state.zoom})`;
+  world.style.transformOrigin = "0 0";
+}
+
+function screenToWorld(sx, sy) {
+  const canvas = qs("#pipelineCanvas");
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (sx - rect.left - state.panX) / state.zoom,
+    y: (sy - rect.top  - state.panY) / state.zoom,
+  };
+}
+
+function bindPanZoom() {
+  const canvas = qs("#pipelineCanvas"); if (!canvas) return;
+  let isPanning = false, panStartX = 0, panStartY = 0, panOriginX = 0, panOriginY = 0;
+  let spaceDown = false;
+
+  document.addEventListener("keydown", e => { if (e.code === "Space") { spaceDown = true; canvas.style.cursor = "grab"; e.preventDefault(); } });
+  document.addEventListener("keyup",   e => { if (e.code === "Space") { spaceDown = false; canvas.style.cursor = ""; } });
+
+  canvas.addEventListener("wheel", e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    const newZoom = Math.max(0.2, Math.min(3, state.zoom * factor));
+    // Zoom toward mouse position
+    state.panX = mouseX - (mouseX - state.panX) * (newZoom / state.zoom);
+    state.panY = mouseY - (mouseY - state.panY) * (newZoom / state.zoom);
+    state.zoom = newZoom;
+    applyTransform();
+    saveState();
+    updateZoomLabel();
+  }, { passive: false });
+
+  canvas.addEventListener("pointerdown", e => {
+    if (e.button === 1 || spaceDown) {
+      isPanning = true;
+      panStartX = e.clientX; panStartY = e.clientY;
+      panOriginX = state.panX; panOriginY = state.panY;
+      canvas.style.cursor = "grabbing";
+      canvas.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    }
+  });
+
+  canvas.addEventListener("pointermove", e => {
+    if (!isPanning) return;
+    state.panX = panOriginX + (e.clientX - panStartX);
+    state.panY = panOriginY + (e.clientY - panStartY);
+    applyTransform();
+  });
+
+  canvas.addEventListener("pointerup", e => {
+    if (!isPanning) return;
+    isPanning = false;
+    canvas.style.cursor = spaceDown ? "grab" : "";
+    saveState();
+  });
+
+  canvas.addEventListener("pointercancel", () => { isPanning = false; });
+
+  // Zoom buttons
+  qs("#zoomInBtn")?.addEventListener("click",  () => zoomBy(1.2));
+  qs("#zoomOutBtn")?.addEventListener("click", () => zoomBy(0.8));
+  qs("#zoomResetBtn")?.addEventListener("click", () => {
+    state.panX = 0; state.panY = 0; state.zoom = 1;
+    applyTransform(); saveState(); updateZoomLabel();
+  });
+  qs("#fitBtn")?.addEventListener("click", fitToScreen);
+}
+
+function zoomBy(factor) {
+  const canvas = qs("#pipelineCanvas");
+  const rect = canvas.getBoundingClientRect();
+  const cx = rect.width / 2, cy = rect.height / 2;
+  const newZoom = Math.max(0.2, Math.min(3, state.zoom * factor));
+  state.panX = cx - (cx - state.panX) * (newZoom / state.zoom);
+  state.panY = cy - (cy - state.panY) * (newZoom / state.zoom);
+  state.zoom = newZoom;
+  applyTransform(); saveState(); updateZoomLabel();
+}
+
+function fitToScreen() {
+  if (!state.nodes.length) return;
+  const canvas = qs("#pipelineCanvas");
+  const rect = canvas.getBoundingClientRect();
+  const minX = Math.min(...state.nodes.map(n => n.x));
+  const minY = Math.min(...state.nodes.map(n => n.y));
+  const maxX = Math.max(...state.nodes.map(n => n.x + NODE_W));
+  const maxY = Math.max(...state.nodes.map(n => n.y + NODE_H));
+  const w = maxX - minX + 80, h = maxY - minY + 80;
+  const zoom = Math.min(0.95, Math.min(rect.width / w, rect.height / h));
+  state.zoom = zoom;
+  state.panX = (rect.width  - w * zoom) / 2 - minX * zoom + 40 * zoom;
+  state.panY = (rect.height - h * zoom) / 2 - minY * zoom + 40 * zoom;
+  applyTransform(); saveState(); updateZoomLabel();
+}
+
+function updateZoomLabel() {
+  const el = qs("#zoomLabel");
+  if (el) el.textContent = Math.round(state.zoom * 100) + "%";
 }
 
 // ── SVG edges ─────────────────────────────────────────────────────────────────
 
 function renderEdges() {
   const svg = qs("#edgeSvg"); if (!svg) return;
-  // Keep defs, remove old paths/polygons
   qsa("path, polygon", svg).forEach(el => el.remove());
 
   state.edges.forEach(edge => {
@@ -167,9 +330,9 @@ function renderEdges() {
     const to   = state.nodes.find(n => n.id === edge.to);
     if (!from || !to) return;
 
-    const p1 = portCenter(from, "out");
-    const p2 = portCenter(to, "in");
-    const dx = Math.abs(p2.x - p1.x) * 0.5;
+    const p1 = { x: from.x + NODE_W, y: from.y + NODE_H / 2 };
+    const p2 = { x: to.x,            y: to.y   + NODE_H / 2 };
+    const dx = Math.max(40, Math.abs(p2.x - p1.x) * 0.5);
 
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", `M${p1.x},${p1.y} C${p1.x+dx},${p1.y} ${p2.x-dx},${p2.y} ${p2.x},${p2.y}`);
@@ -186,10 +349,9 @@ function renderEdges() {
     });
     svg.appendChild(path);
 
-    // Arrowhead
+    // Arrow
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
-    const ax = p2.x - 10 * Math.cos(angle);
-    const ay = p2.y - 10 * Math.sin(angle);
+    const ax = p2.x - 10 * Math.cos(angle), ay = p2.y - 10 * Math.sin(angle);
     const arr = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
     arr.setAttribute("points", [
       [p2.x, p2.y],
@@ -201,17 +363,16 @@ function renderEdges() {
     svg.appendChild(arr);
   });
 
-  // Preview edge during linking
-  if (state.tool === "link" && state.linkSource && state._linkMousePos) {
+  // Link preview
+  if (state.tool === "link" && state.linkSource && state._mousePos) {
     const from = state.nodes.find(n => n.id === state.linkSource);
     if (from) {
-      const p1 = portCenter(from, "out");
-      const p2 = state._linkMousePos;
-      const dx = Math.abs(p2.x - p1.x) * 0.4;
+      const p1 = { x: from.x + NODE_W, y: from.y + NODE_H / 2 };
+      const p2 = state._mousePos;
       const preview = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      preview.setAttribute("d", `M${p1.x},${p1.y} C${p1.x+dx},${p1.y} ${p2.x-dx},${p2.y} ${p2.x},${p2.y}`);
-      preview.setAttribute("stroke", "rgba(52,211,153,0.6)");
-      preview.setAttribute("stroke-width", "2");
+      preview.setAttribute("d", `M${p1.x},${p1.y} L${p2.x},${p2.y}`);
+      preview.setAttribute("stroke", "rgba(52,211,153,0.5)");
+      preview.setAttribute("stroke-width", "1.5");
       preview.setAttribute("stroke-dasharray", "6 4");
       preview.setAttribute("fill", "none");
       preview.style.pointerEvents = "none";
@@ -223,35 +384,35 @@ function renderEdges() {
 // ── Nodes ─────────────────────────────────────────────────────────────────────
 
 function renderNodes() {
-  const canvas = qs("#pipelineCanvas"); if (!canvas) return;
-  qsa(".pipeline-node", canvas).forEach(el => el.remove());
+  const world = qs("#canvasWorld"); if (!world) return;
+  qsa(".pipeline-node", world).forEach(el => el.remove());
 
   state.nodes.forEach(node => {
     const col = TYPE_COLORS[node.type] || TYPE_COLORS.input;
     const isSelected = node.id === state.selectedNodeId;
     const isLinkSrc  = node.id === state.linkSource;
-    const modelLabel = state.availableModels.find(m => m.value === node.model)?.label || node.model || "—";
+    const modelLabel = state.availableModels.find(m => m.value === node.model)?.label || node.model || "— no model —";
 
     const el = document.createElement("article");
     el.className = "pipeline-node"
-      + (isSelected  ? " is-selected"    : "")
-      + (isLinkSrc   ? " is-link-source" : "");
+      + (isSelected ? " is-selected" : "")
+      + (isLinkSrc  ? " is-link-source" : "");
     el.dataset.nodeId = node.id;
     el.style.cssText = `left:${node.x}px;top:${node.y}px;width:${NODE_W}px;`;
 
     el.innerHTML = `
       <div class="node-head">
-        <span class="node-badge" style="color:${col.badge};background:${col.bg};">${node.type}</span>
+        <span class="node-badge" style="color:${col.badge};background:${col.bg};">${esc(node.group || node.type)}</span>
         <button class="node-del" data-del="${esc(node.id)}" title="Remove">✕</button>
       </div>
       <div class="node-title">${esc(node.title)}</div>
       <div class="node-model">${esc(modelLabel)}</div>
       <div class="node-ports">
-        <div class="port port-in"  data-node="${esc(node.id)}" data-side="in"  title="Input"></div>
-        <div class="port port-out" data-node="${esc(node.id)}" data-side="out" title="Click to link"></div>
+        <div class="port port-in"  data-node="${esc(node.id)}" data-side="in"></div>
+        <div class="port port-out" data-node="${esc(node.id)}" data-side="out"></div>
       </div>
     `;
-    canvas.appendChild(el);
+    world.appendChild(el);
   });
 
   bindDrag();
@@ -265,26 +426,26 @@ function renderAll() {
   renderEdges();
   updateInspector();
   renderPipelineSelector();
-  updateToolbar();
   renderPipelineTypePicker();
+  updateToolbar();
+  applyTransform();
+  updateZoomLabel();
 }
 
-// ── Drag (fixed — port clicks excluded from capture) ─────────────────────────
+// ── Drag ──────────────────────────────────────────────────────────────────────
 
 function bindDrag() {
   const canvas = qs("#pipelineCanvas"); if (!canvas) return;
   let active = null, ox = 0, oy = 0, didMove = false;
 
-  qsa(".pipeline-node", canvas).forEach(el => {
+  qsa(".pipeline-node").forEach(el => {
     el.addEventListener("pointerdown", e => {
-      // Never capture if clicking a port, delete btn, or select
       if (e.target.closest(".port") || e.target.closest(".node-del") || e.target.closest("select")) return;
       const node = state.nodes.find(n => n.id === el.dataset.nodeId); if (!node) return;
-      active = { node, el };
-      didMove = false;
-      const rect = canvas.getBoundingClientRect();
-      ox = e.clientX - rect.left - node.x;
-      oy = e.clientY - rect.top  - node.y;
+      active = { node, el }; didMove = false;
+      // Convert screen position to world position
+      const wp = screenToWorld(e.clientX, e.clientY);
+      ox = wp.x - node.x; oy = wp.y - node.y;
       el.setPointerCapture(e.pointerId);
       el.style.cursor = "grabbing";
       e.stopPropagation();
@@ -292,11 +453,11 @@ function bindDrag() {
 
     el.addEventListener("pointermove", e => {
       if (!active || active.el !== el) return;
-      const rect = canvas.getBoundingClientRect();
-      let x = Math.max(0, Math.min(e.clientX - rect.left - ox, canvas.offsetWidth  - NODE_W));
-      let y = Math.max(0, Math.min(e.clientY - rect.top  - oy, canvas.offsetHeight - NODE_H));
-      active.node.x = x; active.node.y = y;
-      el.style.left = x + "px"; el.style.top = y + "px";
+      const wp = screenToWorld(e.clientX, e.clientY);
+      active.node.x = Math.max(0, wp.x - ox);
+      active.node.y = Math.max(0, wp.y - oy);
+      el.style.left = active.node.x + "px";
+      el.style.top  = active.node.y + "px";
       didMove = true;
       renderEdges();
     });
@@ -312,47 +473,28 @@ function bindDrag() {
   });
 }
 
-// ── Port clicks (independent of drag — never captured) ────────────────────────
+// ── Port linking ──────────────────────────────────────────────────────────────
 
 function bindPortClicks() {
   qsa(".port").forEach(port => {
-    port.addEventListener("pointerdown", e => {
-      e.stopPropagation(); // prevent drag from starting
-    });
-
+    port.addEventListener("pointerdown", e => e.stopPropagation());
     port.addEventListener("click", e => {
       e.stopPropagation();
       const nodeId = port.dataset.node;
       const side   = port.dataset.side;
 
       if (!state.linkSource) {
-        // Start link from any port (prefer out as source)
         state.tool = "link";
         state.linkSource = nodeId;
-        state._linkSide = side;
+        state.linkSide = side;
         updateToolbar();
-        renderNodes(); // highlight source
+        renderNodes();
         showToast("Click another node's port to connect", "good");
       } else {
-        // Complete the link
-        if (state.linkSource === nodeId) {
-          // Clicked same node — cancel
-          cancelLink();
-          return;
-        }
-
-        // Determine from/to based on which sides were clicked
-        let from, to;
-        if (state._linkSide === "out" && side === "in") {
-          from = state.linkSource; to = nodeId;
-        } else if (state._linkSide === "in" && side === "out") {
-          from = nodeId; to = state.linkSource;
-        } else if (state._linkSide === "out") {
-          from = state.linkSource; to = nodeId;
-        } else {
-          from = nodeId; to = state.linkSource;
-        }
-
+        if (state.linkSource === nodeId) { cancelLink(); return; }
+        let from = state.linkSide === "out" ? state.linkSource : nodeId;
+        let to   = state.linkSide === "out" ? nodeId : state.linkSource;
+        if (side === "out") { from = nodeId; to = state.linkSource; }
         const exists = state.edges.some(e => e.from === from && e.to === to);
         if (!exists) {
           state.edges.push({ id: uid(), from, to });
@@ -369,30 +511,24 @@ function bindPortClicks() {
 }
 
 function cancelLink() {
-  state.linkSource = null;
-  state._linkSide = null;
-  state._linkMousePos = null;
+  state.linkSource = null; state.linkSide = null; state._mousePos = null;
   state.tool = "select";
-  updateToolbar();
-  renderNodes();
-  renderEdges();
+  updateToolbar(); renderNodes(); renderEdges();
 }
 
-// Track mouse for preview edge
-function bindCanvasMouseMove() {
+function bindCanvasEvents() {
   const canvas = qs("#pipelineCanvas"); if (!canvas) return;
   canvas.addEventListener("mousemove", e => {
     if (state.tool !== "link" || !state.linkSource) return;
-    const rect = canvas.getBoundingClientRect();
-    state._linkMousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const wp = screenToWorld(e.clientX, e.clientY);
+    state._mousePos = wp;
     renderEdges();
   });
   canvas.addEventListener("click", e => {
-    if (e.target === canvas || e.target.classList.contains("canvas-grid")) {
+    if (e.target === canvas || e.target.id === "canvasWorld") {
       if (state.tool === "link") { cancelLink(); return; }
       state.selectedNodeId = null;
-      renderNodes();
-      updateInspector();
+      renderNodes(); updateInspector();
     }
   });
 }
@@ -401,7 +537,7 @@ function bindNodeSelect() {
   qsa(".pipeline-node").forEach(el => {
     el.addEventListener("click", e => {
       if (e.target.closest(".port") || e.target.closest(".node-del") || e.target.closest("select")) return;
-      if (state.tool === "link") return; // don't select while linking
+      if (state.tool === "link") return;
       selectNode(el.dataset.nodeId);
     });
   });
@@ -425,31 +561,35 @@ function bindDelBtns() {
 
 function selectNode(id) {
   state.selectedNodeId = id;
-  saveState();
-  renderNodes();
-  renderEdges();
-  updateInspector();
+  saveState(); renderNodes(); renderEdges(); updateInspector();
+  qs("#inspectorPanel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function updateInspector() {
   const node = state.nodes.find(n => n.id === state.selectedNodeId);
-  qs("#selectedNodeTitle").textContent       = node?.title || "No node selected";
-  qs("#selectedNodeDesc").textContent        = node ? `Type: ${node.type}` : "Select a node to inspect.";
-  qs("#inspectorQuorumRule").value           = node?.quorumRule || "single pass";
-  qs("#inspectorTimeout").value              = node?.timeout    || "60s";
-  qs("#inspectorNotes").value                = node?.notes      || "";
+  qs("#selectedNodeTitle").textContent = node?.title || "No node selected";
+  qs("#selectedNodeDesc").textContent  = node?.desc || (node ? `Type: ${node.type}` : "Select a node to inspect.");
+  qs("#inspectorQuorumRule").value     = node?.quorumRule || "single pass";
+  qs("#inspectorTimeout").value        = node?.timeout    || "60s";
+  qs("#inspectorNotes").value          = node?.notes      || "";
 
   const wrap = qs("#inspectorModelWrap");
-  if (wrap) {
-    if (node) {
-      wrap.innerHTML = `<label class="inline-field"><span class="soft">Assigned model</span><select class="select" id="inspectorModel" style="font-size:12px;">${modelOptions(node.model)}</select></label>`;
-      qs("#inspectorModel")?.addEventListener("change", e => {
-        const n = state.nodes.find(n => n.id === state.selectedNodeId);
-        if (n) { n.model = e.target.value; saveState(); renderNodes(); }
-      });
-    } else {
-      wrap.innerHTML = `<span class="soft" style="font-size:12px;">Select a node to assign a model.</span>`;
-    }
+  if (!wrap) return;
+  if (node) {
+    wrap.innerHTML = `
+      <label class="inline-field">
+        <span class="soft">Assigned model</span>
+        <select class="select" id="inspectorModel" style="font-size:12px;">${modelOptions(node.model)}</select>
+      </label>
+      <div class="node-info-box">
+        <span class="soft" style="font-size:11px;">${esc(node.desc || "")}</span>
+      </div>`;
+    qs("#inspectorModel")?.addEventListener("change", e => {
+      const n = state.nodes.find(n => n.id === state.selectedNodeId);
+      if (n) { n.model = e.target.value; saveState(); renderNodes(); }
+    });
+  } else {
+    wrap.innerHTML = `<span class="soft" style="font-size:12px;">Select a node to assign a model.</span>`;
   }
 }
 
@@ -479,58 +619,60 @@ function renderPipelineTypePicker() {
     <button class="type-pill ${state.pipelineType === t.id ? "type-pill--active" : ""}"
       data-type="${esc(t.id)}" style="--pill-color:${t.color};" type="button">
       ${esc(t.label)}
-    </button>
-  `).join("");
+    </button>`).join("");
   qsa(".type-pill", wrap).forEach(btn => {
     btn.addEventListener("click", () => {
       state.pipelineType = btn.dataset.type;
-      saveState();
-      renderPipelineTypePicker();
-      updateSaveBtnState();
+      saveState(); renderPipelineTypePicker(); updateSaveBtn();
     });
   });
 }
 
-function updateSaveBtnState() {
-  const btn = qs("#savePipelineBtn");
-  if (!btn) return;
+function updateSaveBtn() {
+  const btn = qs("#savePipelineBtn"); if (!btn) return;
   const title = qs("#pipelineTitleInput")?.value.trim() || "";
   btn.disabled = !title;
-  btn.textContent = state.savedPipelineId ? "Update pipeline" : "Save pipeline";
 }
 
-// ── Spawn ─────────────────────────────────────────────────────────────────────
+// ── Role library ──────────────────────────────────────────────────────────────
 
-function refillSubtypes() {
-  const rc = qs("#spawnRoleClass")?.value || "Coder";
-  const el = qs("#spawnSubtype"); if (!el) return;
-  el.innerHTML = (SUBTYPE_MAP[rc] || ["Generic"]).map((v,i) => `<option ${i===0?"selected":""}>${v}</option>`).join("");
+function renderRoleLibrary() {
+  const container = qs("#roleLibraryContainer"); if (!container) return;
+  container.innerHTML = ROLE_GROUPS.map(g => `
+    <div class="role-group">
+      <div class="role-group-label">${esc(g.group)}</div>
+      <div class="role-chip-list">
+        ${g.roles.map(r => `
+          <button class="role-chip" data-title="${esc(r.title)}" data-type="${esc(r.type)}" data-desc="${esc(r.desc)}" data-group="${esc(g.group)}" type="button" title="${esc(r.desc)}">
+            ${esc(r.title)}
+          </button>`).join("")}
+      </div>
+    </div>`).join("");
+
+  qsa(".role-chip", container).forEach(chip => {
+    chip.addEventListener("click", () => {
+      spawnRoleNode(chip.dataset.title, chip.dataset.type, chip.dataset.desc, chip.dataset.group);
+    });
+  });
 }
 
-function renderSpawnModel() {
-  const wrap = qs("#spawnModelWrap"); if (!wrap) return;
-  wrap.innerHTML = `<label class="inline-field"><span class="soft">Assign model</span><select class="select" id="spawnModel" style="font-size:12px;">${modelOptions()}</select></label>`;
-}
-
-function spawnNode() {
-  const roleClass = qs("#spawnRoleClass")?.value || "Coder";
-  const subtype   = qs("#spawnSubtype")?.value   || roleClass;
-  const model     = qs("#spawnModel")?.value      || "";
-  const type      = ROLE_TYPE_MAP[roleClass]      || "coder";
-  const count     = state.nodes.length;
+function spawnRoleNode(title, type, desc, group) {
+  const count = state.nodes.length;
+  const cols = 4;
   const node = {
-    id: uid(), title: subtype, type, model,
-    x: 40 + (count % 5) * 270,
-    y: 360 + Math.floor(count / 5) * 200,
+    id: uid(), title, type, desc, group,
+    model: state.availableModels[0]?.value || "",
+    x: 40 + (count % cols) * (NODE_W + 40),
+    y: 40 + Math.floor(count / cols) * (NODE_H + 60),
     notes: "", quorumRule: "single pass", timeout: "60s",
   };
   state.nodes.push(node);
   state.selectedNodeId = node.id;
   saveState(); renderAll();
-  showToast(`${node.title} spawned`, "good");
+  showToast(`${title} spawned`, "good");
 }
 
-// ── Pipeline selector (backend saved pipelines) ───────────────────────────────
+// ── Pipeline selector ─────────────────────────────────────────────────────────
 
 function renderPipelineSelector() {
   const sel = qs("#pipelineSelector"); if (!sel) return;
@@ -546,61 +688,46 @@ async function refreshPipelines() {
     id: p.public_id || p.id,
     title: p.title || p.name || "Untitled",
     type: p.type || "",
+    stages: p.stages || "",
   }));
   saveState(); renderPipelineSelector();
 }
 
-// ── Save pipeline to backend ──────────────────────────────────────────────────
+// ── Save / load ───────────────────────────────────────────────────────────────
 
 async function savePipeline() {
   const title = qs("#pipelineTitleInput")?.value.trim();
   if (!title) { showToast("Add a pipeline title first", "warn"); return; }
-
   const graphJson = JSON.stringify({ nodes: state.nodes, edges: state.edges });
-  const payload = {
-    title,
-    type: state.pipelineType,
-    description: `${PIPELINE_TYPES.find(t=>t.id===state.pipelineType)?.label || ""} pipeline`,
-    stages: graphJson,
-  };
-
   const btn = qs("#savePipelineBtn");
   if (btn) btn.disabled = true;
-
-  let r;
-  if (state.savedPipelineId) {
-    // No update route yet — clone approach or just create new
-    r = await callApi("/api/pipelines", "POST", payload);
-  } else {
-    r = await callApi("/api/pipelines", "POST", payload);
-  }
-
-  if (btn) btn.disabled = false;
-
+  const r = await callApi("/api/pipelines", "POST", {
+    title, type: state.pipelineType,
+    description: `${PIPELINE_TYPES.find(t=>t.id===state.pipelineType)?.label||""} pipeline`,
+    stages: graphJson,
+  });
+  if (btn) { btn.disabled = false; updateSaveBtn(); }
   if (!r.ok) { showToast("Save failed", "warn"); return; }
-
   state.savedPipelineId = r.body?.public_id || r.body?.id;
   saveState();
   await refreshPipelines();
-  showToast(`Pipeline saved — available in ${PIPELINE_TYPES.find(t=>t.id===state.pipelineType)?.label || ""}`, "good");
-  renderPipelineSelector();
+  const portal = PIPELINE_TYPES.find(t=>t.id===state.pipelineType)?.label || "";
+  showToast(`"${title}" saved — available in ${portal}`, "good");
 }
 
-// ── Load a saved pipeline into the canvas ────────────────────────────────────
-
-async function loadSavedPipeline(pipelineId) {
-  const r = await callApi(`/api/pipelines`);
-  if (!r.ok) return;
-  const found = (r.body?.items || []).find(p => (p.public_id||p.id) === pipelineId);
+async function loadPipeline(id) {
+  const found = state.pipelines.find(p => p.id === id);
   if (!found) return;
   try {
     const graph = JSON.parse(found.stages || "{}");
     if (Array.isArray(graph.nodes)) state.nodes = graph.nodes;
     if (Array.isArray(graph.edges)) state.edges = graph.edges;
+    state.savedPipelineId = id;
     state.pipelineType = found.type || state.pipelineType;
-    state.savedPipelineId = pipelineId;
-    if (qs("#pipelineTitleInput")) qs("#pipelineTitleInput").value = found.name || found.title || "";
+    if (qs("#pipelineTitleInput")) qs("#pipelineTitleInput").value = found.title || "";
+    state.panX = 0; state.panY = 0; state.zoom = 1;
     saveState(); renderAll();
+    setTimeout(fitToScreen, 100);
     showToast("Pipeline loaded", "good");
   } catch { showToast("Could not parse pipeline graph", "warn"); }
 }
@@ -611,10 +738,9 @@ function bindEvents() {
   // Toolbar
   qs("[data-tool='select']")?.addEventListener("click", () => {
     cancelLink(); state.tool = "select"; updateToolbar(); renderNodes();
-    showToast("Select mode", "good");
   });
   qs("[data-tool='link']")?.addEventListener("click", () => {
-    if (state.tool === "link") { cancelLink(); }
+    if (state.tool === "link") cancelLink();
     else { state.tool = "link"; state.linkSource = null; updateToolbar(); showToast("Click a port to start linking", "good"); }
   });
   qs("[data-tool='inspect']")?.addEventListener("click", () => {
@@ -623,38 +749,26 @@ function bindEvents() {
   });
   qs("[data-tool='clear']")?.addEventListener("click", () => {
     if (!confirm("Clear all nodes and connections?")) return;
-    state.nodes = []; state.edges = []; state.selectedNodeId = null; state.savedPipelineId = null;
+    state.nodes = []; state.edges = []; state.selectedNodeId = null;
     cancelLink(); saveState(); renderAll();
     showToast("Pipeline cleared", "warn");
   });
   qs("[data-tool='reset']")?.addEventListener("click", () => {
-    if (!confirm("Reset to default pipeline?")) return;
-    state.nodes = JSON.parse(JSON.stringify(DEFAULT_NODES));
-    state.edges = JSON.parse(JSON.stringify(DEFAULT_EDGES));
-    state.selectedNodeId = null; cancelLink(); saveState(); renderAll();
-    showToast("Reset to default", "good");
+    if (!confirm("Reset canvas?")) return;
+    state.nodes = []; state.edges = []; state.selectedNodeId = null;
+    state.panX = 0; state.panY = 0; state.zoom = 1;
+    cancelLink(); saveState(); renderAll();
+    showToast("Canvas reset", "good");
   });
 
-  // Spawn
-  qs("#spawnRoleClass")?.addEventListener("change", () => { refillSubtypes(); renderSpawnModel(); });
-  qs("#spawnNodeBtn")?.addEventListener("click", spawnNode);
-  qs("#spawnBranchBtn")?.addEventListener("click", () => {
-    state.nodes.push({ id: uid(), title: "Branch", type: "branch", model: "", x: 200, y: 480, notes: "", quorumRule: "single pass", timeout: "45s" });
-    saveState(); renderAll(); showToast("Branch spawned", "good");
-  });
-
-  // Save
+  // Save / load
   qs("#savePipelineBtn")?.addEventListener("click", savePipeline);
-  qs("#pipelineTitleInput")?.addEventListener("input", updateSaveBtnState);
-
-  // Load saved pipeline
+  qs("#pipelineTitleInput")?.addEventListener("input", updateSaveBtn);
   qs("#loadPipelineBtn")?.addEventListener("click", () => {
     const id = qs("#pipelineSelector")?.value;
     if (!id) { showToast("No pipeline selected", "warn"); return; }
-    loadSavedPipeline(id);
+    loadPipeline(id);
   });
-
-  // Clone
   qs("#clonePipelineBtn")?.addEventListener("click", async () => {
     const id = qs("#pipelineSelector")?.value;
     if (!id) { showToast("No saved pipeline selected", "warn"); return; }
@@ -663,35 +777,31 @@ function bindEvents() {
     await refreshPipelines(); showToast("Pipeline cloned", "good");
   });
 
-  // Inspector persistence
+  // Inspector
   qs("#inspectorQuorumRule")?.addEventListener("change", persistInspector);
   qs("#inspectorTimeout")?.addEventListener("change", persistInspector);
   qs("#inspectorNotes")?.addEventListener("input", persistInspector);
 
-  // Library chips
-  qsa(".library-chip").forEach(chip => {
-    chip.addEventListener("click", () => {
-      const map = { Input:"Coder", Planner:"Planner", Verifier:"Verifier", Auditor:"Auditor",
-        "Python Generator":"Coder", "C++ Generator":"Coder", "JS Generator":"Coder",
-        Branch:"Branch", Handoff:"Handoff", Export:"Export", "Portal Projection":"Projection", Router:"Router" };
-      const rc = qs("#spawnRoleClass");
-      if (rc) { rc.value = map[chip.textContent.trim()] || "Coder"; refillSubtypes(); renderSpawnModel(); }
-    });
+  // Toggle portal preview
+  qs("#togglePortalPreviewBtn")?.addEventListener("click", () => {
+    const p = qs(".portal-preview");
+    if (p) p.style.display = p.style.display === "none" ? "flex" : "none";
   });
 
-  bindCanvasMouseMove();
+  bindCanvasEvents();
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  refillSubtypes();
-  renderSpawnModel();
+  bindPanZoom();
   bindEvents();
   renderAll();
-  updateSaveBtnState();
+  renderRoleLibrary();
+  updateSaveBtn();
   await Promise.all([loadModels(), refreshPipelines()]);
   renderAll();
+  if (state.nodes.length) setTimeout(fitToScreen, 200);
 }
 
 document.addEventListener("DOMContentLoaded", init);
