@@ -85,6 +85,13 @@
         </div>
 
         <div class="panel">
+          <div class="panel-label">Execution mode</div>
+          <div id="modeToggleWrap"></div>
+          <!-- Pipeline selector injected here when pipeline mode is active -->
+          <div id="pipelineRunWrap"></div>
+        </div>
+
+        <div class="panel">
           <div class="panel-label">Models</div>
           <div id="modelSelectorWrap">
             <span class="list-empty">Loading models…</span>
@@ -100,11 +107,11 @@
         <div>
           <div class="eyebrow">Center surface</div>
           <h2>Research workbench</h2>
-          <p>Define job → start research → iterate → save knowledge object</p>
+          <p>Define job → choose mode → run → save knowledge object</p>
         </div>
         <div class="action-row">
           <button class="btn btn-secondary" id="saveArtifactBtn">Save as artifact</button>
-          <button class="btn btn-primary" id="startJobBtn">Start job</button>
+          <button class="btn btn-primary" id="startJobBtn">▶ Start job</button>
         </div>
       </div>
 
@@ -354,7 +361,7 @@
 </div>
 
 <!-- ── Artifact modal ── -->
-<div class="modal-overlay" id="artifactModal">
+<div class="modal-overlay" id="artifactModal" style="display:none;">
   <div class="modal-box">
     <div class="modal-head">
       <strong id="artifactModalTitle">Artifact</strong>
@@ -369,10 +376,10 @@
 <script>
 (function(){
   try {
-    const p = new URLSearchParams(window.location.search);
-    const b = p.get("apiBase");
+    var p = new URLSearchParams(window.location.search);
+    var b = p.get("apiBase");
     if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
-    else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+    else { var s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
   } catch(e) {}
 })();
 </script>
