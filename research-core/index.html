@@ -4,218 +4,168 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Research Core — PM</title>
-  <link rel="stylesheet" href="./page.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23060e18%27/%3E%3Cpath%20d%3D%27M20%2044V20h8l8%2014%208-14h8v24h-7V32l-6%2011h-6l-6-11v12z%27%20fill%3D%27%234eb8ff%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
 </head>
 <body>
-  <div class="pm-shell">
-    <header class="topbar">
-      <div class="brand-block">
-        <div class="brand-mark">PM</div>
-        <div class="brand-copy">
-          <h1>Research Core</h1>
-          <p>
-            Structured control surface for research, evidence building, synthesis,
-            evaluation, and model learning across the system.
-          </p>
+<div class="pm-shell">
+
+  <header class="topbar">
+    <div class="brand-block">
+      <div class="brand-mark">PM</div>
+      <div class="brand-copy">
+        <h1>Research Core</h1>
+        <p>Structured research, evidence building, synthesis, evaluation, and model learning.</p>
+      </div>
+    </div>
+    <nav class="topnav">
+      <a href="../">Home</a>
+      <a href="../projects/">Projects</a>
+      <a href="../pipelines/">Pipelines</a>
+      <a href="../agent-factory/">Agent Factory</a>
+      <a href="../appcreator/">AppCreator</a>
+      <a href="../portalcreator/">PortalCreator</a>
+      <a class="active" href="../research-core/">Research Core</a>
+      <a href="../lorecore/">LoreCore</a>
+      <a href="../game-designer/">Game Designer</a>
+      <a href="../state/">State</a>
+      <a href="../settings/">Settings</a>
+    </nav>
+    <div class="top-actions">
+      <span class="chip active">Deep research</span>
+      <span class="chip">Reusable evidence</span>
+      <span class="chip">Learning / training</span>
+    </div>
+  </header>
+
+  <main class="research-layout">
+
+    <!-- ── LEFT RAIL ── -->
+    <aside class="rail left-rail">
+      <div class="rail-head">
+        <div><div class="eyebrow">Left rail</div><h2>Library</h2></div>
+        <span class="badge good">History</span>
+      </div>
+      <div class="stack">
+
+        <div class="panel">
+          <div class="panel-label">Sessions</div>
+          <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <button class="btn btn-secondary" id="newSessionBtn" style="flex:1;padding:8px 10px;font-size:12px;">+ New session</button>
+          </div>
+          <div class="stack" id="sessionList">
+            <div class="list-empty">Loading sessions…</div>
+          </div>
         </div>
+
+        <div class="panel">
+          <div class="panel-label">Knowledge objects</div>
+          <div class="object-grid">
+            <button class="object-card" data-object="dossier">
+              <strong>Research dossiers</strong>
+              <span>Matured research ready for Projects or creator support.</span>
+            </button>
+            <button class="object-card" data-object="evidence-chain">
+              <strong>Evidence chains</strong>
+              <span>Claims tied to provenance, contradictions, verifier notes.</span>
+            </button>
+            <button class="object-card" data-object="synthesis">
+              <strong>Synthesis notebooks</strong>
+              <span>Operator-readable synthesis with uncertainty and next questions.</span>
+            </button>
+            <button class="object-card" data-object="eval">
+              <strong>Eval packs</strong>
+              <span>Evaluation datasets, tasks, expectations, failure checks.</span>
+            </button>
+            <button class="object-card" data-object="training">
+              <strong>Training packs</strong>
+              <span>Structured learning assets for better future model behavior.</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-label">Models</div>
+          <div id="modelSelectorWrap">
+            <span class="list-empty">Loading models…</span>
+          </div>
+        </div>
+
       </div>
+    </aside>
 
-      <nav class="topnav">
-        <a href="../home/index.html">Home</a>
-        <a href="../projects/index.html">Projects</a>
-        <a href="../pipelines/index.html">Pipelines</a>
-        <a href="../agent-factory/index.html">Agent Factory</a>
-        <a href="../appcreator/index.html">AppCreator</a>
-        <a href="../portalcreator/index.html">PortalCreator</a>
-        <a class="active" href="../research-core/index.html">Research Core</a>
-        <a href="../lorecore/index.html">LoreCore</a>
-        <a href="../game-designer/index.html">Game Designer</a>
-        <a href="../state/index.html">State</a>
-        <a href="../settings/index.html">Settings</a>
-      </nav>
-
-      <div class="top-actions">
-        <button class="chip active">Deep research</button>
-        <button class="chip">Reusable evidence</button>
-        <button class="chip">Learning / training</button>
-      </div>
-    </header>
-
-    <section class="surface-contract">
-      <div class="surface-contract__toggle">
-        <span class="caret">▶</span>
+    <!-- ── CENTER ── -->
+    <section class="center-surface">
+      <div class="surface-head">
         <div>
-          <div class="eyebrow">Surface contract</div>
-          <strong>Purpose, ownership, boundaries</strong>
+          <div class="eyebrow">Center surface</div>
+          <h2>Research workbench</h2>
+          <p>Define job → start research → iterate → save knowledge object</p>
+        </div>
+        <div class="action-row">
+          <button class="btn btn-secondary" id="saveArtifactBtn">Save as artifact</button>
+          <button class="btn btn-primary" id="startJobBtn">Start job</button>
         </div>
       </div>
-      <div class="surface-contract__status">Open</div>
-    </section>
 
-    <main class="research-layout">
-      <!-- LEFT -->
-      <aside class="rail left-rail">
-        <div class="rail-head">
-          <div>
-            <div class="eyebrow">Left rail</div>
-            <h2>Library / History</h2>
-          </div>
-          <span class="badge good">Reusable</span>
-        </div>
+      <!-- Tabs -->
+      <div class="rc-tabs">
+        <button class="rc-tab rc-tab--active" data-tab="job">Job definition</button>
+        <button class="rc-tab" data-tab="chat">Research chat</button>
+        <button class="rc-tab" data-tab="artifacts">Saved artifacts</button>
+      </div>
 
-        <div class="stack">
-          <section class="panel">
-            <div class="panel-label">Recent runs</div>
-            <div class="list dense" id="recentRuns">
-              <button class="list-item active">
-                <span class="item-title">Lore grounding — Norse trade routes</span>
-                <span class="item-meta">Synthesis notebook · 2h ago</span>
-              </button>
-              <button class="list-item">
-                <span class="item-title">Tower defense progression review</span>
-                <span class="item-meta">Research dossier · Yesterday</span>
-              </button>
-              <button class="list-item">
-                <span class="item-title">Model failure patterns — creator briefs</span>
-                <span class="item-meta">Training pack · 2d ago</span>
-              </button>
+      <!-- ── JOB TAB ── -->
+      <div id="tabJob">
+        <form id="jobForm">
+
+          <div class="workspace-section">
+            <div class="section-label">1. Job definition</div>
+            <div class="field-grid">
+              <div class="field-grid field-grid-2">
+                <label class="field"><span>Title</span><input type="text" id="jobTitle" placeholder="Research job title…" /></label>
+                <label class="field">
+                  <span>Output type</span>
+                  <select id="outputType">
+                    <option>Research dossier</option>
+                    <option>Synthesis notebook</option>
+                    <option>Evidence chain</option>
+                    <option>Eval pack</option>
+                    <option>Training pack</option>
+                    <option>Lore pack</option>
+                    <option>Creator support pack</option>
+                  </select>
+                </label>
+              </div>
+              <label class="field"><span>Brief</span><textarea id="brief" rows="4" placeholder="What should be researched? Be specific about scope and depth."></textarea></label>
+              <div class="field-grid field-grid-2">
+                <label class="field"><span>Goal</span><textarea id="goal" rows="3" placeholder="What should the output enable or support?"></textarea></label>
+                <label class="field"><span>Key question or problem</span><textarea id="problem" rows="3" placeholder="The central question this research must answer."></textarea></label>
+              </div>
+              <div class="field-grid field-grid-2">
+                <label class="field"><span>Success criteria</span><textarea id="successCriteria" rows="3" placeholder="How will you know the research is complete and useful?"></textarea></label>
+                <label class="field"><span>Constraints</span><textarea id="constraints" rows="3" placeholder="Scope limits, source restrictions, things to avoid."></textarea></label>
+              </div>
             </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-label">Saved briefs</div>
-            <div class="pill-list">
-              <button class="pill">Lore consistency audit</button>
-              <button class="pill">Game economy comparison</button>
-              <button class="pill">Portal IA support pack</button>
-              <button class="pill">Training objective template</button>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-label">Knowledge objects</div>
-            <div class="object-grid">
-              <button class="object-card" data-object="source-stack">
-                <strong>Source stacks</strong>
-                <span>Papers, docs, notes, saved pages, raw source collections.</span>
-              </button>
-              <button class="object-card" data-object="evidence-chain">
-                <strong>Evidence chains</strong>
-                <span>Claims tied to provenance, contradictions, and verifier notes.</span>
-              </button>
-              <button class="object-card" data-object="dossier">
-                <strong>Research dossiers</strong>
-                <span>Matured research objects ready for Projects or creator support.</span>
-              </button>
-              <button class="object-card" data-object="synthesis">
-                <strong>Synthesis notebooks</strong>
-                <span>Operator-readable synthesis with uncertainty and next questions.</span>
-              </button>
-              <button class="object-card" data-object="eval">
-                <strong>Eval packs</strong>
-                <span>Evaluation datasets, tasks, expectations, and failure checks.</span>
-              </button>
-              <button class="object-card" data-object="training">
-                <strong>Training packs</strong>
-                <span>Structured learning assets for better future model behavior.</span>
-              </button>
-            </div>
-          </section>
-        </div>
-      </aside>
-
-      <!-- CENTER -->
-      <section class="center-surface">
-        <div class="surface-head">
-          <div>
-            <div class="eyebrow">Center surface</div>
-            <h2>Job Definition + Research / Learning Controls</h2>
-            <p>
-              Define the job clearly, choose how it should be researched or learned,
-              and produce a reusable knowledge object instead of loose chat output.
-            </p>
           </div>
 
-          <div class="surface-actions">
-            <button class="btn secondary" id="saveDraftBtn">Save draft</button>
-            <button class="btn primary" id="startJobBtn">Start job</button>
-          </div>
-        </div>
-
-        <form class="workspace" id="researchForm">
-          <section class="panel workspace-panel">
-            <div class="panel-label">1. Job definition</div>
-
-            <div class="field-grid two">
-              <label class="field">
-                <span>Title</span>
-                <input type="text" id="jobTitle" value="Lore grounding — Early Viking trade routes" />
-              </label>
-
-              <label class="field">
-                <span>Output type</span>
-                <select id="outputType">
-                  <option>Research dossier</option>
-                  <option>Synthesis notebook</option>
-                  <option>Evidence chain</option>
-                  <option>Eval pack</option>
-                  <option>Training pack</option>
-                  <option>Lore pack</option>
-                  <option>Creator support pack</option>
-                </select>
-              </label>
+          <div class="workspace-section">
+            <div class="section-label">2. Job mode</div>
+            <div class="segment-group" data-hidden="jobMode">
+              <button type="button" class="segment-btn segment-btn--active" data-value="Research">Research</button>
+              <button type="button" class="segment-btn" data-value="Evidence Review">Evidence Review</button>
+              <button type="button" class="segment-btn" data-value="Synthesis">Synthesis</button>
+              <button type="button" class="segment-btn" data-value="Eval Pack">Eval Pack</button>
+              <button type="button" class="segment-btn" data-value="Training Pack">Training Pack</button>
+              <button type="button" class="segment-btn" data-value="Lore Grounding">Lore Grounding</button>
+              <button type="button" class="segment-btn" data-value="Creator Support">Creator Support</button>
             </div>
-
-            <label class="field">
-              <span>Brief</span>
-              <textarea id="brief" rows="4">Research trade routes, coastal movement, river access, and plausible movement patterns relevant to Norse, Anglo-Saxon, and continental interaction in the early Viking age. Preserve contradictions and uncertainty instead of flattening them.</textarea>
-            </label>
-
-            <div class="field-grid two">
-              <label class="field">
-                <span>Goal</span>
-                <textarea id="goal" rows="3">Build a reusable lore grounding object that can support Galdurdal Chronicles, map planning, and historically plausible logistics.</textarea>
-              </label>
-
-              <label class="field">
-                <span>Question / problem</span>
-                <textarea id="problem" rows="3">What routes, ports, river systems, and travel assumptions are most credible for movement between England, Denmark, western Sweden, Trøndelag, Frisia, Francia, and Ireland?</textarea>
-              </label>
-            </div>
-
-            <div class="field-grid two">
-              <label class="field">
-                <span>Success criteria</span>
-                <textarea id="successCriteria" rows="3">Output must separate strong evidence from plausible inference, include contradictions, and produce a usable object for lore and map design.</textarea>
-              </label>
-
-              <label class="field">
-                <span>Constraints</span>
-                <textarea id="constraints" rows="3">No fantasy contamination. Preserve uncertainty. Prioritize provenance. Avoid collapsing disagreements into one clean answer.</textarea>
-              </label>
-            </div>
-          </section>
-
-          <section class="panel workspace-panel">
-            <div class="panel-label">2. Job mode</div>
-
-            <div class="segment-group" id="jobModeGroup">
-              <button type="button" class="segment active" data-value="Research">Research</button>
-              <button type="button" class="segment" data-value="Evidence Review">Evidence Review</button>
-              <button type="button" class="segment" data-value="Synthesis">Synthesis</button>
-              <button type="button" class="segment" data-value="Eval Pack">Eval Pack</button>
-              <button type="button" class="segment" data-value="Training Pack">Training Pack</button>
-              <button type="button" class="segment" data-value="Lore Grounding">Lore Grounding</button>
-              <button type="button" class="segment" data-value="Creator Support">Creator Support</button>
-            </div>
-
             <input type="hidden" id="jobMode" value="Research" />
-          </section>
+          </div>
 
-          <section class="panel workspace-panel">
-            <div class="panel-label">3. Source scope</div>
-
-            <div class="field-grid three">
+          <div class="workspace-section">
+            <div class="section-label">3. Source scope</div>
+            <div class="field-grid field-grid-3">
               <label class="field">
                 <span>Source classes</span>
                 <select id="sourceClasses">
@@ -225,7 +175,6 @@
                   <option>Internal references only</option>
                 </select>
               </label>
-
               <label class="field">
                 <span>Time boundary</span>
                 <select id="timeBoundary">
@@ -234,7 +183,6 @@
                   <option>Modern sources allowed</option>
                 </select>
               </label>
-
               <label class="field">
                 <span>Provenance strictness</span>
                 <select id="provenanceStrictness">
@@ -244,33 +192,17 @@
                 </select>
               </label>
             </div>
+          </div>
 
-            <div class="field-grid two">
-              <label class="field">
-                <span>Include sources</span>
-                <textarea id="includeSources" rows="3">Historical sources, archaeology, geography, map evidence, trade route analysis, river access, settlement relevance.</textarea>
-              </label>
-
-              <label class="field">
-                <span>Exclude sources</span>
-                <textarea id="excludeSources" rows="3">Unsourced fantasy summaries, flattened timelines, low-trust content with no provenance.</textarea>
-              </label>
-            </div>
-          </section>
-
-          <section class="panel workspace-panel">
-            <div class="panel-label">4. Verification controls</div>
-
-            <div class="field-grid four">
+          <div class="workspace-section">
+            <div class="section-label">4. Verification controls</div>
+            <div class="field-grid field-grid-4">
               <label class="field">
                 <span>Verification depth</span>
                 <select id="verificationDepth">
-                  <option>Deep</option>
-                  <option>Standard</option>
-                  <option>Light</option>
+                  <option>Deep</option><option>Standard</option><option>Light</option>
                 </select>
               </label>
-
               <label class="field">
                 <span>Contradiction handling</span>
                 <select id="contradictionHandling">
@@ -279,7 +211,6 @@
                   <option>Minimize contradictions</option>
                 </select>
               </label>
-
               <label class="field">
                 <span>Confidence level</span>
                 <select id="confidenceLevel">
@@ -288,60 +219,40 @@
                   <option>Exploratory acceptable</option>
                 </select>
               </label>
-
               <label class="field">
-                <span>Human review required</span>
-                <select id="humanReview">
-                  <option>Yes</option>
-                  <option>No</option>
-                </select>
+                <span>Human review</span>
+                <select id="humanReview"><option>Yes</option><option>No</option></select>
               </label>
             </div>
+          </div>
 
-            <label class="field">
-              <span>Verifier style</span>
-              <input type="text" id="verifierStyle" value="Challenge assumptions, track contradictions, keep unsupported inferences visible." />
-            </label>
-          </section>
-
-          <section class="panel workspace-panel">
-            <div class="panel-label">5. Learning / training objective</div>
-
-            <div class="field-grid two">
+          <div class="workspace-section">
+            <div class="section-label">5. Learning / training objective</div>
+            <div class="field-grid field-grid-2">
               <label class="field">
-                <span>What should the model(s) become better at?</span>
-                <textarea id="learningObjective" rows="3">Become better at building grounded creator support packs from structured research without flattening contradictions or inventing certainty.</textarea>
+                <span>What should the model become better at?</span>
+                <textarea id="learningObjective" rows="3" placeholder="Describe the improved capability this research should produce…"></textarea>
               </label>
-
               <label class="field">
                 <span>Failure pattern being corrected</span>
-                <textarea id="failurePattern" rows="3">Tendency to collapse multiple source positions into one overly clean answer and skip provenance details.</textarea>
+                <textarea id="failurePattern" rows="3" placeholder="What does the model currently do wrong that this addresses?"></textarea>
               </label>
             </div>
-
-            <div class="field-grid three">
+            <div class="field-grid field-grid-3" style="margin-top:11px;">
               <label class="field">
-                <span>Target portal / page</span>
+                <span>Target portal</span>
                 <select id="targetPortal">
-                  <option>LoreCore</option>
-                  <option>Game Designer</option>
-                  <option>AppCreator</option>
-                  <option>PortalCreator</option>
-                  <option>Home</option>
+                  <option>LoreCore</option><option>Game Designer</option>
+                  <option>AppCreator</option><option>PortalCreator</option><option>Home</option>
                 </select>
               </label>
-
               <label class="field">
                 <span>Target role</span>
                 <select id="targetRole">
-                  <option>Researcher</option>
-                  <option>Verifier</option>
-                  <option>Writer</option>
-                  <option>Game Designer</option>
-                  <option>Worldbuilder</option>
+                  <option>Researcher</option><option>Verifier</option>
+                  <option>Writer</option><option>Game Designer</option><option>Worldbuilder</option>
                 </select>
               </label>
-
               <label class="field">
                 <span>Preparation mode</span>
                 <select id="prepMode">
@@ -351,138 +262,120 @@
                 </select>
               </label>
             </div>
-          </section>
-
-          <section class="panel workspace-panel">
-            <div class="panel-label">6. Runtime intent</div>
-
-            <div class="segment-group" id="runtimeIntentGroup">
-              <button type="button" class="segment active" data-value="Run now">Run now</button>
-              <button type="button" class="segment" data-value="Save draft">Save draft</button>
-              <button type="button" class="segment" data-value="Queue for pipeline">Queue for pipeline</button>
-              <button type="button" class="segment" data-value="Build pack only">Build pack only</button>
-              <button type="button" class="segment" data-value="Prepare for review">Prepare for review</button>
-            </div>
-
-            <input type="hidden" id="runtimeIntent" value="Run now" />
-          </section>
-
-          <section class="panel workspace-panel">
-            <div class="panel-label">7. Main actions</div>
-
-            <div class="action-grid">
-              <button type="button" class="action-tile primary" data-action="Start job">Start job</button>
-              <button type="button" class="action-tile" data-action="Build dossier">Build dossier</button>
-              <button type="button" class="action-tile" data-action="Build evidence chain">Build evidence chain</button>
-              <button type="button" class="action-tile" data-action="Build eval pack">Build eval pack</button>
-              <button type="button" class="action-tile" data-action="Build training pack">Build training pack</button>
-              <button type="button" class="action-tile" data-action="Save reusable asset">Save reusable asset</button>
-              <button type="button" class="action-tile" data-action="Send to review queue">Send to review queue</button>
-            </div>
-          </section>
-        </form>
-      </section>
-
-      <!-- RIGHT -->
-      <aside class="rail right-rail">
-        <div class="rail-head">
-          <div>
-            <div class="eyebrow">Right rail</div>
-            <h2>Destination / Export / Downstream Use</h2>
           </div>
-          <span class="badge warn">Structured</span>
+
+        </form>
+      </div>
+
+      <!-- ── CHAT TAB ── -->
+      <div id="tabChat" style="display:none;">
+        <div class="chat-feed" id="chatFeed"></div>
+        <div class="chat-resize-handle" id="chatResizeHandle"></div>
+        <div class="chat-composer">
+          <div class="chat-status" id="chatStatus"></div>
+          <div class="chat-input-row">
+            <textarea id="chatInput" rows="2" placeholder="Ask a research question, request deeper investigation, or refine the job…"></textarea>
+            <button class="btn btn-primary" id="sendBtn" style="white-space:nowrap;align-self:flex-end;">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ARTIFACTS TAB ── -->
+      <div id="tabArtifacts" style="display:none;">
+        <div class="artifact-grid" id="artifactList">
+          <div class="list-empty">No saved artifacts yet.</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── RIGHT RAIL ── -->
+    <aside class="rail right-rail">
+      <div class="rail-head">
+        <div><div class="eyebrow">Right rail</div><h2>Destination</h2></div>
+        <span class="badge warn">Export</span>
+      </div>
+      <div class="stack">
+
+        <div class="panel">
+          <div class="panel-label">Destination</div>
+          <div class="field-grid">
+            <label class="field">
+              <span>Destination project</span>
+              <select id="destinationProject">
+                <option>Galdurdal Chronicles</option>
+                <option>Ironvale TD</option>
+                <option>Maneit Portal</option>
+                <option>New Project</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Register as</span>
+              <select id="registerAs">
+                <option>Research dossier</option>
+                <option>Evidence chain</option>
+                <option>Synthesis notebook</option>
+                <option>Lore pack</option>
+                <option>Eval pack</option>
+                <option>Training pack</option>
+              </select>
+            </label>
+          </div>
         </div>
 
-        <div class="stack">
-          <section class="panel">
-            <div class="panel-label">Destination</div>
-            <div class="field-grid one">
-              <label class="field">
-                <span>Destination project</span>
-                <select id="destinationProject">
-                  <option>Galdurdal Chronicles</option>
-                  <option>Ironvale TD</option>
-                  <option>Maneit Portal</option>
-                  <option>New Project</option>
-                </select>
-              </label>
-
-              <label class="field">
-                <span>Attach to work item</span>
-                <select id="workItem">
-                  <option>Worldbuilding / historical grounding</option>
-                  <option>Map planning</option>
-                  <option>Faction design</option>
-                  <option>Travel & logistics</option>
-                  <option>New Work Item</option>
-                </select>
-              </label>
-
-              <label class="field">
-                <span>Register as</span>
-                <select id="registerAs">
-                  <option>Research dossier</option>
-                  <option>Evidence chain</option>
-                  <option>Synthesis notebook</option>
-                  <option>Lore pack</option>
-                  <option>Eval pack</option>
-                  <option>Training pack</option>
-                  <option>Creator support pack</option>
-                </select>
-              </label>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-label">Downstream visibility</div>
-            <div class="check-list">
-              <label><input type="checkbox" checked /> Projects</label>
-              <label><input type="checkbox" checked /> Home project context</label>
-              <label><input type="checkbox" checked /> LoreCore</label>
-              <label><input type="checkbox" /> Game Designer</label>
-              <label><input type="checkbox" /> AppCreator</label>
-              <label><input type="checkbox" /> PortalCreator</label>
-              <label><input type="checkbox" /> Pipeline prep queue</label>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-label">Export summary</div>
-            <div class="summary-box" id="exportSummary">
-              <div class="summary-row">
-                <span>Mode</span>
-                <strong id="summaryMode">Research</strong>
-              </div>
-              <div class="summary-row">
-                <span>Output</span>
-                <strong id="summaryOutput">Research dossier</strong>
-              </div>
-              <div class="summary-row">
-                <span>Runtime intent</span>
-                <strong id="summaryIntent">Run now</strong>
-              </div>
-              <div class="summary-row">
-                <span>Destination</span>
-                <strong id="summaryDestination">Galdurdal Chronicles</strong>
-              </div>
-              <div class="summary-row">
-                <span>Work item</span>
-                <strong id="summaryWorkItem">Worldbuilding / historical grounding</strong>
-              </div>
-            </div>
-          </section>
-
-          <section class="panel">
-            <div class="panel-label">Job receipt</div>
-            <div class="receipt" id="jobReceipt">
-              <div class="receipt-state idle">No active job receipt yet.</div>
-            </div>
-          </section>
+        <div class="panel">
+          <div class="panel-label">Downstream visibility</div>
+          <div class="check-list">
+            <label><input type="checkbox" checked /> Projects</label>
+            <label><input type="checkbox" checked /> Home project context</label>
+            <label><input type="checkbox" checked /> LoreCore</label>
+            <label><input type="checkbox" /> Game Designer</label>
+            <label><input type="checkbox" /> AppCreator</label>
+            <label><input type="checkbox" /> PortalCreator</label>
+            <label><input type="checkbox" /> Pipeline prep queue</label>
+          </div>
         </div>
-      </aside>
-    </main>
+
+        <div class="panel">
+          <div class="panel-label">Export summary</div>
+          <div class="stack" style="gap:0;">
+            <div class="summary-row"><span>Mode</span><strong id="summaryMode">Research</strong></div>
+            <div class="summary-row"><span>Output</span><strong id="summaryOutput">Research dossier</strong></div>
+            <div class="summary-row"><span>Destination</span><strong id="summaryDest">—</strong></div>
+            <div class="summary-row"><span>Models</span><strong id="summaryModels">—</strong></div>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+  </main>
+
+</div>
+
+<!-- ── Artifact modal ── -->
+<div class="modal-overlay" id="artifactModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <strong id="artifactModalTitle">Artifact</strong>
+      <button class="modal-close" id="artifactModalClose">✕</button>
+    </div>
+    <div class="modal-body" id="artifactModalBody"></div>
   </div>
+</div>
 
-  <script src="./page.js"></script>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const b = p.get("apiBase");
+    if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+    else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+  } catch(e) {}
+})();
+</script>
+<script src="page.js"></script>
 </body>
 </html>
