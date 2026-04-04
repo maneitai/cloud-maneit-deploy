@@ -2,6 +2,14 @@ const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(
 
 const FREE_SESSION_ID = "chat-lore-01";
 
+const TOOL_ICONS = {
+  web_search: "🔍", web_fetch: "🌐", web_crawl: "🕷️", run_python: "🐍",
+  read_file: "📂", read_server_file: "🗄️", list_server_files: "📁",
+  grep_files: "🔎", query_database: "🗃️", http_request: "📡",
+  write_file: "✏️", shell_command: "💻", diff_text: "📊",
+  summarise_large_file: "📄", image_analyse: "🖼️",
+};
+
 const state = {
   books: [], sessions: [],
   characters: [], worlds: [], scenes: [], chapters: [], drafts: [], notes: [],
@@ -13,6 +21,7 @@ const state = {
   chatMode: "single", selectedModels: [], availableModels: [],
   messages: [],
   freeMode: true,
+  streaming: false,
 };
 
 const qs = (s, r = document) => r.querySelector(s);
@@ -87,7 +96,7 @@ function normalizeSession(raw, i = 0) {
     title: raw?.title || raw?.name || `Session ${i+1}`,
     excerpt: raw?.excerpt || "",
     bookId: raw?.book_public_id || null,
-    messages: [],  // never use embedded messages — always fetch from API
+    messages: [],
     raw,
   };
 }
@@ -152,7 +161,7 @@ function renderModelSelector() {
   }
 }
 
-// ── Session history fetch ─────────────────────────────────────────────────────
+// ── Session history ───────────────────────────────────────────────────────────
 async function loadSessionHistory(sessionId) {
   if (!sessionId || sessionId === FREE_SESSION_ID) return;
   const r = await api(`/api/home/sessions/${encodeURIComponent(sessionId)}/live-chat/history`);
@@ -209,7 +218,7 @@ async function selectSession(sessionId, freeMode = false) {
     renderSessionList();
     renderBookList();
     state.messages = [];
-    renderChatFeed(); // show loading state
+    renderChatFeed();
     updateContextStrip();
     await loadSessionHistory(sessionId);
   }
@@ -240,10 +249,7 @@ function renderBookList() {
 }
 
 function selectBook(id) {
-  if (id === state.selectedBookId && !state.freeMode) {
-    selectSession(FREE_SESSION_ID, true);
-    return;
-  }
+  if (id === state.selectedBookId && !state.freeMode) { selectSession(FREE_SESSION_ID, true); return; }
   state.selectedBookId = id;
   state.freeMode = false;
   state.activeChapterId = null;
@@ -320,10 +326,7 @@ function renderEntityList(tab) {
     return;
   }
   const items = getList(tab);
-  if (!items.length) {
-    el.innerHTML = `<div class="lib-placeholder muted">No ${tab} yet. Press + New.</div>`;
-    return;
-  }
+  if (!items.length) { el.innerHTML = `<div class="lib-placeholder muted">No ${tab} yet. Press + New.</div>`; return; }
   el.innerHTML = items.map(item => `
     <button class="entity-card ${state.activeEntity?.data?.id === item.id ? "entity-card--active" : ""}"
       type="button" data-entity-tab="${escHtml(tab)}" data-entity-id="${escHtml(item.id)}">
@@ -411,9 +414,7 @@ async function saveEntity() {
 // ── Chapters ──────────────────────────────────────────────────────────────────
 function renderChapterList() {
   const el = qs("#chapterList"); if (!el) return;
-  if (state.freeMode || !state.selectedBookId) {
-    el.innerHTML = `<div class="lib-placeholder muted">Select a book.</div>`; return;
-  }
+  if (state.freeMode || !state.selectedBookId) { el.innerHTML = `<div class="lib-placeholder muted">Select a book.</div>`; return; }
   if (!state.chapters.length) { el.innerHTML = `<div class="lib-placeholder muted">No chapters yet.</div>`; return; }
   el.innerHTML = state.chapters.map((ch, i) => `
     <button class="chapter-item ${ch.id === state.activeChapterId ? "chapter-item--active" : ""}" type="button" data-chapter-id="${escHtml(ch.id)}">
@@ -536,9 +537,11 @@ async function extractFromChat(type) {
   showToast("Extracted", "good");
 }
 
-// ── Chat ──────────────────────────────────────────────────────────────────────
+// ── Chat feed ─────────────────────────────────────────────────────────────────
 function renderChatFeed() {
   const feed = qs("#chatFeed"); if (!feed) return;
+  // Don't wipe feed if streaming
+  if (state.streaming) return;
   if (!state.messages.length) {
     const bookName = !state.freeMode && state.selectedBookId ? state.books.find(b=>b.id===state.selectedBookId)?.title : null;
     feed.innerHTML = `<div class="chat-placeholder"><div class="chat-placeholder-icon">📖</div><div class="chat-placeholder-title">LoreCore thinking room</div><div class="muted" style="font-size:13px;">${bookName ? `Book: ${escHtml(bookName)}` : "Free chat — no book context"}</div></div>`;
@@ -558,39 +561,148 @@ function renderChatFeed() {
   feed.scrollTop = feed.scrollHeight;
 }
 
+// ── Streaming helpers ─────────────────────────────────────────────────────────
+function createStreamingMsg(modelName) {
+  const feed = qs("#chatFeed"); if (!feed) return null;
+  // Clear placeholder if present
+  const placeholder = feed.querySelector(".chat-placeholder");
+  if (placeholder) placeholder.remove();
+  const msg = document.createElement("div");
+  msg.className = "chat-msg chat-msg--assistant";
+  msg.id = "streamingMsg";
+  msg.innerHTML = `
+    <div class="chat-msg-role">${escHtml(modelName || "Assistant")}</div>
+    <div class="chat-msg-content">
+      <div class="stream-tools" id="streamTools"></div>
+      <div class="stream-text" id="streamText"><span class="stream-cursor"></span></div>
+    </div>`;
+  feed.appendChild(msg);
+  feed.scrollTop = feed.scrollHeight;
+  return msg;
+}
+
+function appendToolCall(name, args) {
+  const tools = qs("#streamTools"); if (!tools) return;
+  const icon = TOOL_ICONS[name] || "🔧";
+  const argsStr = args && typeof args === "object"
+    ? Object.entries(args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ") : "";
+  const line = document.createElement("div");
+  line.className = "stream-tool-call";
+  line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escHtml(argsStr)}</span>` : ""}`;
+  tools.appendChild(line);
+  qs("#chatFeed").scrollTop = qs("#chatFeed").scrollHeight;
+}
+
+function markToolDone(name, summary) {
+  const tools = qs("#streamTools"); if (!tools) return;
+  const lines = qsa(".stream-tool-call", tools);
+  const last = [...lines].reverse().find(l => l.querySelector(".stream-tool-name")?.textContent === name);
+  if (last) {
+    last.classList.add("stream-tool-call--done");
+    if (summary) { const s = document.createElement("span"); s.className = "stream-tool-summary"; s.textContent = summary; last.appendChild(s); }
+  }
+}
+
+function appendStreamChunk(text) {
+  const streamText = qs("#streamText"); if (!streamText) return;
+  const cursor = qs(".stream-cursor", streamText);
+  const span = document.createElement("span");
+  span.textContent = text;
+  if (cursor) streamText.insertBefore(span, cursor);
+  else streamText.appendChild(span);
+  qs("#chatFeed").scrollTop = qs("#chatFeed").scrollHeight;
+}
+
+function finalizeStreamingMsg(fullContent, modelName) {
+  const msg = qs("#streamingMsg"); if (!msg) return;
+  msg.id = "";
+  const content = msg.querySelector(".chat-msg-content");
+  if (content) content.innerHTML = renderMarkdown(fullContent);
+  qs("#chatFeed").scrollTop = qs("#chatFeed").scrollHeight;
+}
+
+// ── Send with streaming ───────────────────────────────────────────────────────
 async function sendMessage() {
   if (!state.selectedModels.length) { showToast("Select a model first", "warn"); return; }
   const content = qs("#messageInput")?.value.trim() || "";
   if (!content) return;
+  if (state.streaming) { showToast("Already streaming", "warn"); return; }
+
   const book = state.books.find(b => b.id === state.selectedBookId);
-  const payload = { prompt: content, mode: state.chatMode, selected_models: state.selectedModels };
-  if (!state.freeMode && state.selectedBookId) payload.book_public_id = state.selectedBookId;
-  if (!state.freeMode && book?.libraryId) payload.library_public_id = book.libraryId;
   state.messages.push({ role: "user", content, model: "" });
   qs("#messageInput").value = "";
+
+  // Render user message first
   renderChatFeed();
-  const st = qs("#chatStatusText"); if (st) st.textContent = "Sending…";
-  const r = await api(`/api/lorecore/sessions/${encodeURIComponent(state.selectedSessionId)}/messages`, { method:"POST", body:payload });
-  if (!r.ok) { if (st) st.textContent = "Send failed"; showToast("Send failed","warn"); return; }
-  const body = r.body;
-  const allMsgs = Array.isArray(body?.messages) ? body.messages : [];
-  if (allMsgs.length) {
-    const reversedIdx = [...allMsgs].reverse().findIndex(m => (m.role||m.type) === "user");
-    const newMsgs = reversedIdx >= 0 ? allMsgs.slice(allMsgs.length - reversedIdx) : allMsgs.slice(-1);
-    const assistantMsgs = newMsgs.filter(m => (m.role||m.type) === "assistant");
-    if (assistantMsgs.length) {
-      assistantMsgs.forEach(m => state.messages.push({ role:"assistant", model:m.selected_model||m.model||"assistant", content:m.content||m.text||"" }));
-    } else {
-      const last = allMsgs[allMsgs.length-1];
-      const lc = last?.content||last?.text||"";
-      if (lc) state.messages.push({ role:"assistant", model:last?.selected_model||last?.model||"assistant", content:lc });
+
+  const st = qs("#chatStatusText"); if (st) st.textContent = "Streaming…";
+  const sendBtn = qs("#sendBtn"); if (sendBtn) sendBtn.disabled = true;
+
+  state.streaming = true;
+  const modelName = state.selectedModels[0] || "Assistant";
+  createStreamingMsg(modelName);
+
+  const params = new URLSearchParams({
+    prompt: content,
+    mode: state.chatMode,
+    models: state.selectedModels.join(","),
+  });
+  if (!state.freeMode && state.selectedBookId) params.set("book_public_id", state.selectedBookId);
+  if (!state.freeMode && book?.libraryId) params.set("library_public_id", book.libraryId);
+
+  const url = `${PM_API_BASE}/api/lorecore/sessions/${encodeURIComponent(state.selectedSessionId)}/stream?${params}`;
+
+  let fullContent = "";
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Stream failed: ${response.status}`);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === "tool_call") {
+            appendToolCall(event.name, event.args);
+            if (st) st.textContent = `${TOOL_ICONS[event.name] || "🔧"} ${event.name}…`;
+          } else if (event.type === "tool_result") {
+            markToolDone(event.name, event.summary);
+          } else if (event.type === "chunk") {
+            appendStreamChunk(event.text);
+            fullContent += event.text;
+          } else if (event.type === "done") {
+            fullContent = event.content || fullContent;
+          } else if (event.type === "error") {
+            appendStreamChunk(`\n\n⚠️ ${event.message}`);
+          }
+        } catch {}
+      }
     }
-  } else {
-    const reply = body?.content||body?.text||body?.response||"";
-    if (reply) state.messages.push({ role:"assistant", model:body?.model||"assistant", content:reply });
+  } catch (err) {
+    finalizeStreamingMsg(`Error: ${err.message}`, modelName);
+    state.streaming = false;
+    if (sendBtn) sendBtn.disabled = false;
+    if (st) st.textContent = "";
+    showToast("Stream failed", "warn");
+    return;
   }
+
+  finalizeStreamingMsg(fullContent, modelName);
+  state.streaming = false;
+  if (sendBtn) sendBtn.disabled = false;
   if (st) st.textContent = "";
-  renderChatFeed();
+
+  state.messages.push({ role: "assistant", model: modelName, content: fullContent });
 }
 
 // ── Overview ──────────────────────────────────────────────────────────────────
@@ -601,7 +713,6 @@ async function loadOverview() {
   const ov = r.body || {};
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
   state.sessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]).map(normalizeSession);
-
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
   renderBookList();
   renderSessionList();
@@ -614,30 +725,16 @@ async function loadOverview() {
 }
 
 async function createNewSession() {
-  const btn = qs("#newSessionBtn");
-  if (btn) btn.disabled = true;
+  const btn = qs("#newSessionBtn"); if (btn) btn.disabled = true;
   const r = await api("/api/chat-sessions", {
     method: "POST",
-    body: {
-      surface: "lorecore",
-      title: "New session",
-      summary: "LoreCore writing thread",
-      mode: state.chatMode || "single",
-      selected_models: state.selectedModels,
-    }
+    body: { surface: "lorecore", title: "New session", summary: "LoreCore writing thread", mode: state.chatMode || "single", selected_models: state.selectedModels },
   });
   if (btn) btn.disabled = false;
   if (!r.ok) { showToast("Create session failed", "warn"); return; }
   const newId = r.body?.public_id;
   await loadOverview();
-  if (newId) {
-    state.freeMode = false;
-    state.selectedSessionId = newId;
-    state.messages = [];
-    renderSessionList();
-    renderChatFeed();
-    updateContextStrip();
-  }
+  if (newId) { state.freeMode = false; state.selectedSessionId = newId; state.messages = []; renderSessionList(); renderChatFeed(); updateContextStrip(); }
   showToast("New session created", "good");
 }
 
@@ -683,10 +780,7 @@ function updateContextStrip() {
 
 function renderEntityCounts() {
   const box = qs("#entityCountBox"); if (!box) return;
-  if (state.freeMode || !state.selectedBookId) {
-    box.innerHTML = `<strong>${state.books.length} books</strong><span>Select a book to see counts.</span>`;
-    return;
-  }
+  if (state.freeMode || !state.selectedBookId) { box.innerHTML = `<strong>${state.books.length} books</strong><span>Select a book to see counts.</span>`; return; }
   box.innerHTML = `<strong>${state.books.find(b=>b.id===state.selectedBookId)?.title||"Book"}</strong><span>${state.characters.length} characters · ${state.worlds.length} worlds · ${state.scenes.length} scenes · ${state.chapters.length} chapters · ${state.drafts.length} drafts · ${state.notes.length} notes</span>`;
 }
 
@@ -734,16 +828,13 @@ function bindEvents() {
     const btn = e.target.closest("[data-session-id]"); if (btn) selectSession(btn.dataset.sessionId, false);
   });
   qs("#newSessionBtn")?.addEventListener("click", createNewSession);
-
   qs("#bookList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-book-id]"); if (btn) selectBook(btn.dataset.bookId);
   });
   qs("#newBookToggleBtn")?.addEventListener("click", () => { qs("#newBookForm").style.display="block"; qs("#newBookToggleBtn").style.display="none"; });
   qs("#cancelNewBookBtn")?.addEventListener("click", () => { qs("#newBookForm").style.display="none"; qs("#newBookToggleBtn").style.display="block"; });
   qs("#saveNewBookBtn")?.addEventListener("click", createBook);
-
   qs("#libTabs")?.addEventListener("click", e => { const btn = e.target.closest(".lib-tab"); if (btn) switchTab(btn.dataset.tab); });
-
   qs("#entityList")?.addEventListener("click", e => {
     const btn = e.target.closest("[data-entity-tab][data-entity-id]"); if (!btn) return;
     const item = getList(btn.dataset.entityTab).find(x => x.id === btn.dataset.entityId);
@@ -752,24 +843,20 @@ function bindEvents() {
   qs("#saveEntityBtn")?.addEventListener("click", saveEntity);
   qs("#closeEntityBtn")?.addEventListener("click", closeEntityEditor);
   qs("#extractEntityBtn")?.addEventListener("click", () => extractFromChat(state.activeEntity?.type||"character"));
-
   qs("#chapterList")?.addEventListener("click", e => { const btn = e.target.closest("[data-chapter-id]"); if (btn) openChapter(btn.dataset.chapterId); });
   qs("#saveChapterBtn")?.addEventListener("click", saveChapter);
   qs("#prevChapterBtn")?.addEventListener("click", () => navigateChapter(-1));
   qs("#nextChapterBtn")?.addEventListener("click", () => navigateChapter(1));
   qs("#chapterContent")?.addEventListener("input", updateWordCount);
   qs("#extractChapterBtn")?.addEventListener("click", () => extractFromChat("chapter"));
-
   qs("#libNewBtn")?.addEventListener("click", openQuickCreate);
   qs("#closeQcBtn")?.addEventListener("click", () => qs("#quickCreatePanel").style.display="none");
   qs("#qcCreateBtn")?.addEventListener("click", quickCreate);
-
   qs("#openExtractBtn")?.addEventListener("click", () => {
     const type = qs("#extractTypeSelect")?.value||"character";
     if (type==="chapter") { switchTab("chapters"); extractFromChat("chapter"); }
     else { switchTab(type+"s"); openEntityEditor(type+"s", null, true); }
   });
-
   qs("#modeCards")?.addEventListener("click", e => {
     const card = e.target.closest(".mode-card"); if (!card) return;
     state.chatMode = card.dataset.mode;
@@ -777,10 +864,8 @@ function bindEvents() {
     if (state.chatMode === "single" && state.selectedModels.length > 1) state.selectedModels = [state.selectedModels[0]];
     renderModelSelector(); updateContextStrip();
   });
-
   qs("#sendBtn")?.addEventListener("click", sendMessage);
   qs("#messageInput")?.addEventListener("keydown", e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
-
   qs("#runStageBtn")?.addEventListener("click", runStage);
   qs("#exportBtn")?.addEventListener("click", exportLore);
   qs("#refreshBtn")?.addEventListener("click", loadOverview);
