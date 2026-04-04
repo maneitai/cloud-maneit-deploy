@@ -304,7 +304,7 @@ body {
   margin-top: 12px;
 }
 
-/* ── Chat thread ─────────────────────────────────────────────────────────────── */
+/* ── Chat thread ── */
 
 .chat-thread {
   display: flex;
@@ -317,9 +317,6 @@ body {
   overflow-anchor: none;
   padding: 4px 2px 8px;
 }
-
-/* When JS drag resize takes over, it sets explicit min/max-height inline.
-   The CSS values above are the initial defaults only. */
 
 .chat-bubble {
   padding: 14px 16px;
@@ -352,7 +349,6 @@ body {
   font-weight: 600;
 }
 
-/* Prose inside assistant bubbles */
 .chat-bubble--assistant p {
   margin: 0 0 10px;
   color: var(--text);
@@ -366,7 +362,6 @@ body {
   color: var(--text);
 }
 .chat-bubble--assistant li { margin-bottom: 5px; line-height: 1.6; }
-
 .chat-bubble--assistant strong { color: var(--accent); font-weight: 700; }
 .chat-bubble--assistant em { color: var(--muted); font-style: italic; }
 
@@ -413,13 +408,12 @@ body {
   color: var(--text);
 }
 
-/* User bubble text */
 .chat-bubble--user p {
   margin: 0;
   color: var(--text);
 }
 
-/* ── Resize handle ────────────────────────────────────────────────────────────── */
+/* ── Resize handle ── */
 
 #chatResizeHandle {
   width: 100%;
@@ -441,7 +435,7 @@ body {
   background: var(--muted);
 }
 
-/* ── Composer ────────────────────────────────────────────────────────────────── */
+/* ── Composer ── */
 
 .chip-row--inside {
   margin-top: -2px;
@@ -457,7 +451,7 @@ body {
   min-height: 100px;
 }
 
-/* ── Chat history list ───────────────────────────────────────────────────────── */
+/* ── Chat history list ── */
 
 .chat-history-list {
   display: grid;
@@ -764,3 +758,73 @@ body {
 }
 
 #fileUploadInput { display: none; }
+
+/* ── Streaming bubble ── */
+.chat-bubble--streaming {
+  border-color: rgba(110,231,255,0.2);
+  background: rgba(110,231,255,0.03);
+}
+
+.stream-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.stream-tool-call {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  transition: .2s ease;
+}
+
+.stream-tool-call--done {
+  color: rgba(52,211,153,0.7);
+  border-color: rgba(52,211,153,0.15);
+}
+
+.stream-tool-icon { font-size: 13px; flex-shrink: 0; }
+.stream-tool-name { font-weight: 700; flex-shrink: 0; }
+.stream-tool-args {
+  color: rgba(142,160,181,0.6);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+.stream-tool-summary {
+  color: rgba(52,211,153,0.6);
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.stream-text {
+  color: var(--text);
+  line-height: 1.65;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.stream-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--accent);
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
