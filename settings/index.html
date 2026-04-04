@@ -68,7 +68,7 @@
           <div>
             <div class="eyebrow">Cloud models</div>
             <h2>Model roster</h2>
-            <p class="muted">Only models listed here appear in Home and LoreCore chat. Local models are managed in State. Grouped by provider.</p>
+            <p class="muted">Only models listed here appear in surfaces. Local models are managed in State. Grouped by provider.</p>
           </div>
           <button class="button button--primary" id="addProviderBtn" type="button">+ Add provider</button>
         </div>
@@ -200,7 +200,7 @@
           <div>
             <div class="eyebrow">Reasoning layers</div>
             <h2>Per-model KRL v3 layer assignment</h2>
-            <p class="muted">Select which KRL v3 reasoning layers are injected when each model is used in chat. Stored in Settings and applied at runtime.</p>
+            <p class="muted">Set reasoning layers independently per surface — Home Chat, LoreCore, and Pipeline each have their own KRL configuration per model.</p>
           </div>
           <button class="button button--primary" id="applyReasoningBtn" type="button">Apply reasoning changes</button>
         </div>
@@ -222,6 +222,6 @@
     } catch {}
   })();
 </script>
-<script type="module" src="page.js"></script>
+<script src="page.js"></script>
 </body>
 </html>
