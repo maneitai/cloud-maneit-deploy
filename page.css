@@ -765,6 +765,44 @@ body {
   background: rgba(110,231,255,0.03);
 }
 
+.stream-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.stream-head-name {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  color: var(--muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.stream-thinking-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  animation: stream-pulse 1.2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes stream-pulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.stream-status {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
 .stream-tools {
   display: flex;
   flex-direction: column;
@@ -799,32 +837,20 @@ body {
   white-space: nowrap;
   flex: 1;
 }
-.stream-tool-summary {
-  color: rgba(52,211,153,0.6);
+.stream-tool-state {
+  color: rgba(142,160,181,0.5);
   margin-left: auto;
   flex-shrink: 0;
   font-size: 10px;
 }
+.stream-tool-call--done .stream-tool-state {
+  color: rgba(52,211,153,0.7);
+}
 
-.stream-text {
+.stream-body {
   color: var(--text);
   line-height: 1.65;
   font-size: 14px;
   white-space: pre-wrap;
   word-break: break-word;
-}
-
-.stream-cursor {
-  display: inline-block;
-  width: 2px;
-  height: 1em;
-  background: var(--accent);
-  margin-left: 1px;
-  vertical-align: text-bottom;
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
 }
