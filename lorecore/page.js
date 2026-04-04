@@ -7,7 +7,7 @@ const TOOL_ICONS = {
   read_file: "📂", read_server_file: "🗄️", list_server_files: "📁",
   grep_files: "🔎", query_database: "🗃️", http_request: "📡",
   write_file: "✏️", shell_command: "💻", diff_text: "📊",
-  summarise_large_file: "📄", image_analyse: "🖼️",
+  summarise_large_file: "📄", image_analyse: "🖼️", call_model: "🤖",
 };
 
 const state = {
@@ -540,7 +540,6 @@ async function extractFromChat(type) {
 // ── Chat feed ─────────────────────────────────────────────────────────────────
 function renderChatFeed() {
   const feed = qs("#chatFeed"); if (!feed) return;
-  // Don't wipe feed if streaming
   if (state.streaming) return;
   if (!state.messages.length) {
     const bookName = !state.freeMode && state.selectedBookId ? state.books.find(b=>b.id===state.selectedBookId)?.title : null;
@@ -554,7 +553,7 @@ function renderChatFeed() {
     const headLabel = isUser ? "User" : (msg.model || "Assistant");
     const bodyHtml = isUser ? `<p>${escHtml(content)}</p>` : renderMarkdown(content);
     return `<div class="chat-msg ${isUser ? "chat-msg--user" : "chat-msg--assistant"}">
-      <div class="chat-msg-role">${escHtml(headLabel)}</div>
+      <div class="chat-msg-role stream-head">${escHtml(headLabel)}</div>
       <div class="chat-msg-content">${bodyHtml}</div>
     </div>`;
   }).join("");
@@ -564,21 +563,30 @@ function renderChatFeed() {
 // ── Streaming helpers ─────────────────────────────────────────────────────────
 function createStreamingMsg(modelName) {
   const feed = qs("#chatFeed"); if (!feed) return null;
-  // Clear placeholder if present
   const placeholder = feed.querySelector(".chat-placeholder");
   if (placeholder) placeholder.remove();
   const msg = document.createElement("div");
   msg.className = "chat-msg chat-msg--assistant";
   msg.id = "streamingMsg";
   msg.innerHTML = `
-    <div class="chat-msg-role">${escHtml(modelName || "Assistant")}</div>
+    <div class="chat-msg-role stream-head" id="streamHead">
+      <span class="stream-head-name">${escHtml(modelName || "Assistant")}</span>
+      <span class="stream-thinking-dot"></span>
+    </div>
     <div class="chat-msg-content">
       <div class="stream-tools" id="streamTools"></div>
-      <div class="stream-text" id="streamText"><span class="stream-cursor"></span></div>
+      <div class="stream-body" id="streamBody"></div>
     </div>`;
   feed.appendChild(msg);
   feed.scrollTop = feed.scrollHeight;
   return msg;
+}
+
+function setStreamStatus(text) {
+  const head = qs("#streamHead"); if (!head) return;
+  let status = head.querySelector(".stream-status");
+  if (!status) { status = document.createElement("span"); status.className = "stream-status"; head.appendChild(status); }
+  status.textContent = text ? ` · ${text}` : "";
 }
 
 function appendToolCall(name, args) {
@@ -588,7 +596,8 @@ function appendToolCall(name, args) {
     ? Object.entries(args).map(([k,v]) => `${k}: ${String(v).slice(0,60)}`).join(", ") : "";
   const line = document.createElement("div");
   line.className = "stream-tool-call";
-  line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escHtml(argsStr)}</span>` : ""}`;
+  line.dataset.toolName = name;
+  line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escHtml(argsStr)}</span>` : ""}<span class="stream-tool-state">…</span>`;
   tools.appendChild(line);
   qs("#chatFeed").scrollTop = qs("#chatFeed").scrollHeight;
 }
@@ -596,28 +605,35 @@ function appendToolCall(name, args) {
 function markToolDone(name, summary) {
   const tools = qs("#streamTools"); if (!tools) return;
   const lines = qsa(".stream-tool-call", tools);
-  const last = [...lines].reverse().find(l => l.querySelector(".stream-tool-name")?.textContent === name);
+  const last = [...lines].reverse().find(l => l.dataset.toolName === name);
   if (last) {
     last.classList.add("stream-tool-call--done");
-    if (summary) { const s = document.createElement("span"); s.className = "stream-tool-summary"; s.textContent = summary; last.appendChild(s); }
+    const stateEl = last.querySelector(".stream-tool-state");
+    if (stateEl) stateEl.textContent = summary ? ` ✓ ${summary}` : " ✓";
   }
 }
 
 function appendStreamChunk(text) {
-  const streamText = qs("#streamText"); if (!streamText) return;
-  const cursor = qs(".stream-cursor", streamText);
-  const span = document.createElement("span");
-  span.textContent = text;
-  if (cursor) streamText.insertBefore(span, cursor);
-  else streamText.appendChild(span);
+  const streamBody = qs("#streamBody"); if (!streamBody) return;
+  if (!streamBody._raw) streamBody._raw = "";
+  streamBody._raw += text;
+  streamBody.textContent = streamBody._raw;
   qs("#chatFeed").scrollTop = qs("#chatFeed").scrollHeight;
 }
 
 function finalizeStreamingMsg(fullContent, modelName) {
   const msg = qs("#streamingMsg"); if (!msg) return;
   msg.id = "";
-  const content = msg.querySelector(".chat-msg-content");
-  if (content) content.innerHTML = renderMarkdown(fullContent);
+  // Clean up head
+  const head = qs(".stream-head", msg);
+  if (head) { head.className = "chat-msg-role"; head.innerHTML = escHtml(modelName || "Assistant"); }
+  // Replace stream-body with rendered markdown
+  const streamBody = qs("#streamBody", msg);
+  if (streamBody) {
+    streamBody.id = "";
+    streamBody._raw = undefined;
+    streamBody.innerHTML = renderMarkdown(fullContent || "");
+  }
   qs("#chatFeed").scrollTop = qs("#chatFeed").scrollHeight;
 }
 
@@ -631,27 +647,20 @@ async function sendMessage() {
   const book = state.books.find(b => b.id === state.selectedBookId);
   state.messages.push({ role: "user", content, model: "" });
   qs("#messageInput").value = "";
-
-  // Render user message first
   renderChatFeed();
 
-  const st = qs("#chatStatusText"); if (st) st.textContent = "Streaming…";
+  const st = qs("#chatStatusText"); if (st) st.textContent = "Thinking…";
   const sendBtn = qs("#sendBtn"); if (sendBtn) sendBtn.disabled = true;
 
   state.streaming = true;
   const modelName = state.selectedModels[0] || "Assistant";
   createStreamingMsg(modelName);
 
-  const params = new URLSearchParams({
-    prompt: content,
-    mode: state.chatMode,
-    models: state.selectedModels.join(","),
-  });
+  const params = new URLSearchParams({ prompt: content, mode: state.chatMode, models: state.selectedModels.join(",") });
   if (!state.freeMode && state.selectedBookId) params.set("book_public_id", state.selectedBookId);
   if (!state.freeMode && book?.libraryId) params.set("library_public_id", book.libraryId);
 
   const url = `${PM_API_BASE}/api/lorecore/sessions/${encodeURIComponent(state.selectedSessionId)}/stream?${params}`;
-
   let fullContent = "";
 
   try {
@@ -674,16 +683,21 @@ async function sendMessage() {
           const event = JSON.parse(line.slice(6));
           if (event.type === "tool_call") {
             appendToolCall(event.name, event.args);
+            setStreamStatus(`${TOOL_ICONS[event.name] || "🔧"} ${event.name}`);
             if (st) st.textContent = `${TOOL_ICONS[event.name] || "🔧"} ${event.name}…`;
           } else if (event.type === "tool_result") {
             markToolDone(event.name, event.summary);
+            setStreamStatus("Generating…");
+            if (st) st.textContent = "Generating…";
           } else if (event.type === "chunk") {
+            if (!fullContent) setStreamStatus("");
             appendStreamChunk(event.text);
             fullContent += event.text;
           } else if (event.type === "done") {
             fullContent = event.content || fullContent;
           } else if (event.type === "error") {
             appendStreamChunk(`\n\n⚠️ ${event.message}`);
+            fullContent += `\n\n⚠️ ${event.message}`;
           }
         } catch {}
       }
@@ -701,7 +715,6 @@ async function sendMessage() {
   state.streaming = false;
   if (sendBtn) sendBtn.disabled = false;
   if (st) st.textContent = "";
-
   state.messages.push({ role: "assistant", model: modelName, content: fullContent });
 }
 
@@ -714,22 +727,13 @@ async function loadOverview() {
   state.books = normalizeList(ov, ["books","book_library","items"]).map(normalizeBook);
   state.sessions = normalizeList(ov, ["chat_threads","sessions","discussion_sessions"]).map(normalizeSession);
   setChip("#libraryStatusChip", `${state.books.length} books`, "status-chip--good");
-  renderBookList();
-  renderSessionList();
-  updateScopeChip();
-  updateContextStrip();
-  renderChatFeed();
-  renderActiveTab();
-  renderChapterList();
-  renderEntityCounts();
+  renderBookList(); renderSessionList(); updateScopeChip(); updateContextStrip();
+  renderChatFeed(); renderActiveTab(); renderChapterList(); renderEntityCounts();
 }
 
 async function createNewSession() {
   const btn = qs("#newSessionBtn"); if (btn) btn.disabled = true;
-  const r = await api("/api/chat-sessions", {
-    method: "POST",
-    body: { surface: "lorecore", title: "New session", summary: "LoreCore writing thread", mode: state.chatMode || "single", selected_models: state.selectedModels },
-  });
+  const r = await api("/api/chat-sessions", { method: "POST", body: { surface: "lorecore", title: "New session", summary: "LoreCore writing thread", mode: state.chatMode || "single", selected_models: state.selectedModels } });
   if (btn) btn.disabled = false;
   if (!r.ok) { showToast("Create session failed", "warn"); return; }
   const newId = r.body?.public_id;
@@ -793,44 +797,20 @@ function initDragResize() {
   const saved = parseInt(localStorage.getItem(KEY));
   if (saved > 80 && saved < 900) { feed.style.minHeight = saved + "px"; feed.style.maxHeight = saved + "px"; }
   let dragging = false, startY = 0, startH = 0;
-  handle.addEventListener("mousedown", e => {
-    dragging = true; startY = e.clientY; startH = feed.getBoundingClientRect().height;
-    document.body.style.cursor = "ns-resize"; document.body.style.userSelect = "none"; e.preventDefault();
-  });
-  document.addEventListener("mousemove", e => {
-    if (!dragging) return;
-    const h = Math.max(120, Math.min(900, startH + (e.clientY - startY)));
-    feed.style.minHeight = h + "px"; feed.style.maxHeight = h + "px";
-  });
-  document.addEventListener("mouseup", () => {
-    if (!dragging) return; dragging = false;
-    document.body.style.cursor = ""; document.body.style.userSelect = "";
-    localStorage.setItem(KEY, Math.round(feed.getBoundingClientRect().height));
-  });
-  handle.addEventListener("touchstart", e => {
-    dragging = true; startY = e.touches[0].clientY; startH = feed.getBoundingClientRect().height; e.preventDefault();
-  }, { passive: false });
-  document.addEventListener("touchmove", e => {
-    if (!dragging) return;
-    const h = Math.max(120, Math.min(900, startH + (e.touches[0].clientY - startY)));
-    feed.style.minHeight = h + "px"; feed.style.maxHeight = h + "px";
-  }, { passive: true });
-  document.addEventListener("touchend", () => {
-    if (!dragging) return; dragging = false;
-    localStorage.setItem(KEY, Math.round(feed.getBoundingClientRect().height));
-  });
+  handle.addEventListener("mousedown", e => { dragging = true; startY = e.clientY; startH = feed.getBoundingClientRect().height; document.body.style.cursor = "ns-resize"; document.body.style.userSelect = "none"; e.preventDefault(); });
+  document.addEventListener("mousemove", e => { if (!dragging) return; const h = Math.max(120, Math.min(900, startH + (e.clientY - startY))); feed.style.minHeight = h + "px"; feed.style.maxHeight = h + "px"; });
+  document.addEventListener("mouseup", () => { if (!dragging) return; dragging = false; document.body.style.cursor = ""; document.body.style.userSelect = ""; localStorage.setItem(KEY, Math.round(feed.getBoundingClientRect().height)); });
+  handle.addEventListener("touchstart", e => { dragging = true; startY = e.touches[0].clientY; startH = feed.getBoundingClientRect().height; e.preventDefault(); }, { passive: false });
+  document.addEventListener("touchmove", e => { if (!dragging) return; const h = Math.max(120, Math.min(900, startH + (e.touches[0].clientY - startY))); feed.style.minHeight = h + "px"; feed.style.maxHeight = h + "px"; }, { passive: true });
+  document.addEventListener("touchend", () => { if (!dragging) return; dragging = false; localStorage.setItem(KEY, Math.round(feed.getBoundingClientRect().height)); });
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
 function bindEvents() {
   qs("#freeChatBtn")?.addEventListener("click", () => selectSession(FREE_SESSION_ID, true));
-  qs("#sessionList")?.addEventListener("click", e => {
-    const btn = e.target.closest("[data-session-id]"); if (btn) selectSession(btn.dataset.sessionId, false);
-  });
+  qs("#sessionList")?.addEventListener("click", e => { const btn = e.target.closest("[data-session-id]"); if (btn) selectSession(btn.dataset.sessionId, false); });
   qs("#newSessionBtn")?.addEventListener("click", createNewSession);
-  qs("#bookList")?.addEventListener("click", e => {
-    const btn = e.target.closest("[data-book-id]"); if (btn) selectBook(btn.dataset.bookId);
-  });
+  qs("#bookList")?.addEventListener("click", e => { const btn = e.target.closest("[data-book-id]"); if (btn) selectBook(btn.dataset.bookId); });
   qs("#newBookToggleBtn")?.addEventListener("click", () => { qs("#newBookForm").style.display="block"; qs("#newBookToggleBtn").style.display="none"; });
   qs("#cancelNewBookBtn")?.addEventListener("click", () => { qs("#newBookForm").style.display="none"; qs("#newBookToggleBtn").style.display="block"; });
   qs("#saveNewBookBtn")?.addEventListener("click", createBook);
