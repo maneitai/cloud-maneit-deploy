@@ -38,6 +38,7 @@ const TOOL_ICONS = {
   diff_text: "📊",
   summarise_large_file: "📄",
   image_analyse: "🖼️",
+  call_model: "🤖",
 };
 
 const defaultState = {
@@ -238,7 +239,7 @@ function bindDropZone() {
   const uploadBtn = qs("#uploadBtn");
   if (!composer) return;
   composer.addEventListener("dragenter", e => { e.preventDefault(); setDropZoneActive(true); });
-  composer.addEventListener("dragover", e => { e.preventDefault(); setDropZoneActive(true); });
+  composer.addEventListener("dragover",  e => { e.preventDefault(); setDropZoneActive(true); });
   composer.addEventListener("dragleave", e => {
     if (!composer.contains(e.relatedTarget)) setDropZoneActive(false);
   });
@@ -274,21 +275,31 @@ function extractModels(modelResponse) {
     .map(item => ({
       value: String(item?.alias || item?.name || "").trim(),
       label: String(item?.name || item?.alias || "").trim(),
-      active: ["available","loaded"].includes(String(item?.runtime_state || "").toLowerCase()),
+      active: String(item?.runtime_state || "").toLowerCase() === "available"
+        || String(item?.runtime_state || "").toLowerCase() === "loaded",
     }))
     .filter(m => m.value);
 }
 
 async function refreshModelPool() {
   const result = await callApi("/api/model-pool/models?sync=false", "GET");
-  if (!result.ok) { state.activeModels = []; state.availableModels = []; saveState(); renderModeHelp(); hydrateModelSelectors(); return; }
+  if (!result.ok) {
+    state.activeModels = [];
+    state.availableModels = [];
+    saveState();
+    renderModeHelp();
+    hydrateModelSelectors();
+    return;
+  }
   const models = extractModels(result.body);
   state.availableModels = models;
   state.activeModels = models.filter(m => m.active);
+
   const all = state.availableModels;
   if (!state.singleModel && all[0]) state.singleModel = all[0].value;
   if (!state.multiModels.length && all.length) state.multiModels = all.slice(0, 3).map(m => m.value);
   if (!state.discussionModels.length && all.length) state.discussionModels = all.slice(0, 4).map(m => m.value);
+
   saveState();
   hydrateModelSelectors();
   renderModeHelp();
@@ -335,14 +346,20 @@ function bindDropdownToggle(triggerId, dropdownId) {
   const trigger = qs(`#${triggerId}`);
   const dropdown = qs(`#${dropdownId}`);
   if (!trigger || !dropdown) return;
-  trigger.addEventListener("click", e => { e.stopPropagation(); dropdown.classList.toggle("is-open"); });
+  trigger.addEventListener("click", e => {
+    e.stopPropagation();
+    dropdown.classList.toggle("is-open");
+  });
   document.addEventListener("click", e => {
-    if (!dropdown.contains(e.target) && e.target !== trigger) dropdown.classList.remove("is-open");
+    if (!dropdown.contains(e.target) && e.target !== trigger) {
+      dropdown.classList.remove("is-open");
+    }
   });
 }
 
 function hydrateModelSelectors() {
   const allModels = Array.isArray(state.availableModels) ? state.availableModels : [];
+
   const singleEl = qs("#singleModel");
   if (singleEl) {
     singleEl.innerHTML = allModels.length
@@ -355,19 +372,25 @@ function hydrateModelSelectors() {
       singleEl.value = allModels[0].value;
     }
   }
+
   const multiDropdown = qs("#multiModelDropdown");
   const multiTrigger = qs("#multiModelTrigger");
   if (multiDropdown && multiTrigger) {
     buildMultiSelectDropdown(multiDropdown, allModels, state.multiModels, checked => {
-      state.multiModels = checked; saveState(); updateTriggerLabel(multiTrigger, checked, "Select models...");
+      state.multiModels = checked;
+      saveState();
+      updateTriggerLabel(multiTrigger, checked, "Select models...");
     });
     updateTriggerLabel(multiTrigger, state.multiModels, "Select models...");
   }
+
   const discussionDropdown = qs("#discussionDropdown");
   const discussionTrigger = qs("#discussionTrigger");
   if (discussionDropdown && discussionTrigger) {
     buildMultiSelectDropdown(discussionDropdown, allModels, state.discussionModels, checked => {
-      state.discussionModels = checked; saveState(); updateTriggerLabel(discussionTrigger, checked, "Select specialists...");
+      state.discussionModels = checked;
+      saveState();
+      updateTriggerLabel(discussionTrigger, checked, "Select specialists...");
     });
     updateTriggerLabel(discussionTrigger, state.discussionModels, "Select specialists...");
   }
@@ -393,7 +416,8 @@ function normalizeChatItem(item) {
 }
 
 function getChatById(chatId) {
-  return [...state.chats.pinned, ...state.chats.projectFolder, ...state.chats.history].find(item => item.id === chatId) || null;
+  return [...state.chats.pinned, ...state.chats.projectFolder, ...state.chats.history]
+    .find(item => item.id === chatId) || null;
 }
 
 function mergeChatIntoCollections(chat) {
@@ -401,15 +425,21 @@ function mergeChatIntoCollections(chat) {
   state.chats.pinned = removeById(state.chats.pinned);
   state.chats.projectFolder = removeById(state.chats.projectFolder);
   state.chats.history = removeById(state.chats.history);
-  if (chat.pinned) state.chats.pinned.unshift(chat);
-  else if (chat.folder === "project" || chat.folder === "projects") state.chats.projectFolder.unshift(chat);
-  else state.chats.history.unshift(chat);
+  if (chat.pinned) {
+    state.chats.pinned.unshift(chat);
+  } else if (chat.folder === "project" || chat.folder === "projects") {
+    state.chats.projectFolder.unshift(chat);
+  } else {
+    state.chats.history.unshift(chat);
+  }
 }
 
 function ensureSelectedChatExists() {
   const all = [...state.chats.pinned, ...state.chats.projectFolder, ...state.chats.history];
   if (!all.length) return;
-  if (!all.some(item => item.id === state.selectedChatId)) state.selectedChatId = all[0].id;
+  if (!all.some(item => item.id === state.selectedChatId)) {
+    state.selectedChatId = all[0].id;
+  }
 }
 
 // ─── Thread ───────────────────────────────────────────────────────────────────
@@ -443,13 +473,28 @@ function createStreamingBubble(modelName) {
   bubble.className = "chat-bubble chat-bubble--assistant chat-bubble--streaming";
   bubble.id = "streamingBubble";
   bubble.innerHTML = `
-    <div class="chat-bubble-head">${escapeHtml(modelName || "Assistant")}</div>
+    <div class="chat-bubble-head stream-head" id="streamHead">
+      <span class="stream-head-name">${escapeHtml(modelName || "Assistant")}</span>
+      <span class="stream-thinking-dot"></span>
+    </div>
     <div class="stream-tools" id="streamTools"></div>
-    <div class="stream-text" id="streamText"><span class="stream-cursor"></span></div>
+    <div class="stream-body" id="streamBody"></div>
   `;
   root.appendChild(bubble);
   root.scrollTop = root.scrollHeight;
   return bubble;
+}
+
+function setStreamStatus(text) {
+  const head = qs("#streamHead");
+  if (!head) return;
+  let status = head.querySelector(".stream-status");
+  if (!status) {
+    status = document.createElement("span");
+    status.className = "stream-status";
+    head.appendChild(status);
+  }
+  status.textContent = text ? ` · ${text}` : "";
 }
 
 function appendToolCall(name, args) {
@@ -461,7 +506,8 @@ function appendToolCall(name, args) {
     : "";
   const line = document.createElement("div");
   line.className = "stream-tool-call";
-  line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escapeHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escapeHtml(argsStr)}</span>` : ""}`;
+  line.dataset.toolName = name;
+  line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escapeHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escapeHtml(argsStr)}</span>` : ""}<span class="stream-tool-state">…</span>`;
   tools.appendChild(line);
   qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
 }
@@ -470,26 +516,20 @@ function markToolDone(name, summary) {
   const tools = qs("#streamTools");
   if (!tools) return;
   const lines = qsa(".stream-tool-call", tools);
-  const last = [...lines].reverse().find(l => l.querySelector(".stream-tool-name")?.textContent === name);
+  const last = [...lines].reverse().find(l => l.dataset.toolName === name);
   if (last) {
     last.classList.add("stream-tool-call--done");
-    if (summary) {
-      const s = document.createElement("span");
-      s.className = "stream-tool-summary";
-      s.textContent = summary;
-      last.appendChild(s);
-    }
+    const stateEl = last.querySelector(".stream-tool-state");
+    if (stateEl) stateEl.textContent = summary ? ` ✓ ${summary}` : " ✓";
   }
 }
 
 function appendStreamChunk(text) {
-  const streamText = qs("#streamText");
-  if (!streamText) return;
-  const cursor = qs(".stream-cursor", streamText);
-  const span = document.createElement("span");
-  span.textContent = text;
-  if (cursor) streamText.insertBefore(span, cursor);
-  else streamText.appendChild(span);
+  const streamBody = qs("#streamBody");
+  if (!streamBody) return;
+  if (!streamBody._raw) streamBody._raw = "";
+  streamBody._raw += text;
+  streamBody.textContent = streamBody._raw;
   qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
 }
 
@@ -498,13 +538,22 @@ function finalizeStreamingBubble(fullContent, modelName) {
   if (!bubble) return;
   bubble.classList.remove("chat-bubble--streaming");
   bubble.id = "";
-  // Replace streaming text with rendered markdown
-  const streamText = qs("#streamText", bubble);
-  if (streamText) {
-    streamText.innerHTML = renderMarkdown(fullContent);
+
+  // Replace head — clean up thinking dot and status
+  const head = qs(".stream-head", bubble);
+  if (head) {
+    head.className = "chat-bubble-head";
+    head.innerHTML = escapeHtml(modelName || "Assistant");
   }
-  // Remove cursor
-  qs(".stream-cursor", bubble)?.remove();
+
+  // Replace stream-body with fully rendered markdown
+  const streamBody = qs("#streamBody", bubble);
+  if (streamBody) {
+    streamBody.id = "";
+    streamBody._raw = undefined;
+    streamBody.innerHTML = renderMarkdown(fullContent || "");
+  }
+
   qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
 }
 
@@ -516,16 +565,14 @@ async function sendAndStream() {
   const selectedModels = normalizeSelectedModels();
   if (!selectedModels.length) { showToast("No models selected", "warn"); return; }
 
-  // Cancel any existing stream
   if (activeStream) { activeStream.close(); activeStream = null; }
 
-  // Add user bubble
   if (!threadCache[state.selectedChatId]) threadCache[state.selectedChatId] = [];
   threadCache[state.selectedChatId].push({ id: safeId("msg"), role: "user", head: "User", text });
   renderThread();
   if (input) input.value = "";
 
-  setBusy(true, "Streaming...");
+  setBusy(true, "Thinking…");
 
   const modelName = selectedModels[0] || "Assistant";
   createStreamingBubble(modelName);
@@ -538,7 +585,6 @@ async function sendAndStream() {
   const url = `${PM_API_BASE}/api/home/sessions/${encodeURIComponent(state.selectedChatId)}/stream?${params}`;
 
   let fullContent = "";
-  let done = false;
 
   try {
     const response = await fetch(url);
@@ -552,7 +598,7 @@ async function sendAndStream() {
       if (streamDone) break;
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
-      buffer = lines.pop(); // keep incomplete line
+      buffer = lines.pop();
 
       for (const line of lines) {
         if (!line.startsWith("data: ")) continue;
@@ -560,18 +606,21 @@ async function sendAndStream() {
           const event = JSON.parse(line.slice(6));
           if (event.type === "tool_call") {
             appendToolCall(event.name, event.args);
-            const status = qs("#composerStatus");
-            if (status) status.textContent = `${TOOL_ICONS[event.name] || "🔧"} ${event.name}…`;
+            setStreamStatus(`${TOOL_ICONS[event.name] || "🔧"} ${event.name}`);
+            setBusy(true, `${TOOL_ICONS[event.name] || "🔧"} ${event.name}…`);
           } else if (event.type === "tool_result") {
             markToolDone(event.name, event.summary);
+            setStreamStatus("Generating…");
+            setBusy(true, "Generating…");
           } else if (event.type === "chunk") {
+            if (!fullContent) setStreamStatus("");
             appendStreamChunk(event.text);
             fullContent += event.text;
           } else if (event.type === "done") {
             fullContent = event.content || fullContent;
-            done = true;
           } else if (event.type === "error") {
             appendStreamChunk(`\n\n⚠️ ${event.message}`);
+            fullContent += `\n\n⚠️ ${event.message}`;
           }
         } catch {}
       }
@@ -586,7 +635,6 @@ async function sendAndStream() {
   finalizeStreamingBubble(fullContent, modelName);
   setBusy(false);
 
-  // Add to thread cache
   threadCache[state.selectedChatId].push({
     id: safeId("msg"), role: "assistant",
     head: modelName, text: fullContent, model: modelName
@@ -657,7 +705,10 @@ function renderActiveModels() {
     controlsCard.appendChild(box);
   }
   const active = Array.isArray(state.activeModels) ? state.activeModels : [];
-  if (!active.length) { box.innerHTML = "<strong>Active models:</strong> none reported by PM backend."; return; }
+  if (!active.length) {
+    box.innerHTML = "<strong>Active models:</strong> none reported by PM backend.";
+    return;
+  }
   box.innerHTML = `
     <strong>Active models (${active.length}):</strong>
     <div class="chip-row chip-row--inside" style="margin-top:8px;">
@@ -670,7 +721,9 @@ function renderModeHelp() {
   const help = qs("#modeHelpText");
   const composerStatus = qs("#composerStatus");
   if (help) help.innerHTML = MODE_HELP[state.mode] || MODE_HELP.single;
-  if (composerStatus && activeRequestCount === 0) composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
+  if (composerStatus && activeRequestCount === 0) {
+    composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
+  }
   renderActiveModels();
 }
 
@@ -787,32 +840,47 @@ function initDragResize() {
   if (!handle || !thread) return;
   const KEY = "home_chat_height";
   const saved = parseInt(localStorage.getItem(KEY));
-  if (saved > 80 && saved < 1200) { thread.style.minHeight = saved + "px"; thread.style.maxHeight = saved + "px"; }
+  if (saved > 80 && saved < 1200) {
+    thread.style.minHeight = saved + "px";
+    thread.style.maxHeight = saved + "px";
+  }
   let dragging = false, startY = 0, startH = 0;
   handle.addEventListener("mousedown", e => {
-    dragging = true; startY = e.clientY; startH = thread.getBoundingClientRect().height;
-    document.body.style.cursor = "ns-resize"; document.body.style.userSelect = "none"; e.preventDefault();
+    dragging = true;
+    startY = e.clientY;
+    startH = thread.getBoundingClientRect().height;
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+    e.preventDefault();
   });
   document.addEventListener("mousemove", e => {
     if (!dragging) return;
     const h = Math.max(120, Math.min(1200, startH + (e.clientY - startY)));
-    thread.style.minHeight = h + "px"; thread.style.maxHeight = h + "px";
+    thread.style.minHeight = h + "px";
+    thread.style.maxHeight = h + "px";
   });
   document.addEventListener("mouseup", () => {
     if (!dragging) return;
-    dragging = false; document.body.style.cursor = ""; document.body.style.userSelect = "";
+    dragging = false;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
     localStorage.setItem(KEY, Math.round(thread.getBoundingClientRect().height));
   });
   handle.addEventListener("touchstart", e => {
-    dragging = true; startY = e.touches[0].clientY; startH = thread.getBoundingClientRect().height; e.preventDefault();
+    dragging = true;
+    startY = e.touches[0].clientY;
+    startH = thread.getBoundingClientRect().height;
+    e.preventDefault();
   }, { passive: false });
   document.addEventListener("touchmove", e => {
     if (!dragging) return;
     const h = Math.max(120, Math.min(1200, startH + (e.touches[0].clientY - startY)));
-    thread.style.minHeight = h + "px"; thread.style.maxHeight = h + "px";
+    thread.style.minHeight = h + "px";
+    thread.style.maxHeight = h + "px";
   }, { passive: true });
   document.addEventListener("touchend", () => {
-    if (!dragging) return; dragging = false;
+    if (!dragging) return;
+    dragging = false;
     localStorage.setItem(KEY, Math.round(thread.getBoundingClientRect().height));
   });
 }
@@ -824,7 +892,10 @@ function bindModeCards() {
     card.addEventListener("click", () => {
       const mode = card.getAttribute("data-mode");
       if (!mode) return;
-      state.mode = mode; saveState(); renderModeCards(); renderModeHelp();
+      state.mode = mode;
+      saveState();
+      renderModeCards();
+      renderModeHelp();
     });
   });
 }
@@ -841,7 +912,8 @@ function bindProjectTags() {
     const button = e.target.closest("[data-tag]");
     if (!button) return;
     state.selectedProjectType = button.getAttribute("data-tag");
-    saveState(); hydrateFields();
+    saveState();
+    hydrateFields();
   });
 }
 
@@ -852,7 +924,8 @@ function bindTodoControls() {
     if (!value) { showToast("Write a todo first", "warn"); return; }
     state.todos.unshift({ id: safeId("todo"), title: value, detail: "", done: false });
     if (input) input.value = "";
-    saveState(); renderTodos();
+    saveState();
+    renderTodos();
   });
   qs("#todoInput")?.addEventListener("keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); qs("#addTodoBtn")?.click(); }
@@ -864,7 +937,8 @@ function bindChatButtons() {
     try {
       setBusy(true, "Creating chat...");
       const publicId = await createChatSession({ title: "New chat" });
-      setBusy(false); showToast("New chat created", "good");
+      setBusy(false);
+      showToast("New chat created", "good");
       await loadThreadHistory(publicId);
     } catch { setBusy(false); showToast("New chat failed", "warn"); }
   });
@@ -876,7 +950,8 @@ function bindChatButtons() {
     try {
       setBusy(true, "Branching chat...");
       const publicId = await createChatSession({ title, cloneFromPublicId: state.selectedChatId });
-      setBusy(false); showToast("Branch created", "good");
+      setBusy(false);
+      showToast("Branch created", "good");
       await loadThreadHistory(publicId);
     } catch { setBusy(false); showToast("Branch failed", "warn"); }
   });
@@ -890,7 +965,8 @@ function bindChatButtons() {
     if (!result.ok) { showToast("Pin failed", "warn"); return; }
     current.pinned = newPinned;
     mergeChatIntoCollections(current);
-    saveState(); renderHistory();
+    saveState();
+    renderHistory();
     showToast(newPinned ? "Chat pinned" : "Chat unpinned", "good");
   });
 }
@@ -927,8 +1003,11 @@ function bindExportButton() {
 
 async function createChatSession({ title, cloneFromPublicId = null }) {
   const result = await callApi("/api/chat-sessions", "POST", {
-    surface: "home", title, summary: "",
-    mode: state.mode, selected_models: normalizeSelectedModels(),
+    surface: "home",
+    title,
+    summary: "",
+    mode: state.mode,
+    selected_models: normalizeSelectedModels(),
     clone_from_public_id: cloneFromPublicId
   });
   if (!result.ok) throw new Error("Could not create chat session");
@@ -939,7 +1018,8 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
   mergeChatIntoCollections(chat);
   state.selectedChatId = publicId;
   threadCache[publicId] = [];
-  saveState(); renderAll();
+  saveState();
+  renderAll();
   return publicId;
 }
 
@@ -951,10 +1031,17 @@ async function refreshChatSessions() {
   items.forEach(mergeChatIntoCollections);
   if (!state.selectedChatId && items[0]) state.selectedChatId = items[0].id;
   if (!items.length) {
-    try { state.selectedChatId = await createChatSession({ title: "Home chat" }); }
-    catch { showToast("Could not create initial Home chat", "warn"); saveState(); renderAll(); return false; }
+    try {
+      state.selectedChatId = await createChatSession({ title: "Home chat" });
+    } catch {
+      showToast("Could not create initial Home chat", "warn");
+      saveState();
+      renderAll();
+      return false;
+    }
   }
-  saveState(); renderAll();
+  saveState();
+  renderAll();
   return true;
 }
 
@@ -964,9 +1051,13 @@ async function bootstrapHome() {
   setBusy(true, "Loading...");
   refreshModelPool();
   const sessionsOk = await refreshChatSessions();
-  if (sessionsOk && state.selectedChatId) await loadThreadHistory(state.selectedChatId);
+  if (sessionsOk && state.selectedChatId) {
+    await loadThreadHistory(state.selectedChatId);
+  }
   state.bootstrapped = true;
-  saveState(); setBusy(false); renderAll();
+  saveState();
+  setBusy(false);
+  renderAll();
 }
 
 function init() {
