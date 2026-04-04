@@ -7,6 +7,8 @@ const KRL_LABELS = {
   I:"Work offloading", J:"Artifact engine", K:"Rule promotion", L:"Portability"
 };
 const PROVIDER_BADGES = { groq:"badge-groq", openrouter:"badge-openrouter", ollama:"badge-ollama" };
+const SURFACES = ["home","lorecore","pipeline"];
+const SURFACE_LABELS = { home:"Home", lorecore:"LoreCore", pipeline:"Pipeline" };
 
 const KRL_PRESETS = {
   chat:       ["A","B","G"],
@@ -24,12 +26,11 @@ const state = {
   apiKeys: {},
   modelReasoning: {},
   customLayers: [],
-  expandedLayers: new Set(),
 };
 
 const qs = (s, r = document) => r.querySelector(s);
 const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
-const escHtml = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
+const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");
 const uid = () => Math.random().toString(36).slice(2,10);
 
 function showToast(msg, tone = "good") {
@@ -63,6 +64,11 @@ async function api(path, opts = {}) {
   } catch (e) { return { ok: false, status: 0, error: String(e) }; }
 }
 
+function parseSurfaces(val) {
+  if (Array.isArray(val)) return val;
+  try { return JSON.parse(val || "[]"); } catch { return []; }
+}
+
 async function loadAll() {
   setChip("#globalStatusChip", "Loading", "status-chip--warn");
   const [modelsR, settingsR] = await Promise.all([
@@ -81,7 +87,21 @@ async function loadAll() {
       const keyMatch = notes.match(/api_key=(\S+)/);
       if (keyMatch && keyMatch[1] !== "ollama") state.apiKeys[m.provider] = keyMatch[1];
     });
-    state.modelReasoning = settingsR.body.model_reasoning || {};
+    // Migrate old flat reasoning shape to new per-surface shape
+    const raw = settingsR.body.model_reasoning || {};
+    state.modelReasoning = {};
+    for (const [alias, val] of Object.entries(raw)) {
+      if (val && (val.home || val.lorecore || val.pipeline)) {
+        state.modelReasoning[alias] = val; // already new shape
+      } else if (val && (val.mode || val.krlLayers)) {
+        // migrate old shape — apply to all surfaces
+        state.modelReasoning[alias] = {
+          home: { ...val },
+          lorecore: { ...val },
+          pipeline: { ...val },
+        };
+      }
+    }
     state.customLayers = settingsR.body.custom_layers || [];
   }
   renderAll();
@@ -106,6 +126,8 @@ function groupByProvider(models) {
   return groups;
 }
 
+// ── Roster ────────────────────────────────────────────────────────────────────
+
 function renderRoster() {
   const container = qs("#providerGroups"); if (!container) return;
   const groups = groupByProvider(state.models);
@@ -117,76 +139,73 @@ function renderRoster() {
     const badge = PROVIDER_BADGES[provider] || "badge-custom";
     const apiKey = state.apiKeys[provider] || "";
     return `
-      <div class="provider-group" data-provider="${escHtml(provider)}">
+      <div class="provider-group" data-provider="${esc(provider)}">
         <div class="provider-group-header">
           <div class="provider-group-title">
-            <span class="provider-badge ${badge}">${escHtml(provider)}</span>
+            <span class="provider-badge ${badge}">${esc(provider)}</span>
             <span>${models.length} model${models.length !== 1 ? "s" : ""}</span>
           </div>
           <div class="provider-key-row">
             <span class="soft">API key</span>
-            <input class="input api-key-input" type="password" data-provider="${escHtml(provider)}"
-              value="${escHtml(apiKey)}"
+            <input class="input api-key-input" type="password" data-provider="${esc(provider)}"
+              value="${esc(apiKey)}"
               placeholder="${provider === "ollama" ? "ollama (no key needed)" : "sk-..."}" />
-            <button class="button button--small save-key-btn" data-provider="${escHtml(provider)}">Save key</button>
+            <button class="button button--small save-key-btn" data-provider="${esc(provider)}">Save key</button>
           </div>
-          <button class="button button--small add-model-btn" data-provider="${escHtml(provider)}">+ Add model</button>
+          <button class="button button--small add-model-btn" data-provider="${esc(provider)}">+ Add model</button>
         </div>
         <div class="model-table">
           <div class="model-row header">
-            <div>Model</div><div>Alias</div><div>Enabled</div><div>Home</div><div>LoreCore</div><div></div>
+            <div>Model</div><div>Alias</div><div>Enabled</div>
+            <div>Home</div><div>LoreCore</div><div>Pipeline</div><div></div>
           </div>
           ${models.map(m => {
             const surfaces = parseSurfaces(m.surface_allowlist);
-            const inHome = surfaces.includes("home");
-            const inLore = surfaces.includes("lorecore");
             return `
-              <div class="model-row" data-model-id="${escHtml(m.public_id)}">
-                <div><div class="model-name">${escHtml(m.name || m.alias)}</div></div>
-                <div><div class="model-alias">${escHtml(m.alias)}</div></div>
+              <div class="model-row" data-model-id="${esc(m.public_id)}">
+                <div><div class="model-name">${esc(m.name || m.alias)}</div></div>
+                <div><div class="model-alias">${esc(m.alias)}</div></div>
                 <div>
                   <label class="toggle-switch">
-                    <input type="checkbox" class="model-enabled-toggle" data-id="${escHtml(m.public_id)}" ${m.enabled ? "checked" : ""} />
+                    <input type="checkbox" class="model-enabled-toggle" data-id="${esc(m.public_id)}" ${m.enabled ? "checked" : ""} />
                     <div class="toggle-track"></div>
                     <div class="toggle-thumb"></div>
                   </label>
                 </div>
+                ${SURFACES.map(surf => `
+                  <div>
+                    <label class="surface-check">
+                      <input type="checkbox" class="surface-check-input"
+                        data-id="${esc(m.public_id)}" data-surface="${surf}"
+                        ${surfaces.includes(surf) ? "checked" : ""} />
+                      <span>${SURFACE_LABELS[surf]}</span>
+                    </label>
+                  </div>
+                `).join("")}
                 <div>
-                  <label class="surface-check">
-                    <input type="checkbox" class="surface-check-input" data-id="${escHtml(m.public_id)}" data-surface="home" ${inHome ? "checked" : ""} />
-                    <span>Home</span>
-                  </label>
-                </div>
-                <div>
-                  <label class="surface-check">
-                    <input type="checkbox" class="surface-check-input" data-id="${escHtml(m.public_id)}" data-surface="lorecore" ${inLore ? "checked" : ""} />
-                    <span>LoreCore</span>
-                  </label>
-                </div>
-                <div>
-                  <button class="button button--small button--danger remove-model-btn" data-id="${escHtml(m.public_id)}">✕</button>
+                  <button class="button button--small button--danger remove-model-btn" data-id="${esc(m.public_id)}">✕</button>
                 </div>
               </div>`;
           }).join("")}
         </div>
-        <div class="add-model-row" id="add-model-form-${escHtml(provider)}" style="display:none;">
+        <div class="add-model-row" id="add-model-form-${esc(provider)}" style="display:none;">
           <div class="form-grid-3" style="margin-bottom:8px;">
             <label class="inline-field">
               <span class="soft">Display name</span>
-              <input class="input" id="am_name_${escHtml(provider)}" placeholder="Daily Driver · Llama 70B" />
+              <input class="input" id="am_name_${esc(provider)}" placeholder="Daily Driver · Llama 70B" />
             </label>
             <label class="inline-field">
               <span class="soft">Alias</span>
-              <input class="input" id="am_alias_${escHtml(provider)}" placeholder="groq_llama33_70b" />
+              <input class="input" id="am_alias_${esc(provider)}" placeholder="groq_llama33_70b" />
             </label>
             <label class="inline-field">
               <span class="soft">Model ID</span>
-              <input class="input" id="am_modelid_${escHtml(provider)}" placeholder="llama-3.3-70b-versatile" />
+              <input class="input" id="am_modelid_${esc(provider)}" placeholder="llama-3.3-70b-versatile" />
             </label>
           </div>
           <div class="button-row">
-            <button class="button cancel-add-model-btn" data-provider="${escHtml(provider)}">Cancel</button>
-            <button class="button button--primary confirm-add-model-btn" data-provider="${escHtml(provider)}">Add model</button>
+            <button class="button cancel-add-model-btn" data-provider="${esc(provider)}">Cancel</button>
+            <button class="button button--primary confirm-add-model-btn" data-provider="${esc(provider)}">Add model</button>
           </div>
         </div>
       </div>`;
@@ -194,10 +213,7 @@ function renderRoster() {
   bindRosterEvents();
 }
 
-function parseSurfaces(val) {
-  if (Array.isArray(val)) return val;
-  try { return JSON.parse(val || "[]"); } catch { return []; }
-}
+// ── Defaults ──────────────────────────────────────────────────────────────────
 
 function renderDefaults() {
   const s = state.settings;
@@ -207,8 +223,8 @@ function renderDefaults() {
   const defaults = s.default_models || [];
   container.innerHTML = state.models.map(m => `
     <label class="check-chip ${defaults.includes(m.alias) ? "active" : ""}">
-      <input type="checkbox" class="default-model-cb" value="${escHtml(m.alias)}" ${defaults.includes(m.alias) ? "checked" : ""} />
-      ${escHtml(m.name || m.alias)}
+      <input type="checkbox" class="default-model-cb" value="${esc(m.alias)}" ${defaults.includes(m.alias) ? "checked" : ""} />
+      ${esc(m.name || m.alias)}
     </label>
   `).join("");
   qsa(".check-chip").forEach(chip => {
@@ -220,6 +236,8 @@ function renderDefaults() {
     });
   });
 }
+
+// ── Policies ──────────────────────────────────────────────────────────────────
 
 function renderPolicies() {
   const p = state.settings.model_panel_policies || {};
@@ -240,6 +258,45 @@ function renderPolicies() {
   set("pol_rounds", prod.panel_rounds ?? 2);
 }
 
+// ── Reasoning ─────────────────────────────────────────────────────────────────
+
+function getReasoningCfg(alias, surface) {
+  const m = state.modelReasoning[alias];
+  if (!m) return { mode: "none", preset: "", krlLayers: [] };
+  if (m[surface]) return m[surface];
+  return { mode: "none", preset: "", krlLayers: [] };
+}
+
+function setReasoningCfg(alias, surface, cfg) {
+  if (!state.modelReasoning[alias]) {
+    state.modelReasoning[alias] = { home: {mode:"none",preset:"",krlLayers:[]}, lorecore: {mode:"none",preset:"",krlLayers:[]}, pipeline: {mode:"none",preset:"",krlLayers:[]} };
+  }
+  state.modelReasoning[alias][surface] = cfg;
+}
+
+function renderKrlChips(alias, surface, activeLayers, disabled = false) {
+  return `<div class="layer-chips ${disabled ? "layer-chips--disabled" : ""}">
+    ${KRL_LAYERS.map(l => `
+      <span class="layer-chip ${activeLayers.includes(l) ? "active" : ""} ${disabled ? "layer-chip--dim" : ""}"
+        data-alias="${esc(alias)}" data-surface="${esc(surface)}" data-layer="${l}"
+        title="${esc(KRL_LABELS[l])}">${l}</span>
+    `).join("")}
+  </div>`;
+}
+
+function renderPresetSelect(alias, surface, cfg) {
+  const isPreset = cfg.mode === "preset";
+  const isNone = cfg.mode === "none" || !cfg.mode;
+  return `<select class="select reasoning-preset" data-alias="${esc(alias)}" data-surface="${esc(surface)}" style="font-size:11px;">
+    <option value="none" ${isNone ? "selected" : ""}>None</option>
+    <option value="preset_chat" ${cfg.preset === "chat" && isPreset ? "selected" : ""}>Chat (A,B,G)</option>
+    <option value="preset_research" ${cfg.preset === "research" && isPreset ? "selected" : ""}>Research</option>
+    <option value="preset_planning" ${cfg.preset === "planning" && isPreset ? "selected" : ""}>Planning</option>
+    <option value="preset_reflection" ${cfg.preset === "reflection" && isPreset ? "selected" : ""}>Reflection</option>
+    <option value="preset_full" ${cfg.preset === "full" && isPreset ? "selected" : ""}>Full (A–L)</option>
+  </select>`;
+}
+
 function renderReasoning() {
   const container = qs("#reasoningList"); if (!container) return;
 
@@ -255,46 +312,39 @@ function renderReasoning() {
       <div id="customLayerLibraryList">${renderCustomLayerLibrary()}</div>
     </div>
     <div class="reasoning-divider"></div>
+    <div class="reasoning-surface-header">
+      <div class="reasoning-model-col"></div>
+      <div class="reasoning-surface-label" style="color:#ff9f9f;">Home Chat</div>
+      <div class="reasoning-surface-label" style="color:#9fdfaf;">LoreCore</div>
+      <div class="reasoning-surface-label" style="color:#ffbf7f;">Pipeline</div>
+    </div>
   `;
 
   const modelsHtml = state.models.map(m => {
-    const cfg = state.modelReasoning[m.alias] || { mode: "none", preset: "", krlLayers: [], customLayerIds: [] };
-    const isCustom = cfg.mode === "custom";
-    const isPreset = cfg.mode === "preset";
-    const isNone = !isCustom && !isPreset;
-    const activeKrl = isPreset
-      ? (KRL_PRESETS[cfg.preset] || cfg.krlLayers || [])
-      : (!isCustom ? (cfg.krlLayers || []) : []);
+    const cols = SURFACES.map(surf => {
+      const cfg = getReasoningCfg(m.alias, surf);
+      const isNone = cfg.mode === "none" || !cfg.mode;
+      const activeLayers = cfg.krlLayers || [];
+      return `
+        <div class="reasoning-surface-col">
+          ${renderPresetSelect(m.alias, surf, cfg)}
+          ${renderKrlChips(m.alias, surf, activeLayers, isNone)}
+        </div>`;
+    }).join("");
+
     return `
-      <div class="reasoning-row" data-alias="${escHtml(m.alias)}">
-        <div class="reasoning-model-info">
-          <div class="reasoning-model-name">${escHtml(m.name || m.alias)}</div>
-          <div class="reasoning-model-provider">${escHtml(m.provider)} · ${escHtml(m.alias)}</div>
+      <div class="reasoning-row" data-alias="${esc(m.alias)}">
+        <div class="reasoning-model-col">
+          <div class="reasoning-model-name">${esc(m.name || m.alias)}</div>
+          <div class="reasoning-model-provider">${esc(m.provider)} · ${esc(m.alias)}</div>
         </div>
-        <div class="reasoning-mode-col">
-          <select class="select reasoning-preset" data-alias="${escHtml(m.alias)}">
-            <option value="none" ${isNone ? "selected" : ""}>None</option>
-            <option value="preset_chat" ${cfg.preset === "chat" && isPreset ? "selected" : ""}>Chat (A, B, G)</option>
-            <option value="preset_research" ${cfg.preset === "research" && isPreset ? "selected" : ""}>Research (A,B,C,D,G,H)</option>
-            <option value="preset_planning" ${cfg.preset === "planning" && isPreset ? "selected" : ""}>Planning (A,B,C,D,E,F,H)</option>
-            <option value="preset_reflection" ${cfg.preset === "reflection" && isPreset ? "selected" : ""}>Reflection (A,D,G,H,K)</option>
-            <option value="preset_full" ${cfg.preset === "full" && isPreset ? "selected" : ""}>Full KRL (A–L)</option>
-            <option value="custom" ${isCustom ? "selected" : ""}>Custom layers</option>
-          </select>
-        </div>
-        <div class="reasoning-layers-col">
-          ${isCustom
-            ? renderCustomAssignment(m.alias, cfg.customLayerIds || [])
-            : renderKrlChips(m.alias, activeKrl, isNone)}
-        </div>
+        ${cols}
       </div>`;
   }).join("");
 
   container.innerHTML = libraryHtml + modelsHtml;
   bindReasoningEvents();
 
-  // Bind Apply button here — it's in the static HTML above #reasoningList
-  // Remove old listener first to avoid duplicates, then re-add
   const applyBtn = qs("#applyReasoningBtn");
   if (applyBtn) {
     const fresh = applyBtn.cloneNode(true);
@@ -305,71 +355,32 @@ function renderReasoning() {
 
 function renderCustomLayerLibrary() {
   if (!state.customLayers.length) {
-    return `<div class="lib-placeholder muted" style="padding:10px 0;font-size:12px;">No custom layers yet. Create one to assign to models.</div>`;
+    return `<div class="lib-placeholder muted" style="padding:10px 0;font-size:12px;">No custom layers yet.</div>`;
   }
   return state.customLayers.map(layer => `
-    <div class="custom-layer-def" data-layer-id="${escHtml(layer.id)}">
+    <div class="custom-layer-def" data-layer-id="${esc(layer.id)}">
       <div class="custom-layer-def-header">
-        <span class="custom-layer-name-tag">${escHtml(layer.name)}</span>
+        <span class="custom-layer-name-tag">${esc(layer.name)}</span>
         <div class="button-row">
-          <button class="button button--small toggle-layer-def-btn" data-layer-id="${escHtml(layer.id)}">Edit</button>
-          <button class="button button--small button--danger delete-layer-def-btn" data-layer-id="${escHtml(layer.id)}">✕</button>
+          <button class="button button--small toggle-layer-def-btn" data-layer-id="${esc(layer.id)}">Edit</button>
+          <button class="button button--small button--danger delete-layer-def-btn" data-layer-id="${esc(layer.id)}">✕</button>
         </div>
       </div>
-      <div class="custom-layer-def-body" id="layer-def-body-${escHtml(layer.id)}" style="display:none;">
+      <div class="custom-layer-def-body" id="layer-def-body-${esc(layer.id)}" style="display:none;">
         <label class="inline-field" style="margin-bottom:8px;">
           <span class="soft">Layer name</span>
-          <input class="input layer-name-input" data-layer-id="${escHtml(layer.id)}" value="${escHtml(layer.name)}" placeholder="e.g. Norwegian writing style" />
+          <input class="input layer-name-input" data-layer-id="${esc(layer.id)}" value="${esc(layer.name)}" />
         </label>
         <label class="inline-field">
           <span class="soft">Prompt content</span>
-          <textarea class="textarea layer-content-input" data-layer-id="${escHtml(layer.id)}" rows="6" placeholder="Write the full prompt text for this layer.">${escHtml(layer.content)}</textarea>
+          <textarea class="textarea layer-content-input" data-layer-id="${esc(layer.id)}" rows="6">${esc(layer.content)}</textarea>
         </label>
         <div class="button-row" style="margin-top:8px;">
-          <button class="button button--small save-layer-def-btn" data-layer-id="${escHtml(layer.id)}">Save layer</button>
+          <button class="button button--small save-layer-def-btn" data-layer-id="${esc(layer.id)}">Save layer</button>
         </div>
       </div>
     </div>
   `).join("");
-}
-
-function renderKrlChips(alias, activeLayers, disabled = false) {
-  return `<div class="layer-chips ${disabled ? "layer-chips--disabled" : ""}">
-    ${KRL_LAYERS.map(l => `
-      <span class="layer-chip ${activeLayers.includes(l) ? "active" : ""} ${disabled ? "layer-chip--dim" : ""}"
-        data-alias="${escHtml(alias)}" data-layer="${l}" title="${escHtml(KRL_LABELS[l])}">${l}</span>
-    `).join("")}
-  </div>`;
-}
-
-function renderCustomAssignment(alias, activeIds) {
-  const assigned = state.customLayers.filter(l => activeIds.includes(l.id));
-  const unassigned = state.customLayers.filter(l => !activeIds.includes(l.id));
-  return `
-    <div class="custom-assignment">
-      <div class="custom-assigned-chips">
-        ${assigned.map(l => `
-          <div class="custom-assigned-chip-wrap">
-            <span class="custom-chip custom-chip--active toggle-custom-expand"
-              data-alias="${escHtml(alias)}" data-layer-id="${escHtml(l.id)}">${escHtml(l.name)}</span>
-            <div class="custom-chip-editor" id="custom-expand-${escHtml(alias)}-${escHtml(l.id)}" style="display:none;">
-              <textarea class="textarea inline-layer-editor" data-alias="${escHtml(alias)}" data-layer-id="${escHtml(l.id)}" rows="5">${escHtml(l.content)}</textarea>
-              <div class="button-row" style="margin-top:6px;">
-                <button class="button button--small save-inline-layer-btn" data-alias="${escHtml(alias)}" data-layer-id="${escHtml(l.id)}">Save</button>
-                <button class="button button--small button--danger unassign-layer-btn" data-alias="${escHtml(alias)}" data-layer-id="${escHtml(l.id)}">Remove</button>
-              </div>
-            </div>
-          </div>
-        `).join("")}
-        ${unassigned.length ? `
-          <select class="select assign-layer-select" data-alias="${escHtml(alias)}" style="max-width:160px;font-size:12px;">
-            <option value="">+ Add layer</option>
-            ${unassigned.map(l => `<option value="${escHtml(l.id)}">${escHtml(l.name)}</option>`).join("")}
-          </select>
-        ` : ""}
-        ${!state.customLayers.length ? `<span class="muted" style="font-size:12px;">No custom layers defined yet.</span>` : ""}
-      </div>
-    </div>`;
 }
 
 function bindReasoningEvents() {
@@ -384,8 +395,7 @@ function bindReasoningEvents() {
 
   qsa(".toggle-layer-def-btn").forEach(btn => {
     btn.addEventListener("click", () => {
-      const id = btn.dataset.layerId;
-      const body = qs(`#layer-def-body-${id}`);
+      const body = qs(`#layer-def-body-${btn.dataset.layerId}`);
       if (body) body.style.display = body.style.display === "none" ? "block" : "none";
     });
   });
@@ -408,138 +418,75 @@ function bindReasoningEvents() {
   qsa(".delete-layer-def-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.layerId;
-      if (!confirm("Delete this layer? It will be removed from all model assignments.")) return;
+      if (!confirm("Delete this layer?")) return;
       state.customLayers = state.customLayers.filter(l => l.id !== id);
-      Object.values(state.modelReasoning).forEach(cfg => {
-        cfg.customLayerIds = (cfg.customLayerIds || []).filter(lid => lid !== id);
-      });
       markDirty();
       renderReasoning();
     });
   });
 
+  // Preset dropdowns — one per surface per model
   qsa(".reasoning-preset").forEach(sel => {
     sel.addEventListener("change", () => {
       const alias = sel.dataset.alias;
+      const surface = sel.dataset.surface;
       const val = sel.value;
-      if (!state.modelReasoning[alias]) state.modelReasoning[alias] = { mode: "none", preset: "", krlLayers: [], customLayerIds: [] };
-      const cfg = state.modelReasoning[alias];
+      const cfg = getReasoningCfg(alias, surface);
       if (val === "none") {
         cfg.mode = "none"; cfg.preset = ""; cfg.krlLayers = [];
-      } else if (val === "custom") {
-        cfg.mode = "custom"; cfg.preset = "";
       } else if (val.startsWith("preset_")) {
-        const presetKey = val.replace("preset_", "");
-        cfg.mode = "preset"; cfg.preset = presetKey;
-        cfg.krlLayers = KRL_PRESETS[presetKey] || [];
+        const key = val.replace("preset_", "");
+        cfg.mode = "preset"; cfg.preset = key;
+        cfg.krlLayers = KRL_PRESETS[key] || [];
       }
+      setReasoningCfg(alias, surface, cfg);
       markDirty();
+      // Re-render just the chips for this surface column
       const row = qs(`.reasoning-row[data-alias="${CSS.escape(alias)}"]`);
       if (row) {
-        const col = row.querySelector(".reasoning-layers-col");
+        const col = qsa(".reasoning-surface-col", row).find(c => c.querySelector(`[data-surface="${surface}"]`));
         if (col) {
-          col.innerHTML = cfg.mode === "custom"
-            ? renderCustomAssignment(alias, cfg.customLayerIds || [])
-            : renderKrlChips(alias, cfg.krlLayers || [], cfg.mode === "none");
-          bindCustomAssignmentEvents(col, alias);
+          const chipsWrap = col.querySelector(".layer-chips");
+          if (chipsWrap) {
+            const isNone = cfg.mode === "none";
+            chipsWrap.outerHTML = renderKrlChips(alias, surface, cfg.krlLayers, isNone);
+            bindChipEvents(row);
+          }
         }
       }
     });
   });
 
-  qsa(".layer-chip:not(.layer-chip--dim)").forEach(chip => {
+  // KRL chip toggles
+  qsa(".reasoning-row").forEach(row => bindChipEvents(row));
+}
+
+function bindChipEvents(row) {
+  qsa(".layer-chip:not(.layer-chip--dim)", row).forEach(chip => {
     chip.addEventListener("click", () => {
       const alias = chip.dataset.alias;
+      const surface = chip.dataset.surface;
       const layer = chip.dataset.layer;
-      if (!state.modelReasoning[alias]) state.modelReasoning[alias] = { mode: "none", preset: "", krlLayers: [], customLayerIds: [] };
-      const cfg = state.modelReasoning[alias];
+      const cfg = getReasoningCfg(alias, surface);
       const layers = cfg.krlLayers || [];
       const idx = layers.indexOf(layer);
       if (idx >= 0) layers.splice(idx, 1); else layers.push(layer);
       cfg.krlLayers = layers;
       cfg.mode = "preset";
+      setReasoningCfg(alias, surface, cfg);
       chip.classList.toggle("active", layers.includes(layer));
       markDirty();
     });
   });
-
-  qsa(".reasoning-row").forEach(row => {
-    const alias = row.dataset.alias;
-    const col = row.querySelector(".reasoning-layers-col");
-    if (col) bindCustomAssignmentEvents(col, alias);
-  });
 }
 
-function bindCustomAssignmentEvents(col, alias) {
-  qsa(".toggle-custom-expand", col).forEach(chip => {
-    chip.addEventListener("click", () => {
-      const layerId = chip.dataset.layerId;
-      const editor = qs(`#custom-expand-${alias}-${layerId}`);
-      if (editor) editor.style.display = editor.style.display === "none" ? "block" : "none";
-    });
-  });
-
-  qsa(".save-inline-layer-btn", col).forEach(btn => {
-    btn.addEventListener("click", () => {
-      const layerId = btn.dataset.layerId;
-      const layer = state.customLayers.find(l => l.id === layerId);
-      const editor = qs(`.inline-layer-editor[data-layer-id="${layerId}"]`, col);
-      if (layer && editor) { layer.content = editor.value; markDirty(); showToast("Layer updated — press Apply to persist", "good"); }
-    });
-  });
-
-  qsa(".unassign-layer-btn", col).forEach(btn => {
-    btn.addEventListener("click", () => {
-      const layerId = btn.dataset.layerId;
-      const cfg = state.modelReasoning[alias];
-      if (cfg) cfg.customLayerIds = (cfg.customLayerIds || []).filter(id => id !== layerId);
-      markDirty();
-      const row = qs(`.reasoning-row[data-alias="${CSS.escape(alias)}"]`);
-      if (row) {
-        const layersCol = row.querySelector(".reasoning-layers-col");
-        if (layersCol) {
-          layersCol.innerHTML = renderCustomAssignment(alias, cfg?.customLayerIds || []);
-          bindCustomAssignmentEvents(layersCol, alias);
-        }
-      }
-    });
-  });
-
-  qsa(".assign-layer-select", col).forEach(sel => {
-    sel.addEventListener("change", () => {
-      const layerId = sel.value;
-      if (!layerId) return;
-      if (!state.modelReasoning[alias]) state.modelReasoning[alias] = { mode: "custom", preset: "", krlLayers: [], customLayerIds: [] };
-      const cfg = state.modelReasoning[alias];
-      if (!cfg.customLayerIds) cfg.customLayerIds = [];
-      if (!cfg.customLayerIds.includes(layerId)) cfg.customLayerIds.push(layerId);
-      markDirty();
-      const row = qs(`.reasoning-row[data-alias="${CSS.escape(alias)}"]`);
-      if (row) {
-        const layersCol = row.querySelector(".reasoning-layers-col");
-        if (layersCol) {
-          layersCol.innerHTML = renderCustomAssignment(alias, cfg.customLayerIds);
-          bindCustomAssignmentEvents(layersCol, alias);
-        }
-      }
-    });
-  });
-}
-
-function renderCounts() {
-  const el = qs("#snavCounts"); if (!el) return;
-  const groups = groupByProvider(state.models);
-  el.innerHTML = Object.entries(groups).map(([p, ms]) =>
-    `<div>${escHtml(p)}: ${ms.filter(m => m.enabled).length}/${ms.length}</div>`
-  ).join("") + `<div style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px;">Total active: ${state.models.filter(m => m.enabled).length}</div>`;
-}
+// ── Roster events ─────────────────────────────────────────────────────────────
 
 function bindRosterEvents() {
   qsa(".model-enabled-toggle").forEach(cb => {
     cb.addEventListener("change", () => {
-      const id = cb.dataset.id;
-      if (!state.modelChanges[id]) state.modelChanges[id] = {};
-      state.modelChanges[id].enabled = cb.checked;
+      if (!state.modelChanges[cb.dataset.id]) state.modelChanges[cb.dataset.id] = {};
+      state.modelChanges[cb.dataset.id].enabled = cb.checked;
       markDirty();
     });
   });
@@ -553,6 +500,7 @@ function bindRosterEvents() {
       let surfaces = parseSurfaces(model.surface_allowlist);
       if (cb.checked && !surfaces.includes(surface)) surfaces.push(surface);
       if (!cb.checked) surfaces = surfaces.filter(s => s !== surface);
+      model.surface_allowlist = surfaces;
       if (!state.modelChanges[id]) state.modelChanges[id] = {};
       state.modelChanges[id].surface_allowlist = surfaces;
       markDirty();
@@ -624,6 +572,8 @@ function bindRosterEvents() {
   });
 }
 
+// ── Provider form ─────────────────────────────────────────────────────────────
+
 function bindProviderForm() {
   qs("#addProviderBtn")?.addEventListener("click", () => {
     const form = qs("#addProviderForm");
@@ -650,22 +600,15 @@ function bindProviderForm() {
   });
 }
 
+// ── Save ──────────────────────────────────────────────────────────────────────
+
 async function saveReasoningOnly() {
   const btn = qs("#applyReasoningBtn");
   if (btn) { btn.textContent = "Applying…"; btn.disabled = true; }
-
-  const payload = {
-    ...state.settings,
-    model_reasoning: state.modelReasoning,
-    custom_layers: state.customLayers,
-  };
-
+  const payload = { ...state.settings, model_reasoning: state.modelReasoning, custom_layers: state.customLayers };
   const r = await api("/api/settings", { method: "PUT", body: { values: payload } });
-
   if (btn) { btn.textContent = "Apply reasoning changes"; btn.disabled = false; }
-
   if (!r.ok) { showToast(`Apply failed: ${r.status}`, "warn"); return; }
-
   state.settings = { ...state.settings, model_reasoning: state.modelReasoning, custom_layers: state.customLayers };
   setChip("#globalStatusChip", "Saved", "status-chip--good");
   showToast("Reasoning changes applied", "good");
@@ -717,6 +660,18 @@ async function saveAll() {
   setChip("#globalStatusChip", ok ? "Saved" : "Save errors", ok ? "status-chip--good" : "status-chip--warn");
   if (ok) showToast("All changes saved", "good");
 }
+
+// ── Counts ────────────────────────────────────────────────────────────────────
+
+function renderCounts() {
+  const el = qs("#snavCounts"); if (!el) return;
+  const groups = groupByProvider(state.models);
+  el.innerHTML = Object.entries(groups).map(([p, ms]) =>
+    `<div>${esc(p)}: ${ms.filter(m => m.enabled).length}/${ms.length}</div>`
+  ).join("") + `<div style="margin-top:4px;border-top:1px solid var(--border);padding-top:4px;">Total active: ${state.models.filter(m => m.enabled).length}</div>`;
+}
+
+// ── Nav + init ────────────────────────────────────────────────────────────────
 
 function bindNav() {
   qsa(".snav-item").forEach(btn => {
