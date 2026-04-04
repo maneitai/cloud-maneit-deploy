@@ -1,553 +1,582 @@
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
-const PM_AGENT_FACTORY_DRAFT_KEY = "PM_AGENT_FACTORY_DRAFT_V3";
+const GD_KEY = "GD_STATE_V1";
 
-const roleOptions = ["Planner", "Coder", "Verifier", "Auditor", "Router", "Research", "Creative", "Systems"];
+const GENERATION_TYPES = [
+  { id: "gdd",          label: "Game Design Doc",    icon: "📋", desc: "Full GDD from your design notes" },
+  { id: "tower_spec",   label: "Tower Specs",        icon: "🗼", desc: "Stats, upgrade paths, ScriptableObjects" },
+  { id: "enemy_spec",   label: "Enemy Specs",        icon: "👾", desc: "Enemy stats, behaviors, wave data" },
+  { id: "level_design", label: "Level Design",       icon: "🗺️", desc: "Level layout, wave composition, JSON" },
+  { id: "code",         label: "C# Code",            icon: "💻", desc: "Unity MonoBehaviours and systems" },
+  { id: "asset_prompts",label: "Asset Prompts",      icon: "🎨", desc: "Stable Diffusion prompts for sprites" },
+  { id: "lore",         label: "Lore & World",       icon: "📖", desc: "World building, narrative, lore bible" },
+  { id: "dialogue",     label: "Dialogue",           icon: "💬", desc: "NPC dialogue and branching trees" },
+  { id: "quest",        label: "Quest Design",       icon: "⚔️", desc: "Quest structures with objectives" },
+];
 
-const emptyDraft = {
-  id: "",
-  name: "New Agent",
-  roleClass: "Planner",
-  subtype: "",
-  description: "",
-  systemPrompt: "",
-  reasoningLayers: [],
-  modelFamily: [],
-  taskTypes: [],
-  outputContract: "",
-  validationGate: "",
-  quorumDefault: "single",
-  fallbackPolicy: "explicit_fallback_only",
-  timeoutSeconds: 60,
-  testPrompt: "",
-  compatibility: {
-    pipelines: true,
-    home: false,
-    loreDiscussion: false,
-    creatorPresets: true
-  },
-  source: "draft"
-};
+const DOC_TYPES = [
+  "gdd", "tower_spec", "enemy_spec", "level_design", "lore", "dialogue", "quest", "notes", "general"
+];
 
 const state = {
-  agents: [],
-  selectedAgentId: null,
-  filters: { search: "", roleClass: "All", subtype: "All" },
-  recommendedTeam: null,
-  librarySource: "loading"
+  projects: [],
+  activeProjectId: localStorage.getItem("gd_active_project") || null,
+  activeProject: null,
+  documents: [],
+  artifacts: [],
+  generations: [],
+  activeSection: "overview",
+  selectedModel: "",
+  availableModels: [],
+  generating: false,
+  activeArtifactId: null,
+  activeDocId: null,
 };
 
-function deepClone(value) { return JSON.parse(JSON.stringify(value)); }
-function qs(selector, root = document) { return root.querySelector(selector); }
-function qsa(selector, root = document) { return Array.from(root.querySelectorAll(selector)); }
+const qs = (s, r = document) => r.querySelector(s);
+const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+const uid = () => Math.random().toString(36).slice(2,10);
 
-function escapeHtml(value) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+function showToast(msg, tone = "good") {
+  const t = qs("#toast"); if (!t) return;
+  t.textContent = msg; t.className = `toast ${tone} is-visible`;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove("is-visible"), 3000);
 }
 
-function showToast(message, tone = "good") {
-  const toast = qs("#toast");
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = `toast ${tone} is-visible`;
-  window.clearTimeout(showToast._timer);
-  showToast._timer = window.setTimeout(() => toast.classList.remove("is-visible"), 2800);
-}
-
-async function api(path, options = {}) {
-  const config = { method: "GET", headers: {}, ...options };
-  if (config.body && typeof config.body !== "string") {
-    config.headers["Content-Type"] = "application/json";
-    config.body = JSON.stringify(config.body);
+async function api(path, opts = {}) {
+  const cfg = { method: "GET", headers: {}, ...opts };
+  if (cfg.body && typeof cfg.body !== "string") {
+    cfg.headers["Content-Type"] = "application/json";
+    cfg.body = JSON.stringify(cfg.body);
   }
   try {
-    const response = await fetch(`${PM_API_BASE}${path}`, config);
-    const contentType = response.headers.get("content-type") || "";
-    const body = contentType.includes("application/json") ? await response.json() : await response.text();
-    return { ok: response.ok, status: response.status, body };
-  } catch (error) {
-    return { ok: false, status: 0, error: String(error) };
+    const res = await fetch(`${PM_API_BASE}${path}`, cfg);
+    const ct = res.headers.get("content-type") || "";
+    const body = ct.includes("application/json") ? await res.json() : await res.text();
+    return { ok: res.ok, status: res.status, body };
+  } catch (e) { return { ok: false, error: String(e) }; }
+}
+
+// ── Model pool ────────────────────────────────────────────────────────────────
+
+async function loadModels() {
+  const r = await api("/api/model-pool/models?sync=false");
+  if (!r.ok) return;
+  const items = Array.isArray(r.body?.items) ? r.body.items : [];
+  state.availableModels = items
+    .filter(m => m.enabled && m.runtime_driver === "openai_api")
+    .map(m => ({ value: m.alias, label: m.name || m.alias }));
+  if (!state.selectedModel && state.availableModels[0]) {
+    state.selectedModel = state.availableModels[0].value;
+  }
+  renderModelSelect();
+}
+
+function renderModelSelect() {
+  const sel = qs("#modelSelect"); if (!sel) return;
+  sel.innerHTML = state.availableModels.map(m =>
+    `<option value="${esc(m.value)}" ${m.value === state.selectedModel ? "selected" : ""}>${esc(m.label)}</option>`
+  ).join("");
+}
+
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+async function loadProjects() {
+  const r = await api("/api/gd/projects");
+  if (!r.ok) return;
+  state.projects = Array.isArray(r.body?.items) ? r.body.items : [];
+  renderProjectList();
+  if (state.activeProjectId) {
+    await selectProject(state.activeProjectId);
+  } else if (state.projects[0]) {
+    await selectProject(state.projects[0].public_id);
+  } else {
+    renderEmptyState();
   }
 }
 
-// ── Normalize backend agent to internal format ────────────────────────────────
-function normalizeAgent(raw, index = 0) {
-  const name = raw?.name || `Agent ${index + 1}`;
-  const roleClass = raw?.roleClass || raw?.role_class || raw?.role || "Planner";
-
-  // Parse JSON fields that may come as strings from PostgreSQL
-  function parseList(val) {
-    if (Array.isArray(val)) return val;
-    if (!val) return [];
-    try { return JSON.parse(val); } catch { return []; }
-  }
-
-  return {
-    id: raw?.public_id || raw?.id || `agent_${index}`,
-    publicId: raw?.public_id || raw?.id || "",
-    name,
-    roleClass,
-    subtype: raw?.subtype || "",
-    description: raw?.description || "",
-    systemPrompt: raw?.system_prompt || "",
-    reasoningLayers: parseList(raw?.reasoning_layers),
-    modelFamily: parseList(raw?.model_family),
-    taskTypes: parseList(raw?.task_types),
-    outputContract: raw?.output_contract || "",
-    validationGate: raw?.validation_gate || "",
-    quorumDefault: raw?.quorum_default || "single",
-    fallbackPolicy: raw?.fallback_policy || "explicit_fallback_only",
-    timeoutSeconds: parseInt(raw?.timeout_seconds || 60),
-    testPrompt: raw?.test_prompt || "",
-    parentAgentPublicId: raw?.parent_agent_public_id || null,
-    verifierStatus: raw?.verifier_status || "unverified",
-    mockFlag: Boolean(raw?.mock_flag),
-    lastTestResult: raw?.last_test_result || null,
-    lastTestedAt: raw?.last_tested_at || null,
-    compatibility: {
-      pipelines: Boolean(raw?.compatibility?.pipelines ?? parseList(raw?.compatible_pipeline_stages).length > 0),
-      home: Boolean(raw?.compatibility?.home),
-      loreDiscussion: Boolean(raw?.compatibility?.loreDiscussion || raw?.compatibility?.lore_discussion),
-      creatorPresets: Boolean(raw?.compatibility?.creatorPresets || raw?.compatibility?.creator_presets)
-    },
-    source: raw?.mock_flag ? "mock" : "backend",
-    raw
-  };
+async function selectProject(pid) {
+  state.activeProjectId = pid;
+  localStorage.setItem("gd_active_project", pid);
+  const r = await api(`/api/gd/projects/${pid}`);
+  if (!r.ok) return;
+  state.activeProject = r.body;
+  await Promise.all([loadDocuments(), loadArtifacts()]);
+  renderAll();
 }
 
-function normalizeAgentsResponse(body) {
-  if (Array.isArray(body)) return body.map(normalizeAgent);
-  if (Array.isArray(body?.items)) return body.items.map(normalizeAgent);
-  return [];
-}
-
-// ── Build backend payload from internal agent ─────────────────────────────────
-function toBackendPayload(agent) {
-  return {
-    name: agent.name,
-    role: agent.roleClass,
-    description: agent.description,
-    system_prompt: agent.systemPrompt,
-    output_contract: agent.outputContract,
-    validation_gate: agent.validationGate,
-    quorum_default: agent.quorumDefault,
-    fallback_policy: agent.fallbackPolicy,
-    timeout_seconds: parseInt(agent.timeoutSeconds) || 60,
-    model_family: Array.isArray(agent.modelFamily) ? agent.modelFamily : agent.modelFamily.split(",").map(s => s.trim()).filter(Boolean),
-    task_types: Array.isArray(agent.taskTypes) ? agent.taskTypes : agent.taskTypes.split(",").map(s => s.trim()).filter(Boolean),
-    reasoning_layers: Array.isArray(agent.reasoningLayers) ? agent.reasoningLayers : agent.reasoningLayers.split(",").map(s => s.trim()).filter(Boolean),
-    test_prompt: agent.testPrompt,
-    compatible_pipeline_stages: agent.compatibility?.pipelines ? ["all"] : [],
-    verifier_status: agent.verifierStatus || "unverified",
-    input_type: "text",
-    output_type: "text",
-    memory_scope: "session",
-    permission_level: "standard",
-    accent: "blue"
-  };
-}
-
-function getSelectedAgent() {
-  return state.agents.find(a => a.id === state.selectedAgentId) || state.agents[0] || null;
-}
-
-function saveDraftSnapshot() {
-  const selected = getSelectedAgent();
-  if (!selected) return;
-  try { localStorage.setItem(PM_AGENT_FACTORY_DRAFT_KEY, JSON.stringify(selected)); } catch {}
-}
-
-function uniqueSubtypes(agents) {
-  return [...new Set(agents.map(a => a.subtype).filter(Boolean))].sort((a, b) => a.localeCompare(b));
-}
-
-function filteredAgents() {
-  const search = state.filters.search.trim().toLowerCase();
-  return state.agents.filter(agent => {
-    const haystack = [agent.name, agent.roleClass, agent.subtype, agent.description].join(" ").toLowerCase();
-    const matchesSearch = !search || haystack.includes(search);
-    const matchesRole = state.filters.roleClass === "All" || agent.roleClass === state.filters.roleClass;
-    const matchesSubtype = state.filters.subtype === "All" || agent.subtype === state.filters.subtype;
-    return matchesSearch && matchesRole && matchesSubtype;
+async function createProject(title, engine, genre, summary) {
+  const r = await api("/api/gd/projects", {
+    method: "POST",
+    body: { title, engine, genre, summary }
   });
+  if (!r.ok) { showToast("Failed to create project", "warn"); return; }
+  await loadProjects();
+  await selectProject(r.body.public_id);
+  showToast(`${title} created`, "good");
 }
 
-function compatibilityLabel(agent) {
-  const flags = [];
-  if (agent.compatibility?.pipelines) flags.push("Pipelines");
-  if (agent.compatibility?.home) flags.push("Home");
-  if (agent.compatibility?.loreDiscussion) flags.push("LoreCore");
-  if (agent.compatibility?.creatorPresets) flags.push("Creator presets");
-  return flags.length ? flags.join(" · ") : "Restricted";
+async function saveProject() {
+  if (!state.activeProject) return;
+  const title = qs("#projTitle")?.value.trim() || state.activeProject.title;
+  const summary = qs("#projSummary")?.value.trim() || "";
+  const design_doc = qs("#projDesignDoc")?.value || "";
+  const r = await api(`/api/gd/projects/${state.activeProjectId}`, {
+    method: "PATCH",
+    body: { title, summary, design_doc }
+  });
+  if (!r.ok) { showToast("Save failed", "warn"); return; }
+  state.activeProject = { ...state.activeProject, title, summary, design_doc };
+  renderProjectList();
+  showToast("Project saved", "good");
 }
 
-function setLibraryStatus(text, toneClass = "status-chip--good") {
-  const chip = qs("#libraryStatusChip");
-  if (!chip) return;
-  chip.textContent = text;
-  chip.className = `status-chip ${toneClass}`;
+// ── Documents ─────────────────────────────────────────────────────────────────
+
+async function loadDocuments() {
+  if (!state.activeProjectId) return;
+  const r = await api(`/api/gd/projects/${state.activeProjectId}/documents`);
+  if (!r.ok) return;
+  state.documents = Array.isArray(r.body?.items) ? r.body.items : [];
 }
 
-function setWorkspaceStatus(text, toneClass = "status-chip--warn") {
-  const chip = qs("#workspaceStatusChip");
-  if (!chip) return;
-  chip.textContent = text;
-  chip.className = `status-chip ${toneClass}`;
+async function createDocument(doc_type, title, content = "") {
+  const r = await api(`/api/gd/projects/${state.activeProjectId}/documents`, {
+    method: "POST",
+    body: { doc_type, title, content }
+  });
+  if (!r.ok) { showToast("Failed to create document", "warn"); return; }
+  await loadDocuments();
+  state.activeDocId = r.body.public_id;
+  renderDocuments();
+  showToast("Document created", "good");
 }
 
-function populateSubtypeFilter() {
-  const select = qs("#librarySubtype");
-  if (!select) return;
-  const current = state.filters.subtype;
-  const subtypes = uniqueSubtypes(state.agents);
-  select.innerHTML = [`<option value="All">All</option>`, ...subtypes.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`)].join("");
-  select.value = subtypes.includes(current) ? current : "All";
+async function saveDocument(docId, content) {
+  const r = await api(`/api/gd/documents/${docId}`, {
+    method: "PATCH",
+    body: { content }
+  });
+  if (!r.ok) { showToast("Save failed", "warn"); return; }
+  const doc = state.documents.find(d => d.public_id === docId);
+  if (doc) doc.content = content;
+  showToast("Saved", "good");
 }
 
-function renderLibrary() {
-  const list = qs("#agentLibraryList");
-  if (!list) return;
-  const agents = filteredAgents();
-  if (!agents.length) {
-    list.innerHTML = `<div class="library-card"><strong>No agents found</strong><span>Adjust filters or create a new draft.</span></div>`;
+async function deleteDocument(docId) {
+  if (!confirm("Delete this document?")) return;
+  await api(`/api/gd/documents/${docId}`, { method: "DELETE" });
+  state.documents = state.documents.filter(d => d.public_id !== docId);
+  if (state.activeDocId === docId) state.activeDocId = null;
+  renderDocuments();
+  showToast("Document deleted", "warn");
+}
+
+// ── Artifacts ─────────────────────────────────────────────────────────────────
+
+async function loadArtifacts() {
+  if (!state.activeProjectId) return;
+  const r = await api(`/api/gd/projects/${state.activeProjectId}/artifacts`);
+  if (!r.ok) return;
+  state.artifacts = Array.isArray(r.body?.items) ? r.body.items : [];
+}
+
+async function deleteArtifact(artifactId) {
+  if (!confirm("Delete this artifact?")) return;
+  await api(`/api/gd/artifacts/${artifactId}`, { method: "DELETE" });
+  state.artifacts = state.artifacts.filter(a => a.public_id !== artifactId);
+  if (state.activeArtifactId === artifactId) state.activeArtifactId = null;
+  renderArtifacts();
+  showToast("Artifact deleted", "warn");
+}
+
+async function saveArtifactAsDocument(artifact) {
+  await createDocument(artifact.artifact_type, artifact.title, artifact.content);
+  showToast("Saved to documents", "good");
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+
+async function generate(genType, customPrompt = "") {
+  if (!state.activeProjectId) { showToast("No active project", "warn"); return; }
+  if (state.generating) { showToast("Generation in progress", "warn"); return; }
+
+  state.generating = true;
+  const btn = qs(`[data-gen-type="${genType}"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Generating…"; }
+  setGenerateStatus("Generating — this may take 20-60 seconds…", "warn");
+
+  const r = await api(`/api/gd/projects/${state.activeProjectId}/generate`, {
+    method: "POST",
+    body: {
+      generation_type: genType,
+      model: state.selectedModel,
+      prompt: customPrompt,
+    }
+  });
+
+  state.generating = false;
+  if (btn) {
+    const genDef = GENERATION_TYPES.find(g => g.id === genType);
+    btn.disabled = false;
+    btn.textContent = genDef ? `${genDef.icon} ${genDef.label}` : genType;
+  }
+
+  if (!r.ok) {
+    setGenerateStatus("Generation failed", "warn");
+    showToast("Generation failed", "warn");
     return;
   }
-  list.innerHTML = agents.map(agent => `
-    <button class="library-card ${agent.id === state.selectedAgentId ? "library-card--active" : ""}" type="button" data-agent-id="${escapeHtml(agent.id)}">
-      <strong>${escapeHtml(agent.name)}</strong>
-      <span>${escapeHtml(agent.roleClass)}${agent.subtype ? " · " + escapeHtml(agent.subtype) : ""}${agent.mockFlag ? " · mock" : ""}</span>
-    </button>
-  `).join("");
-}
 
-function listToInput(val) {
-  if (Array.isArray(val)) return val.join(", ");
-  return val || "";
-}
+  setGenerateStatus("Done", "good");
+  showToast("Generation complete", "good");
 
-function renderWorkspace() {
-  const agent = getSelectedAgent();
-  if (!agent) return;
+  await loadArtifacts();
 
-  qs("#workspaceRoleClass").textContent = agent.roleClass || "—";
-  qs("#workspaceSubtype").textContent = agent.subtype || "—";
-  qs("#workspaceQuorum").textContent = agent.quorumDefault || "—";
-  qs("#workspaceCompatibility").textContent = compatibilityLabel(agent);
-
-  qs("#agentName").value = agent.name || "";
-  qs("#agentRoleClass").value = roleOptions.includes(agent.roleClass) ? agent.roleClass : "Planner";
-  qs("#agentSubtype").value = agent.subtype || "";
-  qs("#agentDescription").value = agent.description || "";
-  qs("#agentSystemPrompt").value = agent.systemPrompt || "";
-  qs("#agentReasoningLayers").value = listToInput(agent.reasoningLayers);
-  qs("#agentModelFamily").value = listToInput(agent.modelFamily);
-  qs("#agentTaskTypes").value = listToInput(agent.taskTypes);
-  qs("#agentOutputContract").value = agent.outputContract || "";
-  qs("#agentValidationGate").value = agent.validationGate || "";
-  qs("#agentQuorumDefault").value = agent.quorumDefault || "single";
-  qs("#agentFallbackPolicy").value = agent.fallbackPolicy || "explicit_fallback_only";
-  qs("#agentTimeoutSeconds").value = agent.timeoutSeconds || 60;
-  qs("#agentTestPrompt").value = agent.testPrompt || "";
-
-  qs("#compatPipelines").checked = Boolean(agent.compatibility?.pipelines);
-  qs("#compatHome").checked = Boolean(agent.compatibility?.home);
-  qs("#compatLoreDiscussion").checked = Boolean(agent.compatibility?.loreDiscussion);
-  qs("#compatCreatorPresets").checked = Boolean(agent.compatibility?.creatorPresets);
-
-  qs("#previewAgentName").textContent = agent.name || "—";
-  qs("#previewAgentDescription").textContent = agent.description || "No description yet.";
-  qs("#previewAgentId").textContent = agent.publicId || agent.id || "draft";
-  qs("#previewVerifierStatus").textContent = agent.verifierStatus || "unverified";
-
-  qs("#promptPreviewBox").innerHTML = `
-    <strong>${escapeHtml(agent.outputContract || "No output contract")}</strong>
-    <span>Quorum: ${escapeHtml(agent.quorumDefault)} · Timeout: ${escapeHtml(String(agent.timeoutSeconds))}s</span>
-  `;
-
-  qs("#contractPreviewBox").innerHTML = `
-    <strong>${escapeHtml(agent.validationGate || "No validation gate")}</strong>
-    <span>Fallback: ${escapeHtml(agent.fallbackPolicy || "—")}</span>
-  `;
-
-  if (agent.lastTestedAt) {
-    qs("#validationPreviewBox").innerHTML = `
-      <strong>Last tested: ${escapeHtml(agent.lastTestedAt.slice(0, 16))}</strong>
-      <span>${escapeHtml(JSON.stringify(agent.lastTestResult || {}).slice(0, 120))}</span>
-    `;
-  } else {
-    qs("#validationPreviewBox").innerHTML = `<strong>Not yet tested</strong><span>Use Test Agent to fire a live test.</span>`;
+  // Auto-open the new artifact
+  if (r.body.artifact_id) {
+    state.activeArtifactId = r.body.artifact_id;
+    switchSection("artifacts");
   }
-
-  const statusMap = { backend: ["Backend profile", "status-chip--good"], mock: ["Mock profile", "status-chip--warn"], draft: ["Unsaved draft", "status-chip--warn"] };
-  const [label, cls] = statusMap[agent.source] || ["Unknown", "status-chip--warn"];
-  setWorkspaceStatus(label, cls);
 }
+
+function setGenerateStatus(msg, tone = "good") {
+  const el = qs("#generateStatus"); if (!el) return;
+  el.textContent = msg;
+  el.className = `generate-status generate-status--${tone}`;
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
 
 function renderAll() {
-  populateSubtypeFilter();
-  renderLibrary();
-  renderWorkspace();
+  renderProjectList();
+  renderProjectHeader();
+  renderOverview();
+  renderDocuments();
+  renderArtifacts();
+  renderGeneratePanel();
 }
 
-function updateSelectedAgentFromForm() {
-  const agent = getSelectedAgent();
-  if (!agent) return;
-
-  function inputList(id) {
-    return (qs(id)?.value || "").split(",").map(s => s.trim()).filter(Boolean);
-  }
-
-  agent.name = qs("#agentName")?.value.trim() || "Untitled Agent";
-  agent.roleClass = qs("#agentRoleClass")?.value || "Planner";
-  agent.subtype = qs("#agentSubtype")?.value.trim() || "";
-  agent.description = qs("#agentDescription")?.value.trim() || "";
-  agent.systemPrompt = qs("#agentSystemPrompt")?.value.trim() || "";
-  agent.reasoningLayers = inputList("#agentReasoningLayers");
-  agent.modelFamily = inputList("#agentModelFamily");
-  agent.taskTypes = inputList("#agentTaskTypes");
-  agent.outputContract = qs("#agentOutputContract")?.value.trim() || "";
-  agent.validationGate = qs("#agentValidationGate")?.value.trim() || "";
-  agent.quorumDefault = qs("#agentQuorumDefault")?.value || "single";
-  agent.fallbackPolicy = qs("#agentFallbackPolicy")?.value || "explicit_fallback_only";
-  agent.timeoutSeconds = parseInt(qs("#agentTimeoutSeconds")?.value) || 60;
-  agent.testPrompt = qs("#agentTestPrompt")?.value.trim() || "";
-  agent.compatibility = {
-    pipelines: qs("#compatPipelines")?.checked || false,
-    home: qs("#compatHome")?.checked || false,
-    loreDiscussion: qs("#compatLoreDiscussion")?.checked || false,
-    creatorPresets: qs("#compatCreatorPresets")?.checked || false
-  };
-
-  if (agent.source === "backend" || agent.source === "mock") agent.source = "draft";
-  saveDraftSnapshot();
-  renderAll();
+function renderEmptyState() {
+  const main = qs("#mainContent"); if (!main) return;
+  main.innerHTML = `
+    <div class="empty-state">
+      <div class="empty-state-icon">🎮</div>
+      <h2>No projects yet</h2>
+      <p>Create your first game project to get started.</p>
+      <button class="button button--primary" id="emptyCreateBtn">+ New project</button>
+    </div>
+  `;
+  qs("#emptyCreateBtn")?.addEventListener("click", () => showNewProjectForm());
 }
 
-function selectAgent(agentId) {
-  const found = state.agents.find(a => a.id === agentId);
-  if (!found) return;
-  state.selectedAgentId = found.id;
-  renderAll();
+function renderProjectList() {
+  const el = qs("#projectList"); if (!el) return;
+  el.innerHTML = state.projects.map(p => `
+    <button class="project-item ${p.public_id === state.activeProjectId ? "active" : ""}"
+      data-pid="${esc(p.public_id)}">
+      <span class="project-item-icon">🎮</span>
+      <span class="project-item-title">${esc(p.title)}</span>
+      <span class="project-item-engine">${esc(p.engine)}</span>
+    </button>
+  `).join("") + `
+    <button class="project-item project-item--add" id="newProjectBtn">
+      <span>+</span> New project
+    </button>
+  `;
+  qsa(".project-item[data-pid]", el).forEach(btn => {
+    btn.addEventListener("click", () => selectProject(btn.dataset.pid));
+  });
+  qs("#newProjectBtn")?.addEventListener("click", showNewProjectForm);
 }
 
-function createDraftAgent() {
-  const copy = deepClone(emptyDraft);
-  copy.id = `draft_${crypto.randomUUID().slice(0, 8)}`;
-  copy.source = "draft";
-  state.agents.unshift(copy);
-  state.selectedAgentId = copy.id;
-  renderAll();
-  showToast("New draft created", "good");
+function renderProjectHeader() {
+  if (!state.activeProject) return;
+  const el = qs("#projectTitle");
+  if (el) el.textContent = state.activeProject.title;
+  const eng = qs("#projectEngine");
+  if (eng) eng.textContent = state.activeProject.engine;
 }
 
-async function cloneSelectedAgent() {
-  const selected = getSelectedAgent();
-  if (!selected) return;
+function renderOverview() {
+  const el = qs("#overviewContent"); if (!el) return;
+  if (!state.activeProject) return;
+  el.innerHTML = `
+    <div class="field-grid">
+      <label class="inline-field">
+        <span class="soft">Project title</span>
+        <input class="input" id="projTitle" value="${esc(state.activeProject.title)}" />
+      </label>
+      <label class="inline-field">
+        <span class="soft">Summary</span>
+        <input class="input" id="projSummary" value="${esc(state.activeProject.summary || '')}" placeholder="One-line summary..." />
+      </label>
+      <label class="inline-field">
+        <span class="soft">Design document — paste your full design here, models use this as context for all generation</span>
+        <textarea class="textarea textarea--tall" id="projDesignDoc" placeholder="Paste your full game design document here...">${esc(state.activeProject.design_doc || '')}</textarea>
+      </label>
+      <div class="button-row">
+        <button class="button button--primary" id="saveProjectBtn">Save project</button>
+      </div>
+    </div>
 
-  // If it has a real backend ID, clone via API
-  if (selected.publicId && selected.source === "backend") {
-    const result = await api(`/api/agents/${selected.publicId}/clone`, {
-      method: "POST",
-      body: { name: `${selected.name} (clone)` }
+    <div class="overview-stats">
+      <div class="stat-pill">${state.documents.length} documents</div>
+      <div class="stat-pill">${state.artifacts.length} artifacts</div>
+      <div class="stat-pill">${esc(state.activeProject.engine)}</div>
+      <div class="stat-pill">${esc(state.activeProject.genre.replace("_"," "))}</div>
+    </div>
+  `;
+  qs("#saveProjectBtn")?.addEventListener("click", saveProject);
+}
+
+function renderDocuments() {
+  const el = qs("#documentsContent"); if (!el) return;
+  const activeDoc = state.documents.find(d => d.public_id === state.activeDocId);
+
+  el.innerHTML = `
+    <div class="doc-layout">
+      <div class="doc-list">
+        <div class="doc-list-head">
+          <span class="eyebrow">Documents</span>
+          <button class="button button--small button--primary" id="newDocBtn">+ New</button>
+        </div>
+        ${state.documents.length ? state.documents.map(d => `
+          <button class="doc-item ${d.public_id === state.activeDocId ? "active" : ""}" data-doc-id="${esc(d.public_id)}">
+            <span class="doc-item-type">${esc(d.doc_type)}</span>
+            <span class="doc-item-title">${esc(d.title)}</span>
+          </button>
+        `).join("") : `<div class="soft" style="padding:12px;font-size:12px;">No documents yet</div>`}
+      </div>
+      <div class="doc-editor">
+        ${activeDoc ? `
+          <div class="doc-editor-head">
+            <div>
+              <div class="eyebrow">${esc(activeDoc.doc_type)}</div>
+              <strong>${esc(activeDoc.title)}</strong>
+            </div>
+            <div class="button-row">
+              <button class="button button--small" id="saveDocBtn" data-doc-id="${esc(activeDoc.public_id)}">Save</button>
+              <button class="button button--small button--danger" id="deleteDocBtn" data-doc-id="${esc(activeDoc.public_id)}">Delete</button>
+            </div>
+          </div>
+          <textarea class="textarea textarea--editor" id="docEditor">${esc(activeDoc.content || '')}</textarea>
+        ` : `<div class="doc-empty">Select a document to edit</div>`}
+      </div>
+    </div>
+  `;
+
+  qs("#newDocBtn")?.addEventListener("click", () => {
+    const title = prompt("Document title:");
+    if (!title) return;
+    const type = prompt("Type (gdd/tower_spec/enemy_spec/level_design/lore/notes):", "notes");
+    createDocument(type || "notes", title);
+  });
+
+  qsa(".doc-item[data-doc-id]", el).forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.activeDocId = btn.dataset.docId;
+      renderDocuments();
     });
-    if (result.ok) {
-      const cloned = normalizeAgent(result.body);
-      state.agents.unshift(cloned);
-      state.selectedAgentId = cloned.id;
-      renderAll();
-      showToast("Cloned on backend", "good");
-      return;
-    }
-    showToast("Backend clone failed — cloning locally", "warn");
-  }
-
-  // Local clone for drafts
-  const clone = deepClone(selected);
-  clone.id = `draft_${crypto.randomUUID().slice(0, 8)}`;
-  clone.publicId = "";
-  clone.name = `${selected.name} (clone)`;
-  clone.source = "draft";
-  state.agents.unshift(clone);
-  state.selectedAgentId = clone.id;
-  saveDraftSnapshot();
-  renderAll();
-  showToast("Draft cloned locally", "good");
-}
-
-async function saveSelectedAgent() {
-  updateSelectedAgentFromForm();
-  const selected = getSelectedAgent();
-  if (!selected) return;
-
-  const payload = toBackendPayload(selected);
-
-  let result;
-  if (selected.publicId && (selected.source === "backend" || selected.verifierStatus)) {
-    // Update existing
-    result = await api(`/api/agents/${selected.publicId}`, { method: "PUT", body: payload });
-  } else {
-    // Create new
-    result = await api("/api/agents", { method: "POST", body: payload });
-  }
-
-  if (!result.ok) {
-    showToast(`Save failed: ${result.body?.detail || result.status}`, "warn");
-    return;
-  }
-
-  const saved = normalizeAgent(result.body);
-  state.agents = [saved, ...state.agents.filter(a => a.id !== selected.id && a.id !== saved.id)];
-  state.selectedAgentId = saved.id;
-  saveDraftSnapshot();
-  renderAll();
-  showToast("Agent saved to backend", "good");
-}
-
-async function deleteSelectedAgent() {
-  const selected = getSelectedAgent();
-  if (!selected) return;
-
-  if (selected.source === "draft") {
-    state.agents = state.agents.filter(a => a.id !== selected.id);
-    state.selectedAgentId = state.agents[0]?.id || null;
-    renderAll();
-    showToast("Draft removed", "warn");
-    return;
-  }
-
-  if (!selected.publicId) { showToast("No public ID — cannot delete", "warn"); return; }
-  if (!confirm(`Delete agent "${selected.name}"? This cannot be undone.`)) return;
-
-  const result = await api(`/api/agents/${selected.publicId}`, { method: "DELETE" });
-  if (!result.ok) { showToast(`Delete failed: ${result.body?.detail || result.status}`, "warn"); return; }
-
-  state.agents = state.agents.filter(a => a.id !== selected.id);
-  state.selectedAgentId = state.agents[0]?.id || null;
-  renderAll();
-  showToast("Agent deleted", "warn");
-}
-
-async function testSelectedAgent() {
-  const selected = getSelectedAgent();
-  if (!selected || !selected.publicId) { showToast("Save agent first before testing", "warn"); return; }
-
-  const testPrompt = qs("#agentTestPrompt")?.value.trim() || "";
-  setWorkspaceStatus("Testing...", "status-chip--warn");
-
-  const result = await api(`/api/agents/${selected.publicId}/test`, {
-    method: "POST",
-    body: { prompt: testPrompt }
   });
 
-  if (!result.ok) {
-    setWorkspaceStatus("Test failed", "status-chip--warn");
-    showToast(`Test failed: ${result.body?.detail || result.status}`, "warn");
-    return;
-  }
-
-  const tested = result.body;
-  selected.lastTestResult = tested.result;
-  selected.lastTestedAt = tested.tested_at;
-  renderWorkspace();
-  setWorkspaceStatus("Test complete", "status-chip--good");
-  showToast("Test complete — see validation preview", "good");
-}
-
-async function loadRecommendedTeam() {
-  const portalType = qs("#recommendedPortalType")?.value || "appcreator";
-  const result = await api(`/api/agent-teams/recommended/${encodeURIComponent(portalType)}`, { method: "POST" });
-  const box = qs("#recommendedTeamBox");
-  if (!box) return;
-
-  if (!result.ok) {
-    box.innerHTML = `<strong>No team loaded</strong><span>Request failed (${result.status})</span>`;
-    showToast("Recommended team request failed", "warn");
-    return;
-  }
-
-  state.recommendedTeam = result.body;
-  const body = result.body;
-  const members = Array.isArray(body?.members) ? body.members : Array.isArray(body?.agents) ? body.agents : [];
-  const title = body?.name || body?.team_name || `Recommended ${portalType}`;
-  const detail = members.length ? members.map(m => m?.name || m?.role || "member").join(" · ") : "Team loaded";
-  box.innerHTML = `<strong>${escapeHtml(title)}</strong><span>${escapeHtml(detail)}</span>`;
-  showToast("Recommended team loaded", "good");
-}
-
-function checkCompatibility() {
-  updateSelectedAgentFromForm();
-  const selected = getSelectedAgent();
-  if (!selected) return;
-  const messages = [];
-  if (!selected.systemPrompt) messages.push("Missing system prompt");
-  if (!selected.outputContract) messages.push("Missing output contract");
-  if (!selected.validationGate) messages.push("Missing validation gate");
-  if (!selected.modelFamily?.length) messages.push("No model family set");
-  if (!messages.length) { showToast("Profile looks structurally complete", "good"); }
-  else { showToast(messages.join(" · "), "warn"); }
-}
-
-async function loadLibrary() {
-  setLibraryStatus("Loading inventory", "status-chip--warn");
-  const result = await api("/api/agents");
-
-  if (result.ok) {
-    const agents = normalizeAgentsResponse(result.body);
-    if (agents.length) {
-      state.agents = agents;
-      state.selectedAgentId = agents[0].id;
-      state.librarySource = "backend";
-      setLibraryStatus(`${agents.length} agents`, "status-chip--good");
-      renderAll();
-      return;
-    }
-  }
-
-  state.agents = [];
-  state.selectedAgentId = null;
-  state.librarySource = "empty";
-  setLibraryStatus("No agents — create one", "status-chip--warn");
-  renderAll();
-  showToast("No agents in backend. Create your first agent.", "warn");
-}
-
-function bindStaticEvents() {
-  qs("#agentSearch")?.addEventListener("input", e => { state.filters.search = e.target.value; renderLibrary(); });
-  qs("#libraryRoleClass")?.addEventListener("change", e => { state.filters.roleClass = e.target.value; renderLibrary(); });
-  qs("#librarySubtype")?.addEventListener("change", e => { state.filters.subtype = e.target.value; renderLibrary(); });
-
-  qs("#agentLibraryList")?.addEventListener("click", e => {
-    const button = e.target.closest("[data-agent-id]");
-    if (!button) return;
-    selectAgent(button.dataset.agentId);
+  qs("#saveDocBtn")?.addEventListener("click", () => {
+    const content = qs("#docEditor")?.value || "";
+    saveDocument(activeDoc.public_id, content);
   });
 
-  const formFields = [
-    "#agentName", "#agentRoleClass", "#agentSubtype", "#agentDescription",
-    "#agentSystemPrompt", "#agentReasoningLayers", "#agentModelFamily", "#agentTaskTypes",
-    "#agentOutputContract", "#agentValidationGate", "#agentQuorumDefault",
-    "#agentFallbackPolicy", "#agentTimeoutSeconds", "#agentTestPrompt",
-    "#compatPipelines", "#compatHome", "#compatLoreDiscussion", "#compatCreatorPresets"
-  ];
-  formFields.forEach(selector => {
-    qs(selector)?.addEventListener("input", updateSelectedAgentFromForm);
-    qs(selector)?.addEventListener("change", updateSelectedAgentFromForm);
+  qs("#deleteDocBtn")?.addEventListener("click", () => {
+    deleteDocument(activeDoc.public_id);
+  });
+}
+
+function renderArtifacts() {
+  const el = qs("#artifactsContent"); if (!el) return;
+  const activeArtifact = state.artifacts.find(a => a.public_id === state.activeArtifactId);
+
+  // Group by type
+  const groups = {};
+  state.artifacts.forEach(a => {
+    if (!groups[a.artifact_type]) groups[a.artifact_type] = [];
+    groups[a.artifact_type].push(a);
   });
 
-  qs("#newAgentBtn")?.addEventListener("click", createDraftAgent);
-  qs("#cloneAgentBtn")?.addEventListener("click", cloneSelectedAgent);
-  qs("#saveAgentBtn")?.addEventListener("click", saveSelectedAgent);
-  qs("#deleteAgentBtn")?.addEventListener("click", deleteSelectedAgent);
-  qs("#testAgentBtn")?.addEventListener("click", testSelectedAgent);
-  qs("#loadRecommendedBtn")?.addEventListener("click", loadRecommendedTeam);
-  qs("#checkCompatibilityBtn")?.addEventListener("click", checkCompatibility);
+  el.innerHTML = `
+    <div class="doc-layout">
+      <div class="doc-list">
+        <div class="doc-list-head">
+          <span class="eyebrow">Artifacts</span>
+        </div>
+        ${Object.entries(groups).map(([type, arts]) => `
+          <div class="artifact-group-label">${esc(type.replace("_"," "))}</div>
+          ${arts.map(a => `
+            <button class="doc-item ${a.public_id === state.activeArtifactId ? "active" : ""}" data-artifact-id="${esc(a.public_id)}">
+              <span class="doc-item-type">${esc(a.language || a.artifact_type)}</span>
+              <span class="doc-item-title">${esc(a.title)}</span>
+            </button>
+          `).join("")}
+        `).join("") || `<div class="soft" style="padding:12px;font-size:12px;">No artifacts yet — generate something</div>`}
+      </div>
+      <div class="doc-editor">
+        ${activeArtifact ? `
+          <div class="doc-editor-head">
+            <div>
+              <div class="eyebrow">${esc(activeArtifact.artifact_type)} · ${esc(activeArtifact.language)}</div>
+              <strong>${esc(activeArtifact.title)}</strong>
+            </div>
+            <div class="button-row">
+              <button class="button button--small button--primary" id="saveArtifactAsDocBtn">Save to docs</button>
+              <button class="button button--small" id="copyArtifactBtn">Copy</button>
+              <button class="button button--small button--danger" id="deleteArtifactBtn">Delete</button>
+            </div>
+          </div>
+          <pre class="artifact-viewer"><code>${esc(activeArtifact.content || '')}</code></pre>
+        ` : `<div class="doc-empty">Select an artifact to view</div>`}
+      </div>
+    </div>
+  `;
+
+  qsa(".doc-item[data-artifact-id]", el).forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.activeArtifactId = btn.dataset.artifactId;
+      renderArtifacts();
+    });
+  });
+
+  qs("#saveArtifactAsDocBtn")?.addEventListener("click", () => saveArtifactAsDocument(activeArtifact));
+  qs("#deleteArtifactBtn")?.addEventListener("click", () => deleteArtifact(activeArtifact.public_id));
+  qs("#copyArtifactBtn")?.addEventListener("click", () => {
+    navigator.clipboard.writeText(activeArtifact.content || "");
+    showToast("Copied to clipboard", "good");
+  });
 }
 
-function init() {
-  bindStaticEvents();
-  renderAll();
-  loadLibrary();
+function renderGeneratePanel() {
+  const el = qs("#generateContent"); if (!el) return;
+  el.innerHTML = `
+    <div class="generate-layout">
+      <div class="generate-controls">
+        <div class="inline-field" style="margin-bottom:16px;">
+          <span class="soft">Model</span>
+          <select class="select" id="modelSelect">
+            ${state.availableModels.map(m =>
+              `<option value="${esc(m.value)}" ${m.value === state.selectedModel ? "selected" : ""}>${esc(m.label)}</option>`
+            ).join("")}
+          </select>
+        </div>
+        <div class="inline-field" style="margin-bottom:16px;">
+          <span class="soft">Custom prompt (optional — leave blank to auto-generate)</span>
+          <textarea class="textarea" id="customPrompt" rows="3" placeholder="Add specific instructions or context for this generation..."></textarea>
+        </div>
+        <div id="generateStatus" class="generate-status"></div>
+      </div>
+      <div class="generate-grid">
+        ${GENERATION_TYPES.map(g => `
+          <button class="gen-card" data-gen-type="${esc(g.id)}">
+            <span class="gen-card-icon">${g.icon}</span>
+            <span class="gen-card-label">${esc(g.label)}</span>
+            <span class="gen-card-desc">${esc(g.desc)}</span>
+          </button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+
+  qs("#modelSelect")?.addEventListener("change", e => { state.selectedModel = e.target.value; });
+
+  qsa(".gen-card").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const genType = btn.dataset.genType;
+      const customPrompt = qs("#customPrompt")?.value.trim() || "";
+      generate(genType, customPrompt);
+    });
+  });
 }
 
-document.addEventListener("DOMContentLoaded", init);
+// ── Nav ───────────────────────────────────────────────────────────────────────
+
+function switchSection(section) {
+  state.activeSection = section;
+  qsa(".snav-item").forEach(b => b.classList.toggle("snav-item--active", b.dataset.section === section));
+  qsa(".gd-section").forEach(s => s.classList.toggle("active", s.id === `section-${section}`));
+}
+
+function showNewProjectForm() {
+  const existing = qs("#newProjectForm");
+  if (existing) { existing.remove(); return; }
+
+  const form = document.createElement("div");
+  form.id = "newProjectForm";
+  form.className = "new-project-form";
+  form.innerHTML = `
+    <div class="eyebrow" style="margin-bottom:10px;">New project</div>
+    <div class="form-grid">
+      <label class="inline-field">
+        <span class="soft">Title</span>
+        <input class="input" id="np_title" placeholder="My Tower Defence" />
+      </label>
+      <label class="inline-field">
+        <span class="soft">Engine</span>
+        <select class="select" id="np_engine">
+          <option value="unity">Unity</option>
+          <option value="unreal">Unreal Engine</option>
+          <option value="godot">Godot</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label class="inline-field">
+        <span class="soft">Genre</span>
+        <select class="select" id="np_genre">
+          <option value="tower_defence">Tower Defence</option>
+          <option value="hero_defence">Hero Defence</option>
+          <option value="rpg">RPG</option>
+          <option value="fps">FPS</option>
+          <option value="platformer">Platformer</option>
+          <option value="strategy">Strategy</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+      <label class="inline-field">
+        <span class="soft">Summary</span>
+        <input class="input" id="np_summary" placeholder="Brief description..." />
+      </label>
+    </div>
+    <div class="button-row" style="margin-top:12px;">
+      <button class="button" id="cancelNewProject">Cancel</button>
+      <button class="button button--primary" id="confirmNewProject">Create</button>
+    </div>
+  `;
+
+  qs("#projectList")?.after(form);
+
+  qs("#cancelNewProject")?.addEventListener("click", () => form.remove());
+  qs("#confirmNewProject")?.addEventListener("click", () => {
+    const title = qs("#np_title")?.value.trim();
+    if (!title) { showToast("Title required", "warn"); return; }
+    const engine = qs("#np_engine")?.value || "unity";
+    const genre = qs("#np_genre")?.value || "tower_defence";
+    const summary = qs("#np_summary")?.value.trim() || "";
+    form.remove();
+    createProject(title, engine, genre, summary);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+function bindNav() {
+  qsa(".snav-item").forEach(btn => {
+    btn.addEventListener("click", () => switchSection(btn.dataset.section));
+  });
+}
+
+async function init() {
+  bindNav();
+  await Promise.all([loadModels(), loadProjects()]);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
