@@ -22,6 +22,24 @@ const PROJECT_TYPE_MAP = {
   System: "system"
 };
 
+const TOOL_ICONS = {
+  web_search: "🔍",
+  web_fetch: "🌐",
+  web_crawl: "🕷️",
+  run_python: "🐍",
+  read_file: "📂",
+  read_server_file: "🗄️",
+  list_server_files: "📁",
+  grep_files: "🔎",
+  query_database: "🗃️",
+  http_request: "📡",
+  write_file: "✏️",
+  shell_command: "💻",
+  diff_text: "📊",
+  summarise_large_file: "📄",
+  image_analyse: "🖼️",
+};
+
 const defaultState = {
   selectedChatId: "",
   mode: "single",
@@ -48,6 +66,7 @@ const defaultState = {
 let state = loadState();
 let activeRequestCount = 0;
 let threadCache = {};
+let activeStream = null;
 
 function qs(selector, root = document) { return root.querySelector(selector); }
 function qsa(selector, root = document) { return Array.from(root.querySelectorAll(selector)); }
@@ -167,11 +186,11 @@ async function uploadFile(file) {
   }
 }
 
-function renderUploadPill(filename, state = "uploading") {
+function renderUploadPill(filename, pillState = "uploading") {
   const pill = qs("#uploadPill");
   if (!pill) return;
   const icons = { uploading: "⏳", done: "📎", error: "❌" };
-  pill.innerHTML = `<span>${icons[state] || "📎"} ${escapeHtml(filename)}</span>${state !== "uploading" ? '<button id="uploadPillClose" type="button">✕</button>' : ""}`;
+  pill.innerHTML = `<span>${icons[pillState] || "📎"} ${escapeHtml(filename)}</span>${pillState !== "uploading" ? '<button id="uploadPillClose" type="button">✕</button>' : ""}`;
   pill.style.display = "flex";
   qs("#uploadPillClose")?.addEventListener("click", clearUploadPill);
 }
@@ -188,39 +207,28 @@ function setDropZoneActive(active) {
 
 async function handleFileUpload(file) {
   if (!file) return;
-
-  // Ensure we have a session
   if (!state.selectedChatId) {
-    try {
-      await createChatSession({ title: file.name });
-    } catch {
-      showToast("No active chat — create one first", "warn");
-      return;
-    }
+    try { await createChatSession({ title: file.name }); }
+    catch { showToast("No active chat — create one first", "warn"); return; }
   }
-
   renderUploadPill(file.name, "uploading");
   setBusy(true, `Uploading ${file.name}…`);
-
   let result;
   try {
     result = await uploadFile(file);
-  } catch (err) {
+  } catch {
     setBusy(false);
     renderUploadPill(file.name, "error");
     showToast("Upload failed", "warn");
     return;
   }
-
   setBusy(false);
   renderUploadPill(file.name, "done");
   showToast(`Uploaded: ${file.name}`, "good");
-
-  // Auto-send the analysis prompt
   const prompt = result.analysis_prompt || `File '${file.name}' uploaded. Please analyse it.`;
   const input = qs("#composerInput");
   if (input) input.value = prompt;
-  await sendCurrentMessage();
+  await sendAndStream();
   clearUploadPill();
 }
 
@@ -228,14 +236,10 @@ function bindDropZone() {
   const composer = qs("#composerArea");
   const fileInput = qs("#fileUploadInput");
   const uploadBtn = qs("#uploadBtn");
-
   if (!composer) return;
-
-  // Drag events on the whole composer area
   composer.addEventListener("dragenter", e => { e.preventDefault(); setDropZoneActive(true); });
-  composer.addEventListener("dragover",  e => { e.preventDefault(); setDropZoneActive(true); });
+  composer.addEventListener("dragover", e => { e.preventDefault(); setDropZoneActive(true); });
   composer.addEventListener("dragleave", e => {
-    // Only deactivate if leaving the composer entirely
     if (!composer.contains(e.relatedTarget)) setDropZoneActive(false);
   });
   composer.addEventListener("drop", e => {
@@ -244,8 +248,6 @@ function bindDropZone() {
     const file = e.dataTransfer?.files?.[0];
     if (file) handleFileUpload(file);
   });
-
-  // Click-to-upload button
   if (uploadBtn && fileInput) {
     uploadBtn.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", () => {
@@ -272,31 +274,21 @@ function extractModels(modelResponse) {
     .map(item => ({
       value: String(item?.alias || item?.name || "").trim(),
       label: String(item?.name || item?.alias || "").trim(),
-      active: String(item?.runtime_state || "").toLowerCase() === "available"
-        || String(item?.runtime_state || "").toLowerCase() === "loaded",
+      active: ["available","loaded"].includes(String(item?.runtime_state || "").toLowerCase()),
     }))
     .filter(m => m.value);
 }
 
 async function refreshModelPool() {
   const result = await callApi("/api/model-pool/models?sync=false", "GET");
-  if (!result.ok) {
-    state.activeModels = [];
-    state.availableModels = [];
-    saveState();
-    renderModeHelp();
-    hydrateModelSelectors();
-    return;
-  }
+  if (!result.ok) { state.activeModels = []; state.availableModels = []; saveState(); renderModeHelp(); hydrateModelSelectors(); return; }
   const models = extractModels(result.body);
   state.availableModels = models;
   state.activeModels = models.filter(m => m.active);
-
   const all = state.availableModels;
   if (!state.singleModel && all[0]) state.singleModel = all[0].value;
   if (!state.multiModels.length && all.length) state.multiModels = all.slice(0, 3).map(m => m.value);
   if (!state.discussionModels.length && all.length) state.discussionModels = all.slice(0, 4).map(m => m.value);
-
   saveState();
   hydrateModelSelectors();
   renderModeHelp();
@@ -343,20 +335,14 @@ function bindDropdownToggle(triggerId, dropdownId) {
   const trigger = qs(`#${triggerId}`);
   const dropdown = qs(`#${dropdownId}`);
   if (!trigger || !dropdown) return;
-  trigger.addEventListener("click", e => {
-    e.stopPropagation();
-    dropdown.classList.toggle("is-open");
-  });
+  trigger.addEventListener("click", e => { e.stopPropagation(); dropdown.classList.toggle("is-open"); });
   document.addEventListener("click", e => {
-    if (!dropdown.contains(e.target) && e.target !== trigger) {
-      dropdown.classList.remove("is-open");
-    }
+    if (!dropdown.contains(e.target) && e.target !== trigger) dropdown.classList.remove("is-open");
   });
 }
 
 function hydrateModelSelectors() {
   const allModels = Array.isArray(state.availableModels) ? state.availableModels : [];
-
   const singleEl = qs("#singleModel");
   if (singleEl) {
     singleEl.innerHTML = allModels.length
@@ -369,25 +355,19 @@ function hydrateModelSelectors() {
       singleEl.value = allModels[0].value;
     }
   }
-
   const multiDropdown = qs("#multiModelDropdown");
   const multiTrigger = qs("#multiModelTrigger");
   if (multiDropdown && multiTrigger) {
     buildMultiSelectDropdown(multiDropdown, allModels, state.multiModels, checked => {
-      state.multiModels = checked;
-      saveState();
-      updateTriggerLabel(multiTrigger, checked, "Select models...");
+      state.multiModels = checked; saveState(); updateTriggerLabel(multiTrigger, checked, "Select models...");
     });
     updateTriggerLabel(multiTrigger, state.multiModels, "Select models...");
   }
-
   const discussionDropdown = qs("#discussionDropdown");
   const discussionTrigger = qs("#discussionTrigger");
   if (discussionDropdown && discussionTrigger) {
     buildMultiSelectDropdown(discussionDropdown, allModels, state.discussionModels, checked => {
-      state.discussionModels = checked;
-      saveState();
-      updateTriggerLabel(discussionTrigger, checked, "Select specialists...");
+      state.discussionModels = checked; saveState(); updateTriggerLabel(discussionTrigger, checked, "Select specialists...");
     });
     updateTriggerLabel(discussionTrigger, state.discussionModels, "Select specialists...");
   }
@@ -413,8 +393,7 @@ function normalizeChatItem(item) {
 }
 
 function getChatById(chatId) {
-  return [...state.chats.pinned, ...state.chats.projectFolder, ...state.chats.history]
-    .find(item => item.id === chatId) || null;
+  return [...state.chats.pinned, ...state.chats.projectFolder, ...state.chats.history].find(item => item.id === chatId) || null;
 }
 
 function mergeChatIntoCollections(chat) {
@@ -422,21 +401,15 @@ function mergeChatIntoCollections(chat) {
   state.chats.pinned = removeById(state.chats.pinned);
   state.chats.projectFolder = removeById(state.chats.projectFolder);
   state.chats.history = removeById(state.chats.history);
-  if (chat.pinned) {
-    state.chats.pinned.unshift(chat);
-  } else if (chat.folder === "project" || chat.folder === "projects") {
-    state.chats.projectFolder.unshift(chat);
-  } else {
-    state.chats.history.unshift(chat);
-  }
+  if (chat.pinned) state.chats.pinned.unshift(chat);
+  else if (chat.folder === "project" || chat.folder === "projects") state.chats.projectFolder.unshift(chat);
+  else state.chats.history.unshift(chat);
 }
 
 function ensureSelectedChatExists() {
   const all = [...state.chats.pinned, ...state.chats.projectFolder, ...state.chats.history];
   if (!all.length) return;
-  if (!all.some(item => item.id === state.selectedChatId)) {
-    state.selectedChatId = all[0].id;
-  }
+  if (!all.some(item => item.id === state.selectedChatId)) state.selectedChatId = all[0].id;
 }
 
 // ─── Thread ───────────────────────────────────────────────────────────────────
@@ -459,6 +432,174 @@ async function loadThreadHistory(sessionPublicId) {
 
 function getCurrentThread() {
   return threadCache[state.selectedChatId] || [];
+}
+
+// ─── Streaming ────────────────────────────────────────────────────────────────
+
+function createStreamingBubble(modelName) {
+  const root = qs("#chatThread");
+  if (!root) return null;
+  const bubble = document.createElement("div");
+  bubble.className = "chat-bubble chat-bubble--assistant chat-bubble--streaming";
+  bubble.id = "streamingBubble";
+  bubble.innerHTML = `
+    <div class="chat-bubble-head">${escapeHtml(modelName || "Assistant")}</div>
+    <div class="stream-tools" id="streamTools"></div>
+    <div class="stream-text" id="streamText"><span class="stream-cursor"></span></div>
+  `;
+  root.appendChild(bubble);
+  root.scrollTop = root.scrollHeight;
+  return bubble;
+}
+
+function appendToolCall(name, args) {
+  const tools = qs("#streamTools");
+  if (!tools) return;
+  const icon = TOOL_ICONS[name] || "🔧";
+  const argsStr = args && typeof args === "object"
+    ? Object.entries(args).map(([k, v]) => `${k}: ${String(v).slice(0, 60)}`).join(", ")
+    : "";
+  const line = document.createElement("div");
+  line.className = "stream-tool-call";
+  line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escapeHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escapeHtml(argsStr)}</span>` : ""}`;
+  tools.appendChild(line);
+  qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
+}
+
+function markToolDone(name, summary) {
+  const tools = qs("#streamTools");
+  if (!tools) return;
+  const lines = qsa(".stream-tool-call", tools);
+  const last = [...lines].reverse().find(l => l.querySelector(".stream-tool-name")?.textContent === name);
+  if (last) {
+    last.classList.add("stream-tool-call--done");
+    if (summary) {
+      const s = document.createElement("span");
+      s.className = "stream-tool-summary";
+      s.textContent = summary;
+      last.appendChild(s);
+    }
+  }
+}
+
+function appendStreamChunk(text) {
+  const streamText = qs("#streamText");
+  if (!streamText) return;
+  const cursor = qs(".stream-cursor", streamText);
+  const span = document.createElement("span");
+  span.textContent = text;
+  if (cursor) streamText.insertBefore(span, cursor);
+  else streamText.appendChild(span);
+  qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
+}
+
+function finalizeStreamingBubble(fullContent, modelName) {
+  const bubble = qs("#streamingBubble");
+  if (!bubble) return;
+  bubble.classList.remove("chat-bubble--streaming");
+  bubble.id = "";
+  // Replace streaming text with rendered markdown
+  const streamText = qs("#streamText", bubble);
+  if (streamText) {
+    streamText.innerHTML = renderMarkdown(fullContent);
+  }
+  // Remove cursor
+  qs(".stream-cursor", bubble)?.remove();
+  qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
+}
+
+async function sendAndStream() {
+  const input = qs("#composerInput");
+  const text = (input?.value || "").trim();
+  if (!text) { showToast("Write something first", "warn"); return; }
+  if (!state.selectedChatId) { showToast("No active chat session", "warn"); return; }
+  const selectedModels = normalizeSelectedModels();
+  if (!selectedModels.length) { showToast("No models selected", "warn"); return; }
+
+  // Cancel any existing stream
+  if (activeStream) { activeStream.close(); activeStream = null; }
+
+  // Add user bubble
+  if (!threadCache[state.selectedChatId]) threadCache[state.selectedChatId] = [];
+  threadCache[state.selectedChatId].push({ id: safeId("msg"), role: "user", head: "User", text });
+  renderThread();
+  if (input) input.value = "";
+
+  setBusy(true, "Streaming...");
+
+  const modelName = selectedModels[0] || "Assistant";
+  createStreamingBubble(modelName);
+
+  const params = new URLSearchParams({
+    prompt: text,
+    mode: state.mode,
+    models: selectedModels.join(","),
+  });
+  const url = `${PM_API_BASE}/api/home/sessions/${encodeURIComponent(state.selectedChatId)}/stream?${params}`;
+
+  let fullContent = "";
+  let done = false;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Stream failed: ${response.status}`);
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    while (true) {
+      const { value, done: streamDone } = await reader.read();
+      if (streamDone) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop(); // keep incomplete line
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        try {
+          const event = JSON.parse(line.slice(6));
+          if (event.type === "tool_call") {
+            appendToolCall(event.name, event.args);
+            const status = qs("#composerStatus");
+            if (status) status.textContent = `${TOOL_ICONS[event.name] || "🔧"} ${event.name}…`;
+          } else if (event.type === "tool_result") {
+            markToolDone(event.name, event.summary);
+          } else if (event.type === "chunk") {
+            appendStreamChunk(event.text);
+            fullContent += event.text;
+          } else if (event.type === "done") {
+            fullContent = event.content || fullContent;
+            done = true;
+          } else if (event.type === "error") {
+            appendStreamChunk(`\n\n⚠️ ${event.message}`);
+          }
+        } catch {}
+      }
+    }
+  } catch (err) {
+    finalizeStreamingBubble(`Error: ${err.message}`, modelName);
+    setBusy(false);
+    showToast("Stream failed", "warn");
+    return;
+  }
+
+  finalizeStreamingBubble(fullContent, modelName);
+  setBusy(false);
+
+  // Add to thread cache
+  threadCache[state.selectedChatId].push({
+    id: safeId("msg"), role: "assistant",
+    head: modelName, text: fullContent, model: modelName
+  });
+
+  const current = getChatById(state.selectedChatId);
+  if (current && (!current.title || current.title === "New chat")) {
+    current.title = text.slice(0, 48);
+    saveState();
+    renderHistory();
+  }
+
+  await refreshModelPool();
 }
 
 // ─── Render ───────────────────────────────────────────────────────────────────
@@ -516,10 +657,7 @@ function renderActiveModels() {
     controlsCard.appendChild(box);
   }
   const active = Array.isArray(state.activeModels) ? state.activeModels : [];
-  if (!active.length) {
-    box.innerHTML = "<strong>Active models:</strong> none reported by PM backend.";
-    return;
-  }
+  if (!active.length) { box.innerHTML = "<strong>Active models:</strong> none reported by PM backend."; return; }
   box.innerHTML = `
     <strong>Active models (${active.length}):</strong>
     <div class="chip-row chip-row--inside" style="margin-top:8px;">
@@ -532,9 +670,7 @@ function renderModeHelp() {
   const help = qs("#modeHelpText");
   const composerStatus = qs("#composerStatus");
   if (help) help.innerHTML = MODE_HELP[state.mode] || MODE_HELP.single;
-  if (composerStatus && activeRequestCount === 0) {
-    composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
-  }
+  if (composerStatus && activeRequestCount === 0) composerStatus.textContent = MODE_STATUS[state.mode] || MODE_STATUS.single;
   renderActiveModels();
 }
 
@@ -651,47 +787,32 @@ function initDragResize() {
   if (!handle || !thread) return;
   const KEY = "home_chat_height";
   const saved = parseInt(localStorage.getItem(KEY));
-  if (saved > 80 && saved < 1200) {
-    thread.style.minHeight = saved + "px";
-    thread.style.maxHeight = saved + "px";
-  }
+  if (saved > 80 && saved < 1200) { thread.style.minHeight = saved + "px"; thread.style.maxHeight = saved + "px"; }
   let dragging = false, startY = 0, startH = 0;
   handle.addEventListener("mousedown", e => {
-    dragging = true;
-    startY = e.clientY;
-    startH = thread.getBoundingClientRect().height;
-    document.body.style.cursor = "ns-resize";
-    document.body.style.userSelect = "none";
-    e.preventDefault();
+    dragging = true; startY = e.clientY; startH = thread.getBoundingClientRect().height;
+    document.body.style.cursor = "ns-resize"; document.body.style.userSelect = "none"; e.preventDefault();
   });
   document.addEventListener("mousemove", e => {
     if (!dragging) return;
     const h = Math.max(120, Math.min(1200, startH + (e.clientY - startY)));
-    thread.style.minHeight = h + "px";
-    thread.style.maxHeight = h + "px";
+    thread.style.minHeight = h + "px"; thread.style.maxHeight = h + "px";
   });
   document.addEventListener("mouseup", () => {
     if (!dragging) return;
-    dragging = false;
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
+    dragging = false; document.body.style.cursor = ""; document.body.style.userSelect = "";
     localStorage.setItem(KEY, Math.round(thread.getBoundingClientRect().height));
   });
   handle.addEventListener("touchstart", e => {
-    dragging = true;
-    startY = e.touches[0].clientY;
-    startH = thread.getBoundingClientRect().height;
-    e.preventDefault();
+    dragging = true; startY = e.touches[0].clientY; startH = thread.getBoundingClientRect().height; e.preventDefault();
   }, { passive: false });
   document.addEventListener("touchmove", e => {
     if (!dragging) return;
     const h = Math.max(120, Math.min(1200, startH + (e.touches[0].clientY - startY)));
-    thread.style.minHeight = h + "px";
-    thread.style.maxHeight = h + "px";
+    thread.style.minHeight = h + "px"; thread.style.maxHeight = h + "px";
   }, { passive: true });
   document.addEventListener("touchend", () => {
-    if (!dragging) return;
-    dragging = false;
+    if (!dragging) return; dragging = false;
     localStorage.setItem(KEY, Math.round(thread.getBoundingClientRect().height));
   });
 }
@@ -703,10 +824,7 @@ function bindModeCards() {
     card.addEventListener("click", () => {
       const mode = card.getAttribute("data-mode");
       if (!mode) return;
-      state.mode = mode;
-      saveState();
-      renderModeCards();
-      renderModeHelp();
+      state.mode = mode; saveState(); renderModeCards(); renderModeHelp();
     });
   });
 }
@@ -723,8 +841,7 @@ function bindProjectTags() {
     const button = e.target.closest("[data-tag]");
     if (!button) return;
     state.selectedProjectType = button.getAttribute("data-tag");
-    saveState();
-    hydrateFields();
+    saveState(); hydrateFields();
   });
 }
 
@@ -735,8 +852,7 @@ function bindTodoControls() {
     if (!value) { showToast("Write a todo first", "warn"); return; }
     state.todos.unshift({ id: safeId("todo"), title: value, detail: "", done: false });
     if (input) input.value = "";
-    saveState();
-    renderTodos();
+    saveState(); renderTodos();
   });
   qs("#todoInput")?.addEventListener("keydown", e => {
     if (e.key === "Enter") { e.preventDefault(); qs("#addTodoBtn")?.click(); }
@@ -748,8 +864,7 @@ function bindChatButtons() {
     try {
       setBusy(true, "Creating chat...");
       const publicId = await createChatSession({ title: "New chat" });
-      setBusy(false);
-      showToast("New chat created", "good");
+      setBusy(false); showToast("New chat created", "good");
       await loadThreadHistory(publicId);
     } catch { setBusy(false); showToast("New chat failed", "warn"); }
   });
@@ -761,8 +876,7 @@ function bindChatButtons() {
     try {
       setBusy(true, "Branching chat...");
       const publicId = await createChatSession({ title, cloneFromPublicId: state.selectedChatId });
-      setBusy(false);
-      showToast("Branch created", "good");
+      setBusy(false); showToast("Branch created", "good");
       await loadThreadHistory(publicId);
     } catch { setBusy(false); showToast("Branch failed", "warn"); }
   });
@@ -776,16 +890,15 @@ function bindChatButtons() {
     if (!result.ok) { showToast("Pin failed", "warn"); return; }
     current.pinned = newPinned;
     mergeChatIntoCollections(current);
-    saveState();
-    renderHistory();
+    saveState(); renderHistory();
     showToast(newPinned ? "Chat pinned" : "Chat unpinned", "good");
   });
 }
 
 function bindSendButton() {
-  qs("#sendBtn")?.addEventListener("click", sendCurrentMessage);
+  qs("#sendBtn")?.addEventListener("click", sendAndStream);
   qs("#composerInput")?.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendCurrentMessage(); }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendAndStream(); }
   });
 }
 
@@ -814,11 +927,8 @@ function bindExportButton() {
 
 async function createChatSession({ title, cloneFromPublicId = null }) {
   const result = await callApi("/api/chat-sessions", "POST", {
-    surface: "home",
-    title,
-    summary: "",
-    mode: state.mode,
-    selected_models: normalizeSelectedModels(),
+    surface: "home", title, summary: "",
+    mode: state.mode, selected_models: normalizeSelectedModels(),
     clone_from_public_id: cloneFromPublicId
   });
   if (!result.ok) throw new Error("Could not create chat session");
@@ -829,8 +939,7 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
   mergeChatIntoCollections(chat);
   state.selectedChatId = publicId;
   threadCache[publicId] = [];
-  saveState();
-  renderAll();
+  saveState(); renderAll();
   return publicId;
 }
 
@@ -842,61 +951,11 @@ async function refreshChatSessions() {
   items.forEach(mergeChatIntoCollections);
   if (!state.selectedChatId && items[0]) state.selectedChatId = items[0].id;
   if (!items.length) {
-    try {
-      state.selectedChatId = await createChatSession({ title: "Home chat" });
-    } catch {
-      showToast("Could not create initial Home chat", "warn");
-      saveState();
-      renderAll();
-      return false;
-    }
+    try { state.selectedChatId = await createChatSession({ title: "Home chat" }); }
+    catch { showToast("Could not create initial Home chat", "warn"); saveState(); renderAll(); return false; }
   }
-  saveState();
-  renderAll();
+  saveState(); renderAll();
   return true;
-}
-
-// ─── Send ─────────────────────────────────────────────────────────────────────
-
-async function sendCurrentMessage() {
-  const input = qs("#composerInput");
-  const text = (input?.value || "").trim();
-  if (!text) { showToast("Write something first", "warn"); return; }
-  if (!state.selectedChatId) { showToast("No active chat session", "warn"); return; }
-  const selectedModels = normalizeSelectedModels();
-  if (!selectedModels.length) { showToast("No models selected", "warn"); return; }
-
-  if (!threadCache[state.selectedChatId]) threadCache[state.selectedChatId] = [];
-  threadCache[state.selectedChatId].push({ id: safeId("msg"), role: "user", head: "User", text });
-  renderThread();
-  if (input) input.value = "";
-
-  setBusy(true, "Sending...");
-  const result = await callApi(
-    `/api/home/sessions/${encodeURIComponent(state.selectedChatId)}/messages`,
-    "POST",
-    { prompt: text, mode: state.mode, selected_models: selectedModels }
-  );
-  setBusy(false);
-
-  if (!result.ok) {
-    threadCache[state.selectedChatId].push({ id: safeId("msg"), role: "assistant", head: "Error", text: "Message failed to send to backend." });
-    renderThread();
-    showToast("Send failed", "warn");
-    return;
-  }
-
-  await loadThreadHistory(state.selectedChatId);
-
-  const current = getChatById(state.selectedChatId);
-  if (current && (!current.title || current.title === "New chat")) {
-    current.title = text.slice(0, 48);
-    saveState();
-    renderHistory();
-  }
-
-  showToast("Sent", "good");
-  await refreshModelPool();
 }
 
 // ─── Bootstrap ────────────────────────────────────────────────────────────────
@@ -905,13 +964,9 @@ async function bootstrapHome() {
   setBusy(true, "Loading...");
   refreshModelPool();
   const sessionsOk = await refreshChatSessions();
-  if (sessionsOk && state.selectedChatId) {
-    await loadThreadHistory(state.selectedChatId);
-  }
+  if (sessionsOk && state.selectedChatId) await loadThreadHistory(state.selectedChatId);
   state.bootstrapped = true;
-  saveState();
-  setBusy(false);
-  renderAll();
+  saveState(); setBusy(false); renderAll();
 }
 
 function init() {
