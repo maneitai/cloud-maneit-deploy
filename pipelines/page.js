@@ -253,7 +253,6 @@ function freshState() {
     nodes: [],
     edges: [],
     panX: 0, panY: 0, zoom: 1,
-    // Run panel state
     runJobId: null,
     runObjective: "",
     runSelectedModels: [],
@@ -820,7 +819,7 @@ async function refreshPipelines() {
     id: p.public_id || p.id,
     title: p.title || p.name || "Untitled",
     type: p.type || "",
-    stages: p.stages || "",
+    stages: p.stages,
   }));
   saveState(); renderPipelineSelector();
 }
@@ -847,13 +846,56 @@ async function savePipeline() {
   showToast(`"${title}" saved — available in ${portal}`, "good");
 }
 
+// ── Stage-list to canvas conversion ──────────────────────────────────────────
+
+function stageListToGraph(stages) {
+  const typeMap = {
+    input: "input", transform: "planner", build: "coder",
+    verify: "verifier", branch: "branch", handoff: "projection",
+  };
+  const cols = 2;
+  const nodes = stages.map((stage, i) => ({
+    id: stage.id || `n_${i}`,
+    title: stage.title || stage.id || `Stage ${i + 1}`,
+    type: typeMap[stage.kind] || "planner",
+    desc: stage.summary || "",
+    group: stage.kind || "",
+    model: (Array.isArray(stage.models) ? stage.models[0] : stage.model) || "",
+    x: 40 + (i % cols) * (NODE_W + 60),
+    y: 40 + Math.floor(i / cols) * (NODE_H + 80),
+    notes: "", quorumRule: "single pass", timeout: "60s",
+  }));
+  const edges = nodes.slice(0, -1).map((n, i) => ({
+    id: `e_${n.id}_${nodes[i + 1].id}`,
+    from: n.id,
+    to: nodes[i + 1].id,
+  }));
+  return { nodes, edges };
+}
+
 async function loadPipeline(id) {
   const found = state.pipelines.find(p => p.id === id);
   if (!found) return;
   try {
-    const graph = JSON.parse(found.stages || "{}");
-    if (Array.isArray(graph.nodes)) state.nodes = graph.nodes;
-    if (Array.isArray(graph.edges)) state.edges = graph.edges;
+    // stages may be already parsed (array/object) or a JSON string
+    const raw = found.stages;
+    const graph = (typeof raw === "string") ? JSON.parse(raw || "{}") : (raw || {});
+
+    if (Array.isArray(graph.nodes)) {
+      // Standard canvas format saved by this tool
+      state.nodes = graph.nodes;
+      state.edges = graph.edges || [];
+    } else if (Array.isArray(graph)) {
+      // Stage-list format from DB presets — convert to canvas
+      const converted = stageListToGraph(graph);
+      state.nodes = converted.nodes;
+      state.edges = converted.edges;
+    } else {
+      // Unknown / empty
+      state.nodes = [];
+      state.edges = [];
+    }
+
     state.savedPipelineId = id;
     state.pipelineType = found.type || state.pipelineType;
     if (qs("#pipelineTitleInput")) qs("#pipelineTitleInput").value = found.title || "";
@@ -861,7 +903,10 @@ async function loadPipeline(id) {
     saveState(); renderAll();
     setTimeout(fitToScreen, 100);
     showToast("Pipeline loaded", "good");
-  } catch { showToast("Could not parse pipeline graph", "warn"); }
+  } catch (err) {
+    showToast("Could not parse pipeline graph", "warn");
+    console.error("loadPipeline error:", err);
+  }
 }
 
 // ── Run panel ─────────────────────────────────────────────────────────────────
@@ -951,7 +996,6 @@ async function pollRunStatus() {
 
   const statusColor = { queued: "#fbbf24", running: "#6ee7ff", completed: "#34d399", partial: "#fbbf24", failed: "#fb7185" }[job.status] || "#8ea0b5";
   const nodeStates = job.node_states || {};
-  const nodeCount = job.node_count || state.nodes.length;
 
   const nodeRows = state.nodes.map(node => {
     const ns = nodeStates[node.id] || {};
@@ -995,7 +1039,6 @@ async function showArtifacts(pipelineId, jobId) {
   const items = r.body?.items || [];
   if (!items.length) { showToast("No artifacts yet", "warn"); return; }
 
-  // Build modal
   const modal = document.createElement("div");
   modal.className = "artifact-modal";
   modal.innerHTML = `
