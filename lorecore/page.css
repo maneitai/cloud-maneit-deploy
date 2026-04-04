@@ -168,7 +168,7 @@ body {
 .ctx-item { display: flex; flex-direction: column; gap: 2px; }
 .ctx-val { font-size: 12px; color: var(--accent); }
 
-/* ── Chat feed — NO max-height, JS controls it ── */
+/* ── Chat feed ── */
 .chat-feed {
   min-height: 260px;
   overflow-y: auto;
@@ -313,6 +313,29 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+/* ── Streaming ── */
+.stream-tools {
+  display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px;
+}
+.stream-tool-call {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; color: var(--muted); padding: 4px 8px;
+  border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+  transition: .2s ease;
+}
+.stream-tool-call--done { color: rgba(52,211,153,0.7); border-color: rgba(52,211,153,0.15); }
+.stream-tool-icon { font-size: 13px; flex-shrink: 0; }
+.stream-tool-name { font-weight: 700; flex-shrink: 0; }
+.stream-tool-args { color: rgba(142,160,181,0.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.stream-tool-summary { color: rgba(52,211,153,0.6); margin-left: auto; flex-shrink: 0; font-size: 10px; }
+.stream-text { color: var(--text); line-height: 1.65; font-size: 13px; white-space: pre-wrap; word-break: break-word; }
+.stream-cursor {
+  display: inline-block; width: 2px; height: 1em;
+  background: var(--accent); margin-left: 1px; vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
 /* ── Responsive ── */
 @media (max-width: 1400px) { .lorecore-layout { grid-template-columns: 240px 1fr 260px; } }
