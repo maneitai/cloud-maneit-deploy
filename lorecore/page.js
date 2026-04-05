@@ -326,7 +326,7 @@ function renderEntityList(tab) {
     return;
   }
   const items = getList(tab);
-  if (!items.length) { el.innerHTML = `<div class="lib-placeholder muted">No ${tab} yet. Press + New.</div>`; return; }
+  if (!items.length) { el.innerHTML = `<div class="lib-placeholder muted">No ${tab} yet. Press + New or Extract.</div>`; return; }
   el.innerHTML = items.map(item => `
     <button class="entity-card ${state.activeEntity?.data?.id === item.id ? "entity-card--active" : ""}"
       type="button" data-entity-tab="${escHtml(tab)}" data-entity-id="${escHtml(item.id)}">
@@ -506,7 +506,7 @@ async function quickCreate() {
   if (state.selectedBookId) await loadBookEntities(state.selectedBookId);
 }
 
-// ── Extract ───────────────────────────────────────────────────────────────────
+// ── Extract from chat (fills entity editor form — single entity) ───────────────
 async function extractFromChat(type) {
   const msgs = state.messages;
   const statusEl = qs("#extractStatus");
@@ -535,6 +535,126 @@ async function extractFromChat(type) {
   }
   if (statusEl) statusEl.textContent = "✓ Filled from conversation. Review and save.";
   showToast("Extracted", "good");
+}
+
+// ── Extract & Save — reads session, saves all entities directly to library ────
+function renderBookPickerForExtract(scope, containerId) {
+  const container = qs(`#${containerId}`); if (!container) return;
+  if (!state.books.length) {
+    container.innerHTML = `<div class="muted" style="font-size:12px;padding:8px 0;">No books yet — create one first.</div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Select book to save into:</div>
+    <div class="extract-book-list">
+      ${state.books.map(b => `
+        <button class="extract-book-btn button button--small ${b.id === state.selectedBookId ? 'button--primary' : ''}"
+          data-book-id="${escHtml(b.id)}" data-library-id="${escHtml(b.libraryId)}" data-scope="${escHtml(scope)}">
+          ${escHtml(b.title)}
+        </button>
+      `).join("")}
+    </div>`;
+  container.querySelectorAll(".extract-book-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      runExtractAndSave(btn.dataset.scope, btn.dataset.bookId, btn.dataset.libraryId);
+    });
+  });
+}
+
+async function runExtractAndSave(scope, bookId, libraryId) {
+  const statusEl = qs("#extractSaveStatus");
+  const btn = qs("#extractSaveBtn");
+
+  if (!bookId) { showToast("Select a book first", "warn"); return; }
+
+  const sessionId = state.selectedSessionId;
+  if (!sessionId || sessionId === FREE_SESSION_ID) {
+    if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "⚠ No active session. Open a session first."; }
+    return;
+  }
+
+  if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = `Extracting ${scope} from session…`; }
+  if (btn) btn.disabled = true;
+
+  // Hide book picker if shown
+  const picker = qs("#extractBookPicker");
+  if (picker) picker.innerHTML = "";
+
+  const r = await api("/api/lorecore/extract-and-save", {
+    method: "POST",
+    body: {
+      session_public_id: sessionId,
+      book_public_id: bookId,
+      library_public_id: libraryId || "LIB-3001",
+      scope: scope,
+    }
+  });
+
+  if (btn) btn.disabled = false;
+
+  if (!r.ok) {
+    const detail = r.body?.detail || `Error ${r.status}`;
+    if (statusEl) statusEl.textContent = `✗ ${detail}`;
+    showToast(`Extraction failed`, "warn");
+    return;
+  }
+
+  const result = r.body;
+  const created = result.created || {};
+  const parts = [];
+  if ((created.characters || []).length) parts.push(`${created.characters.length} character${created.characters.length !== 1 ? "s" : ""}`);
+  if ((created.world || []).length) parts.push(`${created.world.length} world record`);
+  if ((created.scenes || []).length) parts.push(`${created.scenes.length} scene${created.scenes.length !== 1 ? "s" : ""}`);
+  if ((created.notes || []).length) parts.push(`${created.notes.length} note${created.notes.length !== 1 ? "s" : ""}`);
+
+  const summary = parts.length ? `✓ Saved: ${parts.join(", ")}` : "✓ Complete — no new entities found";
+  if (statusEl) statusEl.textContent = summary;
+  showToast(summary, "good");
+
+  // Switch to that book and reload entities
+  if (state.selectedBookId !== bookId) {
+    state.selectedBookId = bookId;
+    state.freeMode = false;
+    renderBookList();
+    updateScopeChip();
+  }
+  await loadBookEntities(bookId);
+
+  // Switch to the tab that got the most data
+  const counts = {
+    characters: (created.characters||[]).length,
+    worlds: (created.world||[]).length,
+    scenes: (created.scenes||[]).length,
+    notes: (created.notes||[]).length,
+  };
+  const topTab = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  if (topTab && topTab[1] > 0) switchTab(topTab[0]);
+}
+
+async function extractAndSave() {
+  const scopeEl = qs("#extractScopeSelect");
+  const scope = scopeEl ? scopeEl.value : "all";
+  const statusEl = qs("#extractSaveStatus");
+
+  // If free mode or no book — show book picker inline
+  if (state.freeMode || !state.selectedBookId) {
+    const pickerEl = qs("#extractBookPicker");
+    if (pickerEl) {
+      pickerEl.style.display = pickerEl.style.display === "none" ? "block" : "none";
+      if (pickerEl.style.display === "block") {
+        renderBookPickerForExtract(scope, "extractBookPicker");
+      }
+    }
+    return;
+  }
+
+  const book = state.books.find(b => b.id === state.selectedBookId);
+  await runExtractAndSave(scope, state.selectedBookId, book?.libraryId || "LIB-3001");
+}
+
+// Keep exportLore wired to extractAndSave for the export button
+async function exportLore() {
+  await extractAndSave();
 }
 
 // ── Chat feed ─────────────────────────────────────────────────────────────────
@@ -624,10 +744,8 @@ function appendStreamChunk(text) {
 function finalizeStreamingMsg(fullContent, modelName) {
   const msg = qs("#streamingMsg"); if (!msg) return;
   msg.id = "";
-  // Clean up head
   const head = qs(".stream-head", msg);
   if (head) { head.className = "chat-msg-role"; head.innerHTML = escHtml(modelName || "Assistant"); }
-  // Replace stream-body with rendered markdown
   const streamBody = qs("#streamBody", msg);
   if (streamBody) {
     streamBody.id = "";
@@ -764,15 +882,6 @@ async function runStage() {
   showToast(`Stage ${stage} complete`,"good");
 }
 
-async function exportLore() {
-  const payload = {};
-  if (state.selectedBookId) payload.book_public_id = state.selectedBookId;
-  if (state.selectedSessionId) payload.session_public_id = state.selectedSessionId;
-  const r = await api("/api/lorecore/exports", { method:"POST", body:payload });
-  if (!r.ok) { showToast("Export failed","warn"); return; }
-  showToast("Export requested","good");
-}
-
 function updateContextStrip() {
   const book = state.books.find(b => b.id === state.selectedBookId);
   const set = (id, v) => { const el = qs(id); if (el) el.textContent = v; };
@@ -832,11 +941,26 @@ function bindEvents() {
   qs("#libNewBtn")?.addEventListener("click", openQuickCreate);
   qs("#closeQcBtn")?.addEventListener("click", () => qs("#quickCreatePanel").style.display="none");
   qs("#qcCreateBtn")?.addEventListener("click", quickCreate);
+
+  // New extract & save button
+  qs("#extractSaveBtn")?.addEventListener("click", extractAndSave);
+
+  // Scope selector change — update book picker if visible
+  qs("#extractScopeSelect")?.addEventListener("change", () => {
+    const picker = qs("#extractBookPicker");
+    if (picker && picker.style.display !== "none") {
+      const scope = qs("#extractScopeSelect")?.value || "all";
+      renderBookPickerForExtract(scope, "extractBookPicker");
+    }
+  });
+
+  // Legacy open extract panel button
   qs("#openExtractBtn")?.addEventListener("click", () => {
     const type = qs("#extractTypeSelect")?.value||"character";
     if (type==="chapter") { switchTab("chapters"); extractFromChat("chapter"); }
     else { switchTab(type+"s"); openEntityEditor(type+"s", null, true); }
   });
+
   qs("#modeCards")?.addEventListener("click", e => {
     const card = e.target.closest(".mode-card"); if (!card) return;
     state.chatMode = card.dataset.mode;
