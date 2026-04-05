@@ -1,563 +1,406 @@
-const PM_PROJECTS_KEY = "PM_PROJECTS_V2";
+/* Projects — page.js */
+
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
-const defaultState = {
-  selectedProjectId: "",
-  filters: {
-    search: "",
-    status: "All",
-    readiness: "All"
-  },
+const qs  = (s, r = document) => r.querySelector(s);
+const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
+
+function timeAgo(iso) {
+  if (!iso) return "—";
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+function showToast(msg, tone = "good") {
+  const t = qs("#toast"); if (!t) return;
+  t.textContent = msg; t.className = `toast ${tone} is-visible`;
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove("is-visible"), 3000);
+}
+
+async function api(path, opts = {}) {
+  const cfg = { method: "GET", headers: {}, ...opts };
+  if (cfg.body && typeof cfg.body !== "string") {
+    cfg.headers["Content-Type"] = "application/json";
+    cfg.body = JSON.stringify(cfg.body);
+  }
+  try {
+    const res = await fetch(`${PM_API_BASE}${path}`, cfg);
+    const ct = res.headers.get("content-type") || "";
+    const body = ct.includes("application/json") ? await res.json() : await res.text();
+    return { ok: res.ok, status: res.status, body };
+  } catch (e) { return { ok: false, status: 0, error: String(e) }; }
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+const state = {
   projects: [],
-  loaded: false
+  activeProjectId: localStorage.getItem("projects_active") || null,
+  activeType: "all",
+  search: "",
+  jobs: [],
 };
 
-let state = loadState();
-let activeRequestCount = 0;
+// ── Normalize project from backend ────────────────────────────────────────────
+function normalizeProject(raw) {
+  const notes = (() => {
+    if (!raw.notes) return {};
+    if (typeof raw.notes === "object") return raw.notes;
+    try { return JSON.parse(raw.notes); } catch { return { Summary: raw.notes }; }
+  })();
 
-function loadState() {
-  try {
-    const raw = localStorage.getItem(PM_PROJECTS_KEY);
-    if (!raw) return clone(defaultState);
-    const parsed = JSON.parse(raw);
-    return {
-      ...clone(defaultState),
-      ...parsed,
-      filters: { ...clone(defaultState).filters, ...(parsed.filters || {}) },
-      projects: Array.isArray(parsed.projects) ? parsed.projects : []
-    };
-  } catch {
-    return clone(defaultState);
-  }
+  const typeRaw = (raw.target_portal || raw.portal || raw.type || "").toLowerCase();
+  let type = "other";
+  if (typeRaw.includes("portal") || typeRaw.includes("web")) type = "portal";
+  else if (typeRaw.includes("app")) type = "app";
+  else if (typeRaw.includes("game")) type = "game";
+  else if (typeRaw.includes("research")) type = "research";
+  else if (typeRaw.includes("lore")) type = "lore";
+
+  const creatorMap = {
+    portal: "portalcreator",
+    app: "appcreator",
+    game: "game-designer",
+    research: "research-core",
+    lore: "lorecore",
+  };
+
+  return {
+    id: raw.public_id || raw.id || "",
+    title: raw.title || "Untitled",
+    type,
+    status: raw.status || "Draft",
+    target: raw.target_portal || raw.portal || creatorMap[type] || "portalcreator",
+    summary: raw.summary || notes.Summary || notes.summary || "",
+    goal: notes.Goal || notes.goal || raw.goal || "",
+    modules: notes.Modules || notes.modules || notes.Features || notes.features || "",
+    techStack: notes["Tech stack"] || notes.tech_stack || notes.TechStack || "",
+    constraints: notes.Constraints || notes.constraints || "",
+    risks: notes.Risks || notes.risks || "",
+    nextAction: raw.next_action || notes["Next action"] || notes.next_action || "",
+    tags: Array.isArray(raw.tags) ? raw.tags.join(", ") : (raw.tags || ""),
+    notes: typeof raw.notes === "string" ? raw.notes : "",
+    createdAt: raw.created_at || "",
+    updatedAt: raw.updated_at || "",
+    raw,
+  };
 }
 
-function saveState() {
-  localStorage.setItem(PM_PROJECTS_KEY, JSON.stringify(state));
+// ── Load ──────────────────────────────────────────────────────────────────────
+async function loadProjects() {
+  const r = await api("/api/projects");
+  if (!r.ok) { showToast("Could not load projects", "warn"); return; }
+  const items = Array.isArray(r.body?.items) ? r.body.items : [];
+  state.projects = items.map(normalizeProject);
+  qs("#projectCountChip").textContent = `${state.projects.length}`;
+  renderProjectList();
+
+  // Auto-select
+  const saved = state.projects.find(p => p.id === state.activeProjectId);
+  if (saved) selectProject(saved.id);
+  else if (state.projects[0]) selectProject(state.projects[0].id);
 }
 
-function clone(value) {
-  return JSON.parse(JSON.stringify(value));
+async function loadJobs(projectId) {
+  const r = await api(`/api/production/jobs?subject_public_id=${encodeURIComponent(projectId)}`);
+  if (!r.ok) return [];
+  return Array.isArray(r.body?.items) ? r.body.items : [];
 }
 
-function qs(selector, root = document) {
-  return root.querySelector(selector);
-}
-
-function qsa(selector, root = document) {
-  return Array.from(root.querySelectorAll(selector));
-}
-
-function escapeHtml(text) {
-  return String(text ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function showToast(message, tone = "good") {
-  const toast = qs("#toast");
-  if (!toast) return;
-  toast.textContent = message;
-  toast.className = `toast ${tone} is-visible`;
-  clearTimeout(showToast._timer);
-  showToast._timer = setTimeout(() => {
-    toast.classList.remove("is-visible");
-  }, 2600);
-}
-
-function setBusy(isBusy) {
-  activeRequestCount += isBusy ? 1 : -1;
-  if (activeRequestCount < 0) activeRequestCount = 0;
-  const busy = activeRequestCount > 0;
-
-  [
-    "#duplicateProjectBtn",
-    "#archiveProjectBtn",
-    "#saveProjectBtn",
-    "#openTargetBtn",
-    "#routeToAppBtn",
-    "#routeToPortalBtn",
-    "#routeToGameBtn",
-    "#routeToResearchBtn"
-  ].forEach((selector) => {
-    const el = qs(selector);
-    if (el) el.disabled = busy;
+// ── Render project list ───────────────────────────────────────────────────────
+function filteredProjects() {
+  return state.projects.filter(p => {
+    const matchType = state.activeType === "all" || p.type === state.activeType;
+    const search = state.search.toLowerCase();
+    const matchSearch = !search || [p.title, p.goal, p.summary, p.tags].join(" ").toLowerCase().includes(search);
+    return matchType && matchSearch;
   });
 }
 
-async function callApi(path, method = "GET", payload = null) {
-  try {
-    const res = await fetch(`${PM_API_BASE}${path}`, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: payload ? JSON.stringify(payload) : undefined
-    });
-    const contentType = res.headers.get("content-type") || "";
-    const body = contentType.includes("application/json") ? await res.json() : await res.text();
-    return { ok: res.ok, status: res.status, body };
-  } catch (error) {
-    return { ok: false, error: String(error) };
-  }
-}
+const TYPE_ICONS = { portal: "🌐", app: "⚙️", game: "🎮", research: "🔬", lore: "📖", other: "📁" };
+const TYPE_LABELS = { portal: "Portal", app: "App", game: "Game", research: "Research", lore: "Lore", other: "Other" };
 
-function normalizeProject(item) {
-  return {
-    id: item.public_id || item.project_public_id || item.id || "",
-    title: item.title || "Untitled project",
-    class: item.type || item.class || "App",
-    subtype: item.subtype || "",
-    status: item.status || "Draft",
-    readiness: item.readiness || "Prep",
-    target: item.portal || item.target || "PortalCreator",
-    preset: item.preset || "none",
-    nextAction: item.next_action || item.nextAction || "",
-    summary: item.summary || "",
-    tags: Array.isArray(item.tags) ? item.tags.join(", ") : (item.tags || ""),
-    origin: item.origin || "",
-    assets: Array.isArray(item.assets) ? item.assets.join("\n") : (item.assets || ""),
-    notes: item.notes || "",
-    pinned: Boolean(item.pinned),
-    checks: Array.isArray(item.checks) ? item.checks.slice(0, 4) : [false, false, false, false]
-  };
-}
-
-function toBackendType(projectClass) {
-  const map = {
-    App: "app",
-    Web: "web",
-    Portal: "portal",
-    Game: "game",
-    Research: "research",
-    System: "system"
-  };
-  return map[projectClass] || String(projectClass || "app").toLowerCase();
-}
-
-function toBackendPortal(target) {
-  const map = {
-    AppCreator: "appcreator",
-    PortalCreator: "portalcreator",
-    "Game Designer": "game-designer",
-    "Research Core": "research-core",
-    LoreCore: "lorecore"
-  };
-  return map[target] || String(target || "").toLowerCase();
-}
-
-function getSelectedProject() {
-  return state.projects.find(project => project.id === state.selectedProjectId) || state.projects[0] || null;
-}
-
-function ensureSelectedProjectExists() {
-  if (!state.projects.length) {
-    state.selectedProjectId = "";
+function renderProjectList() {
+  const el = qs("#projectList"); if (!el) return;
+  const items = filteredProjects();
+  if (!items.length) {
+    el.innerHTML = `<div class="list-placeholder">No projects found.</div>`;
     return;
   }
-  if (!state.projects.some(project => project.id === state.selectedProjectId)) {
-    state.selectedProjectId = state.projects[0].id;
+  el.innerHTML = items.map(p => `
+    <button class="proj-item ${p.id === state.activeProjectId ? "proj-item--active" : ""}"
+      data-pid="${esc(p.id)}">
+      <span class="proj-icon">${TYPE_ICONS[p.type] || "📁"}</span>
+      <span class="proj-body">
+        <span class="proj-title">${esc(p.title)}</span>
+        <span class="proj-meta">${TYPE_LABELS[p.type] || "Other"} · ${esc(p.status)}</span>
+      </span>
+      ${p.status === "Active" ? `<span class="proj-dot"></span>` : ""}
+    </button>
+  `).join("");
+  qsa(".proj-item[data-pid]", el).forEach(btn => {
+    btn.addEventListener("click", () => selectProject(btn.dataset.pid));
+  });
+}
+
+// ── Select project ────────────────────────────────────────────────────────────
+async function selectProject(id) {
+  state.activeProjectId = id;
+  localStorage.setItem("projects_active", id);
+  renderProjectList();
+  const p = state.projects.find(x => x.id === id);
+  if (!p) return;
+  renderWorkspace(p);
+
+  // Load jobs for this project
+  state.jobs = await loadJobs(id);
+  renderRunHistory(p);
+  renderRecentRuns();
+  renderQuickActions(p);
+}
+
+// ── Render workspace ──────────────────────────────────────────────────────────
+function renderWorkspace(p) {
+  qs("#centerEmpty").style.display = "none";
+  qs("#projectWorkspace").style.display = "block";
+
+  // Header
+  qs("#wsType").textContent = TYPE_LABELS[p.type] || "Project";
+  qs("#wsTitle").textContent = p.title;
+
+  // Status bar
+  const statusEl = qs("#wsStatus");
+  if (statusEl) statusEl.value = p.status;
+
+  const targetEl = qs("#wsTarget");
+  if (targetEl) {
+    // Set closest match
+    const opts = Array.from(targetEl.options);
+    const match = opts.find(o => p.target.includes(o.value) || o.value.includes(p.type));
+    if (match) targetEl.value = match.value;
+  }
+
+  qs("#wsLastRun").textContent = state.jobs[0] ? timeAgo(state.jobs[0].updated_at) : "—";
+  qs("#wsRunCount").textContent = state.jobs.length;
+
+  // Plan fields
+  const set = (id, v) => { const el = qs(`#${id}`); if (el) el.value = v || ""; };
+  set("wsGoal", p.goal);
+  set("wsNextAction", p.nextAction);
+  set("wsModules", p.modules);
+  set("wsTechStack", p.techStack);
+  set("wsConstraints", p.constraints);
+  set("wsRisks", p.risks);
+  set("wsSummary", p.summary);
+  set("wsNotes", p.notes);
+
+  // Plan source chip
+  const chip = qs("#planSourceChip");
+  if (chip) {
+    const hasExtracted = p.goal || p.modules || p.constraints;
+    chip.textContent = hasExtracted ? "Extracted from Home" : "Manual";
+    chip.className = hasExtracted ? "chip good" : "chip";
   }
 }
 
-function filterProjectsLocal(projects) {
-  const search = state.filters.search.trim().toLowerCase();
-
-  return projects.filter(project => {
-    const matchesSearch = !search || [
-      project.title,
-      project.summary,
-      project.tags,
-      project.origin,
-      project.notes,
-      project.class,
-      project.target
-    ].join(" ").toLowerCase().includes(search);
-
-    const matchesStatus = state.filters.status === "All" || project.status === state.filters.status;
-    const matchesReadiness = state.filters.readiness === "All" || project.readiness === state.filters.readiness;
-
-    return matchesSearch && matchesStatus && matchesReadiness;
-  });
+// ── Run history ───────────────────────────────────────────────────────────────
+function renderRunHistory(p) {
+  const el = qs("#wsRunHistory"); if (!el) return;
+  if (!state.jobs.length) {
+    el.innerHTML = `<div class="list-placeholder">No pipeline runs yet.</div>`;
+    return;
+  }
+  el.innerHTML = state.jobs.slice(0, 6).map(j => {
+    const statusClass = j.status === "completed" ? "good" : j.status === "failed" ? "bad" : j.status === "running" ? "running" : "";
+    return `
+      <div class="ws-run-item">
+        <div class="ws-run-dot ${statusClass}"></div>
+        <div class="ws-run-body">
+          <div class="ws-run-title">${esc(j.title || "Run")}</div>
+          <div class="ws-run-meta">${esc(j.status)} · ${timeAgo(j.updated_at)}</div>
+        </div>
+        <a href="../${creatorPath(p)}/?job=${esc(j.public_id)}" class="ws-run-link">View →</a>
+      </div>
+    `;
+  }).join("");
 }
 
-function projectButtonMarkup(project) {
-  return `
-    <button class="library-item ${project.id === state.selectedProjectId ? "library-item--active" : ""}" type="button" data-project-id="${escapeHtml(project.id)}">
-      <span class="library-title">${escapeHtml(project.title)}</span>
-      <span class="library-meta">${escapeHtml(project.class)} · ${escapeHtml(project.status)}</span>
-    </button>
+function renderRecentRuns() {
+  const el = qs("#recentRuns"); if (!el) return;
+  const allJobs = state.jobs.slice(0, 5);
+  if (!allJobs.length) { el.innerHTML = `<div class="section-meta">No recent runs.</div>`; return; }
+  el.innerHTML = allJobs.map(j => `
+    <div class="recent-run-item">
+      <div class="ws-run-dot ${j.status === "completed" ? "good" : j.status === "failed" ? "bad" : ""}"></div>
+      <div>
+        <div class="recent-run-title">${esc(j.title || "Run")}</div>
+        <div class="recent-run-meta">${esc(j.status)} · ${timeAgo(j.updated_at)}</div>
+      </div>
+    </div>
+  `).join("");
+}
+
+// ── Quick actions ─────────────────────────────────────────────────────────────
+function creatorPath(p) {
+  const map = { portalcreator: "portalcreator", appcreator: "appcreator", "game-designer": "game-designer", "research-core": "research-core", lorecore: "lorecore" };
+  const target = qs("#wsTarget")?.value || p.target;
+  return map[target] || "portalcreator";
+}
+
+function renderQuickActions(p) {
+  const el = qs("#quickActions"); if (!el) return;
+  const path = creatorPath(p);
+  const creatorLabel = {
+    portalcreator: "PortalCreator", appcreator: "AppCreator",
+    "game-designer": "Game Designer", "research-core": "Research Core", lorecore: "LoreCore",
+  }[path] || "Creator";
+
+  el.innerHTML = `
+    <a href="../${path}/?project=${esc(p.id)}" class="quick-action-btn quick-action-btn--primary">
+      Open in ${esc(creatorLabel)} →
+    </a>
+    <button class="quick-action-btn" id="qaSaveBtn">Save changes</button>
+    <button class="quick-action-btn" id="qaArchiveBtn">Archive</button>
+    <button class="quick-action-btn" id="qaDuplicateBtn">Duplicate</button>
   `;
+
+  qs("#qaSaveBtn")?.addEventListener("click", saveProject);
+  qs("#qaArchiveBtn")?.addEventListener("click", archiveProject);
+  qs("#qaDuplicateBtn")?.addEventListener("click", duplicateProject);
 }
 
-function renderLibrarySection(containerId, items) {
-  const container = qs(containerId);
-  if (!container) return;
+// ── Save ──────────────────────────────────────────────────────────────────────
+function collectWorkspaceValues() {
+  const get = id => qs(`#${id}`)?.value.trim() || "";
+  const p = state.projects.find(x => x.id === state.activeProjectId); if (!p) return null;
 
-  container.innerHTML = items.length
-    ? items.map(projectButtonMarkup).join("")
-    : `<div class="library-meta">No matching records</div>`;
+  const target = qs("#wsTarget")?.value || p.target;
+  const typeFromTarget = { portalcreator: "portal", appcreator: "app", "game-designer": "game", "research-core": "research", lorecore: "lore" }[target] || p.type;
 
-  qsa(".library-item", container).forEach(button => {
-    button.addEventListener("click", () => {
-      state.selectedProjectId = button.dataset.projectId;
-      saveState();
-      renderAll();
-    });
-  });
-}
-
-function renderLibrary() {
-  const filtered = filterProjectsLocal(state.projects);
-
-  renderLibrarySection("#pinnedProjectList", filtered.filter(project => project.pinned));
-  renderLibrarySection("#appProjectList", filtered.filter(project => project.class === "App"));
-  renderLibrarySection("#webProjectList", filtered.filter(project => project.class === "Web" || project.class === "Portal"));
-  renderLibrarySection("#gameProjectList", filtered.filter(project => project.class === "Game"));
-  renderLibrarySection("#researchProjectList", filtered.filter(project => project.class === "Research"));
-}
-
-function renderWorkspace() {
-  const project = getSelectedProject();
-  if (!project) return;
-
-  const map = {
-    "#workspaceClass": project.class,
-    "#workspaceStatus": project.status,
-    "#workspaceTarget": project.target,
-    "#workspaceReadiness": project.readiness,
-    "#projectName": project.title,
-    "#projectClass": project.class,
-    "#projectSubtype": project.subtype,
-    "#projectStatus": project.status,
-    "#projectSummary": project.summary,
-    "#projectTarget": project.target,
-    "#projectPreset": project.preset,
-    "#projectReadiness": project.readiness,
-    "#projectNextAction": project.nextAction,
-    "#projectTags": project.tags,
-    "#projectOrigin": project.origin,
-    "#projectAssets": project.assets,
-    "#projectNotes": project.notes
+  return {
+    title: qs("#wsTitle")?.textContent || p.title,
+    status: get("wsStatus") || p.status,
+    target_portal: target,
+    type: typeFromTarget,
+    summary: get("wsSummary"),
+    next_action: get("wsNextAction"),
+    notes: JSON.stringify({
+      Goal: get("wsGoal"),
+      Modules: get("wsModules"),
+      "Tech stack": get("wsTechStack"),
+      Constraints: get("wsConstraints"),
+      Risks: get("wsRisks"),
+      Summary: get("wsSummary"),
+    }),
   };
+}
 
-  Object.entries(map).forEach(([selector, value]) => {
-    const el = qs(selector);
-    if (!el) return;
-    if ("value" in el) {
-      el.value = value ?? "";
-    } else {
-      el.textContent = value ?? "";
+async function saveProject() {
+  const id = state.activeProjectId; if (!id) return;
+  const payload = collectWorkspaceValues(); if (!payload) return;
+  const r = await api(`/api/projects/${encodeURIComponent(id)}`, { method: "PUT", body: payload });
+  if (!r.ok) { showToast(`Save failed: ${r.status}`, "warn"); return; }
+  showToast("Saved", "good");
+  // Update local state
+  const p = state.projects.find(x => x.id === id);
+  if (p) Object.assign(p, normalizeProject({ ...p.raw, ...payload }));
+  renderProjectList();
+}
+
+async function archiveProject() {
+  const id = state.activeProjectId; if (!id) return;
+  if (!confirm("Archive this project?")) return;
+  const r = await api(`/api/projects/${encodeURIComponent(id)}`, { method: "PUT", body: { status: "Archived" } });
+  if (!r.ok) { showToast("Archive failed", "warn"); return; }
+  showToast("Archived", "warn");
+  await loadProjects();
+}
+
+async function duplicateProject() {
+  const p = state.projects.find(x => x.id === state.activeProjectId); if (!p) return;
+  const payload = { ...collectWorkspaceValues(), title: `${p.title} (copy)`, status: "Draft" };
+  const r = await api("/api/projects", { method: "POST", body: payload });
+  if (!r.ok) { showToast("Duplicate failed", "warn"); return; }
+  showToast("Duplicated", "good");
+  await loadProjects();
+  if (r.body?.public_id) selectProject(r.body.public_id);
+}
+
+async function createProject() {
+  const title = qs("#npTitle")?.value.trim(); if (!title) { showToast("Title required", "warn"); return; }
+  const type = qs("#npType")?.value || "portal";
+  const goal = qs("#npGoal")?.value.trim() || "";
+  const targetMap = { portal: "portalcreator", app: "appcreator", game: "game-designer", research: "research-core", lore: "lorecore" };
+
+  const r = await api("/api/projects", {
+    method: "POST",
+    body: {
+      title, type, status: "Draft",
+      target_portal: targetMap[type] || "portalcreator",
+      summary: goal,
+      notes: JSON.stringify({ Goal: goal }),
     }
   });
-
-  const handoffPreview = qs("#handoffPreview");
-  if (handoffPreview) {
-    handoffPreview.innerHTML = `
-      <strong>${escapeHtml(project.target)}</strong>
-      <span>${escapeHtml(project.preset || "none")} · ${escapeHtml((project.readiness || "").toLowerCase())}</span>
-    `;
-  }
-
-  renderChecks(project);
+  if (!r.ok) { showToast("Create failed", "warn"); return; }
+  showToast("Project created", "good");
+  qs("#newProjectForm").style.display = "none";
+  qs("#showNewProjectBtn").style.display = "block";
+  qs("#npTitle").value = ""; qs("#npGoal").value = "";
+  await loadProjects();
+  if (r.body?.public_id) selectProject(r.body.public_id);
 }
 
-function renderChecks(project) {
-  const container = qs(".check-list");
-  if (!container || !project) return;
+// ── Events ────────────────────────────────────────────────────────────────────
+function bindEvents() {
+  qs("#projectSearch")?.addEventListener("input", e => {
+    state.search = e.target.value;
+    renderProjectList();
+  });
 
-  const labels = [
-    "Structured enough to be reused",
-    "Correct creator target selected",
-    "Preset or next action is clear",
-    "Ready to move from library to active creator work"
-  ];
-
-  const checks = Array.isArray(project.checks) ? project.checks : [false, false, false, false];
-
-  container.innerHTML = labels.map((label, index) => `
-    <label class="check-item" data-check-index="${index}">
-      <input type="checkbox" ${checks[index] ? "checked" : ""} />
-      <span>${escapeHtml(label)}</span>
-    </label>
-  `).join("");
-
-  qsa(".check-item input", container).forEach(input => {
-    input.addEventListener("change", event => {
-      const row = event.target.closest(".check-item");
-      if (!row) return;
-      const idx = Number(row.dataset.checkIndex);
-      const selected = getSelectedProject();
-      if (!selected) return;
-      if (!Array.isArray(selected.checks)) selected.checks = [false, false, false, false];
-      selected.checks[idx] = event.target.checked;
-      saveState();
+  qsa(".type-tab").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.activeType = btn.dataset.type;
+      qsa(".type-tab").forEach(b => b.classList.toggle("type-tab--active", b === btn));
+      renderProjectList();
     });
   });
-}
 
-function updateSelectedProjectFromWorkspace() {
-  const project = getSelectedProject();
-  if (!project) return;
-
-  project.title = qs("#projectName")?.value || project.title;
-  project.class = qs("#projectClass")?.value || project.class;
-  project.subtype = qs("#projectSubtype")?.value || project.subtype;
-  project.status = qs("#projectStatus")?.value || project.status;
-  project.summary = qs("#projectSummary")?.value || project.summary;
-  project.target = qs("#projectTarget")?.value || project.target;
-  project.preset = qs("#projectPreset")?.value || project.preset;
-  project.readiness = qs("#projectReadiness")?.value || project.readiness;
-  project.nextAction = qs("#projectNextAction")?.value || project.nextAction;
-  project.tags = qs("#projectTags")?.value || project.tags;
-  project.origin = qs("#projectOrigin")?.value || project.origin;
-  project.assets = qs("#projectAssets")?.value || project.assets;
-  project.notes = qs("#projectNotes")?.value || project.notes;
-
-  saveState();
-  renderLibrary();
-  renderWorkspace();
-}
-
-function buildProjectPayload(project) {
-  return {
-    title: project.title,
-    type: toBackendType(project.class),
-    subtype: project.subtype,
-    status: project.status,
-    readiness: project.readiness,
-    portal: toBackendPortal(project.target),
-    preset: project.preset,
-    next_action: project.nextAction,
-    summary: project.summary,
-    tags: project.tags
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    origin: project.origin,
-    assets: project.assets
-      .split("\n")
-      .map((item) => item.trim())
-      .filter(Boolean),
-    notes: project.notes,
-    pinned: Boolean(project.pinned),
-    checks: Array.isArray(project.checks) ? project.checks : [false, false, false, false]
-  };
-}
-
-async function duplicateSelectedProject() {
-  const selected = getSelectedProject();
-  if (!selected) return;
-
-  const payload = buildProjectPayload({
-    ...clone(selected),
-    title: `${selected.title} Copy`,
-    pinned: false
+  qs("#saveProjectBtn")?.addEventListener("click", saveProject);
+  qs("#openCreatorBtn")?.addEventListener("click", () => {
+    const p = state.projects.find(x => x.id === state.activeProjectId); if (!p) return;
+    window.location.href = `../${creatorPath(p)}/?project=${encodeURIComponent(p.id)}`;
   });
 
-  setBusy(true);
-  const result = await callApi("/api/projects", "POST", payload);
-  setBusy(false);
+  qs("#refreshBtn")?.addEventListener("click", loadProjects);
 
-  if (!result.ok) {
-    showToast("Duplicate failed", "warn");
-    return;
-  }
-
-  await refreshProjects();
-  const newId = result.body?.public_id || result.body?.project_public_id || result.body?.id;
-  if (newId) state.selectedProjectId = newId;
-  saveState();
-  renderAll();
-  showToast("Project duplicated", "good");
-}
-
-async function archiveSelectedProject() {
-  const selected = getSelectedProject();
-  if (!selected?.id) return;
-
-  selected.status = "Archived";
-  selected.readiness = "Prep";
-
-  setBusy(true);
-  const result = await callApi(`/api/projects/${encodeURIComponent(selected.id)}`, "PUT", {
-    status: selected.status,
-    readiness: selected.readiness
+  qs("#showNewProjectBtn")?.addEventListener("click", () => {
+    qs("#newProjectForm").style.display = "block";
+    qs("#showNewProjectBtn").style.display = "none";
   });
-  setBusy(false);
-
-  if (!result.ok) {
-    showToast("Archive failed", "warn");
-    return;
-  }
-
-  await refreshProjects();
-  state.selectedProjectId = selected.id;
-  saveState();
-  renderAll();
-  showToast("Project archived", "warn");
-}
-
-async function saveSelectedProject() {
-  updateSelectedProjectFromWorkspace();
-  const selected = getSelectedProject();
-  if (!selected?.id) {
-    showToast("No selected project", "warn");
-    return;
-  }
-
-  setBusy(true);
-  const result = await callApi(`/api/projects/${encodeURIComponent(selected.id)}`, "PUT", buildProjectPayload(selected));
-  setBusy(false);
-
-  if (!result.ok) {
-    showToast("Project save failed", "warn");
-    return;
-  }
-
-  await refreshProjects();
-  state.selectedProjectId = selected.id;
-  saveState();
-  renderAll();
-  showToast("Project saved", "good");
-}
-
-function setTarget(target) {
-  const selected = getSelectedProject();
-  if (!selected) return;
-  selected.target = target;
-  saveState();
-  renderWorkspace();
-  showToast(`Target set to ${target}`, "good");
-}
-
-function targetPath(target) {
-  switch (target) {
-    case "AppCreator": return "../appcreator/";
-    case "PortalCreator": return "../portalcreator/";
-    case "Game Designer": return "../game-designer/";
-    case "Research Core": return "../research-core/";
-    case "LoreCore": return "../lorecore/";
-    default: return "../projects/";
-  }
-}
-
-function openTargetSurface() {
-  const selected = getSelectedProject();
-  if (!selected) return;
-  const path = targetPath(selected.target);
-  const url = `${path}?project=${encodeURIComponent(selected.id)}`;
-  window.location.href = url;
-}
-
-function bindFilters() {
-  qs("#projectSearch")?.addEventListener("input", event => {
-    state.filters.search = event.target.value;
-    saveState();
-    renderLibrary();
+  qs("#cancelNewProjectBtn")?.addEventListener("click", () => {
+    qs("#newProjectForm").style.display = "none";
+    qs("#showNewProjectBtn").style.display = "block";
   });
-
-  qs("#projectStatusFilter")?.addEventListener("change", event => {
-    state.filters.status = event.target.value;
-    saveState();
-    renderLibrary();
-  });
-
-  qs("#projectReadinessFilter")?.addEventListener("change", event => {
-    state.filters.readiness = event.target.value;
-    saveState();
-    renderLibrary();
+  qs("#createProjectBtn")?.addEventListener("click", createProject);
+  qs("#newProjectBtn")?.addEventListener("click", () => {
+    qs("#newProjectForm").style.display = "block";
+    qs("#showNewProjectBtn").style.display = "none";
+    qs("#newProjectForm")?.scrollIntoView({ behavior: "smooth" });
   });
 }
 
-function bindWorkspace() {
-  [
-    "#projectName",
-    "#projectClass",
-    "#projectSubtype",
-    "#projectStatus",
-    "#projectSummary",
-    "#projectTarget",
-    "#projectPreset",
-    "#projectReadiness",
-    "#projectNextAction",
-    "#projectTags",
-    "#projectOrigin",
-    "#projectAssets",
-    "#projectNotes"
-  ].forEach(selector => {
-    qs(selector)?.addEventListener("change", updateSelectedProjectFromWorkspace);
-    qs(selector)?.addEventListener("input", updateSelectedProjectFromWorkspace);
-  });
-}
-
-function bindButtons() {
-  qs("#duplicateProjectBtn")?.addEventListener("click", duplicateSelectedProject);
-  qs("#archiveProjectBtn")?.addEventListener("click", archiveSelectedProject);
-  qs("#saveProjectBtn")?.addEventListener("click", saveSelectedProject);
-
-  qs("#openTargetBtn")?.addEventListener("click", openTargetSurface);
-  qs("#routeToAppBtn")?.addEventListener("click", () => setTarget("AppCreator"));
-  qs("#routeToPortalBtn")?.addEventListener("click", () => setTarget("PortalCreator"));
-  qs("#routeToGameBtn")?.addEventListener("click", () => setTarget("Game Designer"));
-  qs("#routeToResearchBtn")?.addEventListener("click", () => setTarget("Research Core"));
-}
-
-function initFiltersUI() {
-  const search = qs("#projectSearch");
-  const status = qs("#projectStatusFilter");
-  const readiness = qs("#projectReadinessFilter");
-
-  if (search) search.value = state.filters.search;
-  if (status) status.value = state.filters.status;
-  if (readiness) readiness.value = state.filters.readiness;
-}
-
-async function refreshProjects() {
-  const params = new URLSearchParams();
-
-  if (state.filters.search.trim()) params.set("search", state.filters.search.trim());
-  if (state.filters.status !== "All") params.set("status", state.filters.status);
-
-  const selectedClass = getSelectedProject()?.class;
-  if (selectedClass && selectedClass !== "All") {
-    params.set("type_", toBackendType(selectedClass));
-  }
-
-  const query = params.toString() ? `?${params.toString()}` : "";
-
-  setBusy(true);
-  const result = await callApi(`/api/projects${query}`, "GET");
-  setBusy(false);
-
-  if (!result.ok) {
-    showToast("Could not load projects", "warn");
-    return;
-  }
-
-  state.projects = Array.isArray(result.body?.items)
-    ? result.body.items.map(normalizeProject)
-    : [];
-
-  ensureSelectedProjectExists();
-  state.loaded = true;
-  saveState();
-  renderAll();
-}
-
-function renderAll() {
-  initFiltersUI();
-  ensureSelectedProjectExists();
-  renderLibrary();
-  renderWorkspace();
-}
-
+// ── Init ──────────────────────────────────────────────────────────────────────
 async function init() {
-  renderAll();
-  bindFilters();
-  bindWorkspace();
-  bindButtons();
-  await refreshProjects();
+  bindEvents();
+  await loadProjects();
 }
 
-document.addEventListener("DOMContentLoaded", init);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}
