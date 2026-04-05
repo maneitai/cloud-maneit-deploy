@@ -34,7 +34,7 @@
     </nav>
     <div class="header-actions">
       <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
-      <button class="button button--small" id="exportBtn" type="button">Export</button>
+      <button class="button button--small button--primary" id="exportBtn" type="button">Extract &amp; Save</button>
     </div>
   </header>
 
@@ -43,7 +43,6 @@
     <!-- ══ LEFT RAIL ══ -->
     <aside class="panel panel-left">
 
-      <!-- CHAT HISTORY — top of left rail -->
       <div class="left-block">
         <div class="left-block-head">
           <div>
@@ -53,7 +52,6 @@
           <span class="status-chip status-chip--warn" id="sessionChip">—</span>
         </div>
 
-        <!-- Free chat option always at top -->
         <button class="session-item session-item--free" id="freeChatBtn" type="button">
           <div class="session-item-title">🌐 Free chat</div>
           <div class="session-item-sub">No book context</div>
@@ -68,7 +66,6 @@
 
       <div class="left-divider"></div>
 
-      <!-- BOOKS — bottom of left rail -->
       <div class="left-block left-block--grow">
         <div class="left-block-head">
           <div>
@@ -100,7 +97,6 @@
     <!-- ══ CENTER ══ -->
     <main class="panel panel-center">
 
-      <!-- ── Chat controls bar ── -->
       <div class="chat-controls-bar">
         <div class="mode-cards" id="modeCards">
           <button class="mode-card mode-card--active" data-mode="single">
@@ -133,7 +129,6 @@
         </div>
       </div>
 
-      <!-- ── Chat feed ── -->
       <div class="chat-feed" id="chatFeed">
         <div class="chat-placeholder">
           <div class="chat-placeholder-icon">📖</div>
@@ -142,10 +137,8 @@
         </div>
       </div>
 
-      <!-- ── Drag handle ── -->
       <div id="chatResizeHandle" class="chat-resize-handle" title="Drag to resize"></div>
 
-      <!-- ── Input ── -->
       <div class="chat-input-area">
         <textarea class="textarea chat-textarea" id="messageInput"
           placeholder="Think out loud. Enter to send, Shift+Enter for newline." rows="3"></textarea>
@@ -155,7 +148,6 @@
         </div>
       </div>
 
-      <!-- ── Library tabs + content ── -->
       <div class="library-section" id="librarySection">
 
         <div class="lib-tab-bar">
@@ -174,7 +166,6 @@
 
         <div class="lib-content" id="libContent">
 
-          <!-- Entity tabs -->
           <div id="tabEntity" class="tab-pane tab-pane--active">
             <div class="entity-columns">
               <div class="entity-list-col">
@@ -205,7 +196,6 @@
             </div>
           </div>
 
-          <!-- Chapter tab -->
           <div id="tabChapters" class="tab-pane" style="display:none;">
             <div class="chapter-columns">
               <div class="chapter-list-col">
@@ -263,6 +253,7 @@
         <span class="status-chip status-chip--warn" id="pipelineStatusChip">Idle</span>
       </div>
       <div class="stack--md">
+
         <article class="card card--compact">
           <div class="eyebrow">Active context</div>
           <div class="context-rows">
@@ -271,6 +262,36 @@
             <div class="context-row"><span class="soft">Models</span><strong id="ctxModels">—</strong></div>
           </div>
         </article>
+
+        <!-- ── Extract & Save ── -->
+        <article class="card card--compact">
+          <div class="eyebrow">Extract &amp; Save to library</div>
+          <p class="muted" style="font-size:12px;margin:4px 0 10px;">
+            Reads the active session. Saves characters, world, and scenes directly into the selected book.
+          </p>
+
+          <label class="inline-field" style="margin-bottom:8px;">
+            <span class="soft">Scope</span>
+            <select class="select" id="extractScopeSelect" style="font-size:12px;">
+              <option value="all">All — characters, world, scenes</option>
+              <option value="characters">Characters only</option>
+              <option value="world">World &amp; rules only</option>
+              <option value="scenes">Scenes only</option>
+            </select>
+          </label>
+
+          <button class="button button--primary" id="extractSaveBtn" type="button" style="width:100%;margin-bottom:8px;">
+            Extract &amp; Save
+          </button>
+
+          <!-- Book picker — shown when no book selected or free chat -->
+          <div id="extractBookPicker" style="display:none;"></div>
+
+          <!-- Status feedback -->
+          <div id="extractSaveStatus" class="muted" style="display:none;font-size:12px;margin-top:4px;line-height:1.5;"></div>
+        </article>
+
+        <!-- ── Run stage ── -->
         <article class="card card--compact">
           <div class="eyebrow">Run stage</div>
           <label class="inline-field" style="margin-top:8px;">
@@ -290,17 +311,23 @@
             <strong>Result</strong><span id="stageResultText"></span>
           </div>
         </article>
+
+        <!-- ── Counts ── -->
         <article class="card card--compact">
           <div class="eyebrow">Counts</div>
           <div class="preview-box" id="entityCountBox">
             <strong>—</strong><span>Loading…</span>
           </div>
         </article>
+
+        <!-- ── Single entity extract (fills editor form) ── -->
         <article class="card card--compact">
-          <div class="eyebrow">Extract from chat</div>
-          <p class="muted" style="font-size:12px;margin-bottom:8px;">Use Extract from chat in the entity or chapter editor.</p>
+          <div class="eyebrow">Fill editor from chat</div>
+          <p class="muted" style="font-size:12px;margin-bottom:8px;">
+            Opens the entity editor and fills it from the conversation. Review and save manually.
+          </p>
           <label class="inline-field">
-            <span class="soft">Extract as</span>
+            <span class="soft">Type</span>
             <select class="select" id="extractTypeSelect">
               <option value="character">Character</option>
               <option value="world">World</option>
@@ -309,8 +336,9 @@
               <option value="note">Note</option>
             </select>
           </label>
-          <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open extract panel</button>
+          <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open in editor</button>
         </article>
+
       </div>
     </aside>
 
