@@ -132,17 +132,30 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(PM_HOME_KEY, JSON.stringify(state));
+  try { localStorage.setItem(PM_HOME_KEY, JSON.stringify(state)); } catch {}
 }
 
+// FIX: hard-reset counter, never leave buttons permanently disabled
 function setBusy(isBusy, label = "") {
-  activeRequestCount += isBusy ? 1 : -1;
-  if (activeRequestCount < 0) activeRequestCount = 0;
+  if (isBusy) {
+    activeRequestCount++;
+  } else {
+    activeRequestCount = Math.max(0, activeRequestCount - 1);
+  }
   const busyNow = activeRequestCount > 0;
   const status = qs("#composerStatus");
   if (status) status.textContent = busyNow ? (label || "Working...") : (MODE_STATUS[state.mode] || "Ready");
   [qs("#sendBtn"), qs("#exportBtn"), qs("#newChatBtn"), qs("#branchChatBtn"), qs("#addTodoBtn")].forEach(b => {
     if (b) b.disabled = busyNow;
+  });
+}
+
+function forceUnbusy() {
+  activeRequestCount = 0;
+  const status = qs("#composerStatus");
+  if (status) status.textContent = MODE_STATUS[state.mode] || "Ready";
+  [qs("#sendBtn"), qs("#exportBtn"), qs("#newChatBtn"), qs("#branchChatBtn"), qs("#addTodoBtn")].forEach(b => {
+    if (b) b.disabled = false;
   });
 }
 
@@ -404,6 +417,7 @@ function normalizeSelectedModels() {
 
 // ─── Chat session helpers ─────────────────────────────────────────────────────
 
+// FIX: preserve timestamps for sort
 function normalizeChatItem(item) {
   return {
     id: item.public_id || item.session_public_id || item.id || safeId("chat"),
@@ -411,7 +425,9 @@ function normalizeChatItem(item) {
     summary: item.summary || "",
     mode: item.mode || "single",
     pinned: Boolean(item.pinned),
-    folder: item.folder || item.bucket || ""
+    folder: item.folder || item.bucket || "",
+    updatedAt: item.updated_at || item.updatedAt || "",
+    createdAt: item.created_at || item.createdAt || "",
   };
 }
 
@@ -446,18 +462,22 @@ function ensureSelectedChatExists() {
 
 async function loadThreadHistory(sessionPublicId) {
   if (!sessionPublicId) return;
-  const result = await callApi(`/api/home/sessions/${encodeURIComponent(sessionPublicId)}/live-chat/history`, "GET");
-  if (!result.ok) return;
-  const messages = Array.isArray(result.body?.messages) ? result.body.messages : [];
-  threadCache[sessionPublicId] = messages.map(msg => ({
-    id: msg.message_public_id || safeId("msg"),
-    role: msg.role || "assistant",
-    head: msg.role === "user" ? "User" : (msg.selected_worker_name || msg.selected_model || "Assistant"),
-    text: msg.content || "",
-    mode: msg.mode || "single",
-    model: msg.selected_model || msg.selected_worker_name || ""
-  }));
-  renderThread();
+  try {
+    const result = await callApi(`/api/home/sessions/${encodeURIComponent(sessionPublicId)}/live-chat/history`, "GET");
+    if (!result.ok) return;
+    const messages = Array.isArray(result.body?.messages) ? result.body.messages : [];
+    threadCache[sessionPublicId] = messages.map(msg => ({
+      id: msg.message_public_id || safeId("msg"),
+      role: msg.role || "assistant",
+      head: msg.role === "user" ? "User" : (msg.selected_worker_name || msg.selected_model || "Assistant"),
+      text: msg.content || "",
+      mode: msg.mode || "single",
+      model: msg.selected_model || msg.selected_worker_name || ""
+    }));
+    renderThread();
+  } catch (e) {
+    console.warn("loadThreadHistory failed:", e);
+  }
 }
 
 function getCurrentThread() {
@@ -509,7 +529,8 @@ function appendToolCall(name, args) {
   line.dataset.toolName = name;
   line.innerHTML = `<span class="stream-tool-icon">${icon}</span><span class="stream-tool-name">${escapeHtml(name)}</span>${argsStr ? `<span class="stream-tool-args">${escapeHtml(argsStr)}</span>` : ""}<span class="stream-tool-state">…</span>`;
   tools.appendChild(line);
-  qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
+  const thread = qs("#chatThread");
+  if (thread) thread.scrollTop = thread.scrollHeight;
 }
 
 function markToolDone(name, summary) {
@@ -530,7 +551,8 @@ function appendStreamChunk(text) {
   if (!streamBody._raw) streamBody._raw = "";
   streamBody._raw += text;
   streamBody.textContent = streamBody._raw;
-  qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
+  const thread = qs("#chatThread");
+  if (thread) thread.scrollTop = thread.scrollHeight;
 }
 
 function finalizeStreamingBubble(fullContent, modelName) {
@@ -538,23 +560,19 @@ function finalizeStreamingBubble(fullContent, modelName) {
   if (!bubble) return;
   bubble.classList.remove("chat-bubble--streaming");
   bubble.id = "";
-
-  // Replace head — clean up thinking dot and status
   const head = qs(".stream-head", bubble);
   if (head) {
     head.className = "chat-bubble-head";
     head.innerHTML = escapeHtml(modelName || "Assistant");
   }
-
-  // Replace stream-body with fully rendered markdown
   const streamBody = qs("#streamBody", bubble);
   if (streamBody) {
     streamBody.id = "";
     streamBody._raw = undefined;
     streamBody.innerHTML = renderMarkdown(fullContent || "");
   }
-
-  qs("#chatThread").scrollTop = qs("#chatThread").scrollHeight;
+  const thread = qs("#chatThread");
+  if (thread) thread.scrollTop = thread.scrollHeight;
 }
 
 async function sendAndStream() {
@@ -627,24 +645,28 @@ async function sendAndStream() {
     }
   } catch (err) {
     finalizeStreamingBubble(`Error: ${err.message}`, modelName);
-    setBusy(false);
+    forceUnbusy();
     showToast("Stream failed", "warn");
     return;
   }
 
   finalizeStreamingBubble(fullContent, modelName);
-  setBusy(false);
+  forceUnbusy();
 
   threadCache[state.selectedChatId].push({
     id: safeId("msg"), role: "assistant",
     head: modelName, text: fullContent, model: modelName
   });
 
+  // FIX: update title locally AND persist to backend
   const current = getChatById(state.selectedChatId);
-  if (current && (!current.title || current.title === "New chat")) {
-    current.title = text.slice(0, 48);
+  if (current && (!current.title || current.title === "New chat" || current.title === "Untitled chat" || current.title === "Home chat")) {
+    const newTitle = text.slice(0, 60);
+    current.title = newTitle;
+    current.updatedAt = new Date().toISOString();
     saveState();
     renderHistory();
+    callApi(`/api/chat-sessions/${encodeURIComponent(state.selectedChatId)}`, "PATCH", { title: newTitle });
   }
 
   await refreshModelPool();
@@ -817,7 +839,9 @@ function renderSelectedChatTitleIntoExport() {
   const exportTitle = qs("#exportTitle");
   if (!exportTitle || exportTitle.value.trim()) return;
   const current = getChatById(state.selectedChatId);
-  if (current?.title) exportTitle.value = current.title;
+  if (current?.title && current.title !== "New chat" && current.title !== "Home chat") {
+    exportTitle.value = current.title;
+  }
 }
 
 function renderAll() {
@@ -937,10 +961,13 @@ function bindChatButtons() {
     try {
       setBusy(true, "Creating chat...");
       const publicId = await createChatSession({ title: "New chat" });
-      setBusy(false);
       showToast("New chat created", "good");
       await loadThreadHistory(publicId);
-    } catch { setBusy(false); showToast("New chat failed", "warn"); }
+    } catch (e) {
+      showToast("New chat failed", "warn");
+    } finally {
+      setBusy(false);
+    }
   });
 
   qs("#branchChatBtn")?.addEventListener("click", async () => {
@@ -950,10 +977,13 @@ function bindChatButtons() {
     try {
       setBusy(true, "Branching chat...");
       const publicId = await createChatSession({ title, cloneFromPublicId: state.selectedChatId });
-      setBusy(false);
       showToast("Branch created", "good");
       await loadThreadHistory(publicId);
-    } catch { setBusy(false); showToast("Branch failed", "warn"); }
+    } catch (e) {
+      showToast("Branch failed", "warn");
+    } finally {
+      setBusy(false);
+    }
   });
 
   qs("#pinChatBtn")?.addEventListener("click", async () => {
@@ -985,17 +1015,25 @@ function bindExportButton() {
     if (!title) { showToast("Add a project title first", "warn"); return; }
     if (!state.selectedChatId) { showToast("No active chat session", "warn"); return; }
     setBusy(true, "Exporting...");
-    const result = await callApi("/api/home/exports", "POST", {
-      title,
-      production_type: PROJECT_TYPE_MAP[state.selectedProjectType] || "app",
-      target_portal: "projects",
-      quick_capture: note,
-      session_public_id: state.selectedChatId,
-      mode: state.mode
-    });
-    setBusy(false);
-    if (!result.ok) { showToast("Export failed", "warn"); return; }
-    showToast("Export created", "good");
+    try {
+      const result = await callApi("/api/home/exports", "POST", {
+        title,
+        production_type: PROJECT_TYPE_MAP[state.selectedProjectType] || "app",
+        target_portal: "projects",
+        quick_capture: note,
+        session_public_id: state.selectedChatId,
+        mode: state.mode
+      });
+      if (!result.ok) {
+        showToast(`Export failed: ${result.body?.detail || result.status}`, "warn");
+        return;
+      }
+      showToast("Exported to Projects", "good");
+      if (qs("#exportTitle")) qs("#exportTitle").value = "";
+      if (qs("#exportNote")) qs("#exportNote").value = "";
+    } finally {
+      setBusy(false);
+    }
   });
 }
 
@@ -1025,11 +1063,24 @@ async function createChatSession({ title, cloneFromPublicId = null }) {
 
 async function refreshChatSessions() {
   const result = await callApi("/api/chat-sessions?surface=home", "GET");
-  if (!result.ok) { showToast("Could not load chat sessions", "warn"); return false; }
+  if (!result.ok) {
+    showToast("Could not load chat sessions", "warn");
+    return false;
+  }
   const items = Array.isArray(result.body?.items) ? result.body.items.map(normalizeChatItem) : [];
+
+  // FIX: sort newest first before merging
+  items.sort((a, b) => {
+    const ta = a.updatedAt || a.createdAt || "";
+    const tb = b.updatedAt || b.createdAt || "";
+    return tb.localeCompare(ta);
+  });
+
   state.chats = { pinned: [], projectFolder: [], history: [] };
   items.forEach(mergeChatIntoCollections);
+
   if (!state.selectedChatId && items[0]) state.selectedChatId = items[0].id;
+
   if (!items.length) {
     try {
       state.selectedChatId = await createChatSession({ title: "Home chat" });
@@ -1040,24 +1091,32 @@ async function refreshChatSessions() {
       return false;
     }
   }
+
   saveState();
   renderAll();
   return true;
 }
 
-// ─── Bootstrap ────────────────────────────────────────────────────────────────
+// ─── Bootstrap ─────────────────────────────────────────────────────────────────
+// FIX: try/finally guarantees buttons are always re-enabled after load
 
 async function bootstrapHome() {
   setBusy(true, "Loading...");
-  refreshModelPool();
-  const sessionsOk = await refreshChatSessions();
-  if (sessionsOk && state.selectedChatId) {
-    await loadThreadHistory(state.selectedChatId);
+  try {
+    await refreshModelPool();
+    const sessionsOk = await refreshChatSessions();
+    if (sessionsOk && state.selectedChatId) {
+      await loadThreadHistory(state.selectedChatId);
+    }
+    state.bootstrapped = true;
+    saveState();
+  } catch (e) {
+    console.error("Bootstrap error:", e);
+    showToast("Load error — some features may be unavailable", "warn");
+  } finally {
+    forceUnbusy();
+    renderAll();
   }
-  state.bootstrapped = true;
-  saveState();
-  setBusy(false);
-  renderAll();
 }
 
 function init() {
