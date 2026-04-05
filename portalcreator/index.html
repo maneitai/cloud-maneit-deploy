@@ -3,511 +3,228 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PM • PortalCreator</title>
-  <link rel="stylesheet" href="page.css" />
+  <title>PortalCreator — PM</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../creator-shell.css" />
 </head>
-<body>
-  <div class="page-shell">
-    <header class="pm-topbar">
-      <div class="brand-block">
-        <div class="brand-mark">PM</div>
-        <div class="brand-copy">
-          <div class="brand-title">PortalCreator</div>
-          <div class="brand-subtitle">
-            Portal shell builder for routes, structure, actions, backend hooks, and portal-ready outputs.
-          </div>
-        </div>
+<body data-page="portal">
+<div class="creator-shell">
+
+  <header class="creator-header">
+    <div class="header-brand">
+      <div class="brand-mark">PC</div>
+      <div class="header-titles">
+        <div class="eyebrow accent">Creator</div>
+        <h1>PortalCreator</h1>
+        <p>Web + infrastructure pipeline — frontend, backend, deployment, hardware setup</p>
       </div>
+    </div>
+    <nav class="header-nav" aria-label="Primary">
+      <a class="nav-link" href="../">Home</a>
+      <a class="nav-link" href="../projects/">Projects</a>
+      <a class="nav-link" href="../pipelines/">Pipelines</a>
+      <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+      <a class="nav-link" href="../appcreator/">AppCreator</a>
+      <a class="nav-link nav-link--active" href="../portalcreator/">PortalCreator</a>
+      <a class="nav-link" href="../research-core/">Research Core</a>
+      <a class="nav-link" href="../lorecore/">LoreCore</a>
+      <a class="nav-link" href="../game-designer/">Game Designer</a>
+      <a class="nav-link" href="../state/">State</a>
+      <a class="nav-link" href="../settings/">Settings</a>
+    </nav>
+    <div class="header-controls">
+      <button class="btn btn--sm" id="refreshBtn">Refresh</button>
+      <span class="chip" id="activeProjectChip">No project</span>
+    </div>
+  </header>
 
-      <nav class="pm-nav" aria-label="Primary">
-        <a href="../">Home</a>
-        <a href="../projects/">Projects</a>
-        <a href="../pipelines/">Pipelines</a>
-        <a href="../agent-factory/">Agent Factory</a>
-        <a href="../appcreator/">AppCreator</a>
-        <a class="active" href="./">PortalCreator</a>
-        <a href="../research-core/">Research Core</a>
-        <a href="../lorecore/">LoreCore</a>
-        <a href="../game-designer/">Game Designer</a>
-        <a href="../state/">State</a>
-        <a href="../settings/">Settings</a>
-      </nav>
-
-      <div class="topbar-pills">
-        <span class="top-pill">Portal shell</span>
-        <span class="top-pill">Routes + actions</span>
-        <span class="top-pill">Project-linked</span>
-      </div>
-    </header>
-
-    <main class="portal-shell">
-      <section class="surface-intro panel">
-        <div class="surface-label">Surface contract</div>
-        <div class="surface-title">Purpose, ownership, boundaries</div>
-        <div class="surface-note">
-          PortalCreator consumes promoted project work and builds portal structure around it. It owns portal shell,
-          navigation, actions, route composition, backend hooks, and handoff-ready portal outputs. It is not Projects,
-          not Pipelines, and not runtime control.
-        </div>
-      </section>
-
-      <section class="selection-bar panel">
-        <div class="selection-group">
-          <div class="selection-label">Linked project</div>
-          <button class="select-like" type="button">PM Operating System</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Selected stage</div>
-          <button class="select-like" type="button">Portal shell → route map</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Portal preset</div>
-          <button class="select-like" type="button">Control surface / premium dark</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Route focus</div>
-          <button class="select-like" type="button">/home → /projects → /pipelines</button>
-        </div>
-
-        <div class="selection-group">
-          <div class="selection-label">Output target</div>
-          <button class="select-like" type="button">Portal artifact set</button>
-        </div>
-
-        <div class="selection-actions">
-          <button class="ghost-btn" type="button">Save workspace note</button>
-          <button class="ghost-btn" type="button">Save portal draft</button>
-          <button class="primary-btn" type="button">Run selected stage</button>
-        </div>
-      </section>
-
-      <section class="main-grid">
-        <aside class="left-rail panel">
-          <div class="rail-section">
-            <div class="rail-topline">
-              <div>
-                <div class="rail-kicker">Left rail</div>
-                <h2>Linked project + source inputs</h2>
-              </div>
-              <button class="mini-chip" type="button">Project-linked</button>
-            </div>
-
-            <label class="field-label" for="projectView">Project view</label>
-            <select id="projectView" class="field-input">
-              <option>Core project brief</option>
-              <option>Stage-ready tasks</option>
-              <option>Portal requirements</option>
-              <option>Output handoff set</option>
-            </select>
-
-            <input class="field-input" type="text" placeholder="Search project notes, routes, actions, data blocks..." />
-
-            <button class="primary-outline-btn" type="button">Open project record</button>
-          </div>
-
-          <div class="rail-section">
-            <div class="section-kicker">Linked project</div>
-            <div class="dense-list">
-              <button class="dense-item is-selected" type="button">
-                <span class="dense-title">PM Operating System</span>
-                <span class="dense-meta">Promoted from Home • active build</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">Research Core</span>
-                <span class="dense-meta">Portal design dependency</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">LoreCore</span>
-                <span class="dense-meta">Hybrid layout reference</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="rail-section">
-            <div class="section-row">
-              <div>
-                <div class="section-kicker">Stage entries</div>
-                <div class="section-title-small">Portal flow tasks</div>
-              </div>
-              <div class="row-actions">
-                <button class="small-btn" type="button">New</button>
-                <button class="small-btn" type="button">Queue</button>
-              </div>
-            </div>
-
-            <div class="dense-list compact">
-              <button class="dense-item is-selected" type="button">
-                <span class="dense-title">Portal shell cleanup</span>
-                <span class="dense-meta">Ready • structure pass</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">Route map alignment</span>
-                <span class="dense-meta">In progress • page hierarchy</span>
-              </button>
-              <button class="dense-item" type="button">
-                <span class="dense-title">Action model review</span>
-                <span class="dense-meta">Pending • controls and outputs</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="rail-section">
-            <div class="section-kicker">Builder focus</div>
-            <div class="focus-list">
-              <div class="focus-card">
-                <strong>Keep page ownership clean</strong>
-                <span>PortalCreator builds shell and route behavior, not pipelines or runtime.</span>
-              </div>
-              <div class="focus-card">
-                <strong>Use Projects as source</strong>
-                <span>Consume promoted work instead of turning this surface into a registry.</span>
-              </div>
-              <div class="focus-card">
-                <strong>Think in portal surfaces</strong>
-                <span>Routes, sidebars, dashboards, actions, data cards, and output packaging.</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <section class="center-column">
-          <div class="workspace-panel panel">
-            <div class="workspace-header">
-              <div>
-                <div class="workspace-kicker">Center surface</div>
-                <h1>Portal builder board</h1>
-                <p>
-                  Build the portal shell here. Define routes, navigation logic, action surfaces, data structures,
-                  and backend-facing behavior without collapsing into runtime or pipeline ownership.
-                </p>
-              </div>
-
-              <div class="workspace-header-actions">
-                <button class="ghost-btn" type="button">Save route map</button>
-                <button class="ghost-btn" type="button">Save portal shell</button>
-                <button class="ghost-btn" type="button">Prepare handoff</button>
-              </div>
-            </div>
-
-            <div class="board-grid">
-              <article class="board-card board-card-wide">
-                <div class="board-card-head">
-                  <div>
-                    <div class="section-kicker">Portal charter</div>
-                    <h3>Identity, purpose, operating surface</h3>
-                  </div>
-                  <button class="tiny-ghost" type="button">edit</button>
-                </div>
-
-                <div class="field-pair">
-                  <label class="field-label" for="portalName">Portal name</label>
-                  <input id="portalName" class="field-input" type="text" value="PM Operating System Portal" />
-                </div>
-
-                <div class="field-pair">
-                  <label class="field-label" for="portalIntent">Portal purpose</label>
-                  <textarea id="portalIntent" class="field-input field-textarea" placeholder="Define what this portal exists to do.">A clean operating surface for planning, projects, pipelines, agents, creator pages, research, and runtime visibility, with strict ownership between pages and premium dark visual continuity.</textarea>
-                </div>
-              </article>
-
-              <article class="board-card">
-                <div class="board-card-head">
-                  <div>
-                    <div class="section-kicker">Navigation</div>
-                    <h3>Route map</h3>
-                  </div>
-                  <button class="tiny-ghost" type="button">focus</button>
-                </div>
-
-                <div class="route-list" id="routeList">
-                  <button class="route-item is-active" data-route="home" type="button">
-                    <span class="route-path">/home</span>
-                    <span class="route-meta">Daily driver chat surface</span>
-                  </button>
-                  <button class="route-item" data-route="projects" type="button">
-                    <span class="route-path">/projects</span>
-                    <span class="route-meta">Promoted work registry</span>
-                  </button>
-                  <button class="route-item" data-route="pipelines" type="button">
-                    <span class="route-path">/pipelines</span>
-                    <span class="route-meta">Canonical workflow graph</span>
-                  </button>
-                  <button class="route-item" data-route="state" type="button">
-                    <span class="route-path">/state</span>
-                    <span class="route-meta">Local runtime control</span>
-                  </button>
-                </div>
-              </article>
-
-              <article class="board-card">
-                <div class="board-card-head">
-                  <div>
-                    <div class="section-kicker">Portal shell</div>
-                    <h3>Layout profile</h3>
-                  </div>
-                  <button class="tiny-ghost" type="button">preset</button>
-                </div>
-
-                <div class="shell-metrics">
-                  <div class="metric-box">
-                    <span class="metric-label">Header</span>
-                    <span class="metric-value">Locked shell</span>
-                  </div>
-                  <div class="metric-box">
-                    <span class="metric-label">Nav style</span>
-                    <span class="metric-value">Pill topnav</span>
-                  </div>
-                  <div class="metric-box">
-                    <span class="metric-label">Main frame</span>
-                    <span class="metric-value">3-surface split</span>
-                  </div>
-                  <div class="metric-box">
-                    <span class="metric-label">Theme</span>
-                    <span class="metric-value">Premium dark</span>
-                  </div>
-                </div>
-              </article>
-
-              <article class="board-card board-card-wide">
-                <div class="board-card-head">
-                  <div>
-                    <div class="section-kicker">Actions + data model</div>
-                    <h3>Controls, outputs, backend-facing structure</h3>
-                  </div>
-                  <button class="tiny-ghost" type="button">review</button>
-                </div>
-
-                <div class="data-grid">
-                  <div class="data-column">
-                    <div class="data-title">Primary actions</div>
-                    <div class="mini-stack">
-                      <button class="mini-note" type="button">Save artifact</button>
-                      <button class="mini-note" type="button">Run stage</button>
-                      <button class="mini-note" type="button">Open inspector</button>
-                      <button class="mini-note" type="button">Export output</button>
-                    </div>
-                  </div>
-
-                  <div class="data-column">
-                    <div class="data-title">Data blocks</div>
-                    <div class="mini-stack">
-                      <button class="mini-note" type="button">Page metadata</button>
-                      <button class="mini-note" type="button">Route schema</button>
-                      <button class="mini-note" type="button">Action cards</button>
-                      <button class="mini-note" type="button">Output packages</button>
-                    </div>
-                  </div>
-
-                  <div class="data-column">
-                    <div class="data-title">Backend hooks</div>
-                    <div class="mini-stack">
-                      <button class="mini-note" type="button">Workspace config</button>
-                      <button class="mini-note" type="button">Receipts</button>
-                      <button class="mini-note" type="button">Production jobs</button>
-                      <button class="mini-note" type="button">Model pool read</button>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            </div>
-
-            <div class="workspace-footer">
-              <div class="builder-guidance">
-                <strong>PortalCreator rule.</strong>
-                <span>
-                  Build routes, shells, actions, and portal handoff outputs here. Do not turn this page into Projects,
-                  Pipelines, State, or Settings.
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <section class="studio-panel panel">
-            <div class="studio-header">
-              <div>
-                <div class="studio-kicker">Portal workbench</div>
-                <h2>Focused editor</h2>
-                <p>
-                  Refine the currently selected route or surface. This is for structured portal production, not freeform planning.
-                </p>
-              </div>
-            </div>
-
-            <div class="studio-tabs" id="studioTabs">
-              <button class="studio-tab is-active" data-tab="structure" type="button">Structure</button>
-              <button class="studio-tab" data-tab="routes" type="button">Routes</button>
-              <button class="studio-tab" data-tab="actions" type="button">Actions</button>
-              <button class="studio-tab" data-tab="data" type="button">Data model</button>
-              <button class="studio-tab" data-tab="handoff" type="button">Handoff</button>
-            </div>
-
-            <div class="studio-panes">
-              <div class="studio-pane is-active" data-pane="structure">
-                <label class="field-label" for="structureArea">Portal structure</label>
-                <textarea id="structureArea" class="studio-editor" placeholder="Define portal sections, shell hierarchy, and layout logic.">Top shell with PM branding and persistent nav. Main work area split into left context/input rail, center production surface, and right inspector/output rail. Maintain visual consistency while preserving strict page responsibility.</textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="routes">
-                <label class="field-label" for="routesArea">Route design</label>
-                <textarea id="routesArea" class="studio-editor" placeholder="Define routes, subroutes, transitions, and navigation logic."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="actions">
-                <label class="field-label" for="actionsArea">Action surfaces</label>
-                <textarea id="actionsArea" class="studio-editor" placeholder="Define action bars, buttons, save states, and operational controls."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="data">
-                <label class="field-label" for="dataArea">Data model</label>
-                <textarea id="dataArea" class="studio-editor" placeholder="Define metadata blocks, UI contracts, backend fields, and output structure."></textarea>
-              </div>
-
-              <div class="studio-pane" data-pane="handoff">
-                <label class="field-label" for="handoffArea">Handoff package</label>
-                <textarea id="handoffArea" class="studio-editor" placeholder="Define what the artifact set should contain for downstream delivery."></textarea>
-              </div>
-            </div>
-          </section>
-        </section>
-
-        <aside class="right-rail">
-          <div class="panel rail-card">
-            <div class="rail-card-top">
-              <div>
-                <div class="rail-kicker">Right rail</div>
-                <h2>Inspector + outputs</h2>
-              </div>
-              <button class="accent-chip" type="button">Portal live</button>
-            </div>
-
-            <div class="setup-card">
-              <div class="setup-head">
-                <div>
-                  <div class="section-kicker">Current focus</div>
-                  <div class="setup-title">Portal shell cleanup</div>
-                </div>
-                <button class="small-accent-btn" type="button">Active stage</button>
-              </div>
-
-              <div class="metric-grid">
-                <div class="metric-box">
-                  <span class="metric-label">Routes</span>
-                  <span class="metric-value">11</span>
-                </div>
-                <div class="metric-box">
-                  <span class="metric-label">Primary pages</span>
-                  <span class="metric-value">7</span>
-                </div>
-                <div class="metric-box">
-                  <span class="metric-label">Artifacts</span>
-                  <span class="metric-value">4</span>
-                </div>
-                <div class="metric-box">
-                  <span class="metric-label">Stage</span>
-                  <span class="metric-value">Route map</span>
-                </div>
-              </div>
-
-              <p class="setup-copy">
-                Keep the center surface focused on portal build logic. Use the right rail for inspection, outputs,
-                progress, and activity — not for second-guessing the main build board.
-              </p>
-            </div>
-          </div>
-
-          <div class="panel rail-card">
-            <div class="section-row">
-              <div>
-                <div class="section-kicker">Inspector</div>
-                <div class="section-title-small">Current route summary</div>
-              </div>
-              <button class="tiny-ghost" type="button">view contract</button>
-            </div>
-
-            <div class="status-list">
-              <div class="status-item">
-                <span>Selected route</span>
-                <strong id="selectedRouteLabel">/home</strong>
-              </div>
-              <div class="status-item">
-                <span>Purpose</span>
-                <strong id="selectedRoutePurpose">Daily driver chat surface</strong>
-              </div>
-              <div class="status-item">
-                <span>Owner</span>
-                <strong>Home page</strong>
-              </div>
-              <div class="status-item">
-                <span>Status</span>
-                <strong>Aligned</strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel rail-card stack-gap">
-            <div class="rail-mini-row">
-              <div>
-                <div class="section-kicker">Outputs</div>
-                <div class="section-title-small">Portal artifacts</div>
-              </div>
-              <button class="tiny-ghost" type="button">ready set</button>
-            </div>
-
-            <div class="output-actions">
-              <button class="primary-outline-btn" type="button">Save route spec</button>
-              <button class="primary-outline-btn" type="button">Save shell draft</button>
-              <button class="primary-btn" type="button">Export artifact set</button>
-            </div>
-          </div>
-
-          <div class="panel rail-card stack-gap">
-            <div class="rail-mini-row">
-              <div>
-                <div class="section-kicker">Production</div>
-                <div class="section-title-small">Jobs + handoff state</div>
-              </div>
-              <span class="tiny-status">active</span>
-            </div>
-
-            <div class="recent-output-list">
-              <button class="recent-output" type="button">
-                <span class="recent-output-title">Portal shell draft</span>
-                <span class="recent-output-meta">Saved 4 min ago</span>
-              </button>
-              <button class="recent-output" type="button">
-                <span class="recent-output-title">Navigation map v2</span>
-                <span class="recent-output-meta">Ready for review</span>
-              </button>
-              <button class="recent-output" type="button">
-                <span class="recent-output-title">Action surface notes</span>
-                <span class="recent-output-meta">Attached to project</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="panel rail-card stack-gap">
-            <div class="rail-mini-row">
-              <div>
-                <div class="section-kicker">Activity</div>
-                <div class="section-title-small">Run and edit log</div>
-              </div>
-              <button class="mini-chip" type="button">live</button>
-            </div>
-
-            <div class="activity-box" id="activityBox">
-              <div class="activity-line">PortalCreator ready.</div>
-              <div class="activity-line">Linked project loaded.</div>
-              <div class="activity-line">Structure tab active.</div>
-            </div>
-          </div>
-        </aside>
-      </section>
-    </main>
+  <!-- Job status bar -->
+  <div class="job-status-bar" id="jobStatusBar">
+    <div class="job-status-dot"></div>
+    <div class="job-status-text">No active job</div>
+    <div class="job-status-meta">Select a project and launch a pipeline run</div>
+    <span class="chip">idle</span>
   </div>
 
-  <script src="page.js"></script>
+  <div class="creator-layout">
+
+    <!-- ══ LEFT RAIL ══ -->
+    <aside class="left-rail">
+
+      <div class="panel">
+        <div class="rail-section">
+          <div class="rail-head">
+            <div class="eyebrow">Projects</div>
+            <a href="../projects/" class="btn btn--sm">+ New</a>
+          </div>
+          <div class="project-list" id="projectList">
+            <div class="section-meta">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="rail-section">
+          <div class="eyebrow" style="margin-bottom:10px;">Project plan</div>
+          <div id="projectPlan"><div class="section-meta">Select a project.</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="rail-section">
+          <div class="eyebrow" style="margin-bottom:10px;">Stack target</div>
+          <div class="target-selector" id="targetSelector">
+            <button class="target-btn active" data-target="frontend">
+              <span class="target-btn-icon">🌐</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Frontend only</span>
+                <span class="target-btn-desc">HTML/CSS/JS — static site, Cloudflare deploy</span>
+              </span>
+            </button>
+            <button class="target-btn" data-target="frontend+backend">
+              <span class="target-btn-icon">⚡</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Frontend + Backend</span>
+                <span class="target-btn-desc">Web app with API, DB, auth</span>
+              </span>
+            </button>
+            <button class="target-btn" data-target="full-infra">
+              <span class="target-btn-icon">🏗️</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Full infrastructure</span>
+                <span class="target-btn-desc">Backend setup, systemd, nginx, TLS, deploy scripts</span>
+              </span>
+            </button>
+            <button class="target-btn" data-target="hardware-setup">
+              <span class="target-btn-icon">🖥️</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Hardware setup</span>
+                <span class="target-btn-desc">New machine onboarding, services, model stack</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ══ CENTER ══ -->
+    <main class="center-col" id="centerCol">
+
+      <!-- Pipeline board -->
+      <div class="panel">
+        <div class="pipeline-header">
+          <div>
+            <div class="eyebrow accent">Pipeline</div>
+            <h2>Execution Plan</h2>
+            <p>Pipeline stages for the selected stack target. Configure per-run settings then launch.</p>
+          </div>
+          <div class="pipeline-actions">
+            <button class="btn" id="configToggleBtn">Configure run</button>
+          </div>
+        </div>
+
+        <div id="stageList" class="stage-list">
+          <div class="section-meta">Select a project to see the pipeline.</div>
+        </div>
+      </div>
+
+      <!-- Per-run config (collapsed by default) -->
+      <div class="panel" id="runConfigPanel" style="display:none;">
+        <div class="eyebrow accent" style="margin-bottom:12px;">Per-run configuration</div>
+        <div class="run-config-grid" id="runConfigGrid">
+          <div class="config-toggle on" data-key="multi_source_verify">
+            <span class="config-toggle-label">Multi-source verify</span>
+            <span class="config-toggle-desc">Cross-verify critical outputs across 3 models</span>
+          </div>
+          <div class="config-toggle on" data-key="reasoning_layer">
+            <span class="config-toggle-label">Maneit reasoning</span>
+            <span class="config-toggle-desc">Full Maneit v1 layer on all models</span>
+          </div>
+          <div class="config-toggle on" data-key="audit_pass">
+            <span class="config-toggle-label">Audit pass</span>
+            <span class="config-toggle-desc">Dedicated audit stage after each major stage</span>
+          </div>
+          <div class="config-toggle" data-key="dry_run">
+            <span class="config-toggle-label">Dry run</span>
+            <span class="config-toggle-desc">Plan and validate without writing output files</span>
+          </div>
+          <div class="config-toggle on" data-key="save_artifacts">
+            <span class="config-toggle-label">Save artifacts</span>
+            <span class="config-toggle-desc">Persist all stage outputs to artifact store</span>
+          </div>
+          <div class="config-toggle" data-key="verbose_log">
+            <span class="config-toggle-label">Verbose log</span>
+            <span class="config-toggle-desc">Show full model reasoning in execution log</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Launch bar -->
+      <div class="launch-bar">
+        <div class="launch-info">
+          <h3 id="launchTitle">Select a project and target to launch</h3>
+          <p id="launchMeta">Pipeline will run fully automatically. You can monitor and override from the right rail.</p>
+        </div>
+        <button class="btn btn--launch" id="launchBtn" disabled>Launch Pipeline</button>
+      </div>
+
+      <!-- Execution log -->
+      <div class="panel">
+        <div class="eyebrow accent" style="margin-bottom:8px;">Execution log</div>
+        <div class="exec-log" id="execLog">
+          <div class="log-line muted">No activity yet.</div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- ══ RIGHT RAIL ══ -->
+    <aside class="right-rail">
+
+      <div class="panel">
+        <div class="eyebrow accent" style="margin-bottom:10px;">Model activity</div>
+        <div class="model-activity-list" id="modelActivityList">
+          <div class="section-meta">No active job.</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="rail-head" style="margin-bottom:10px;">
+          <div class="eyebrow accent">Artifacts</div>
+          <span class="chip" id="artifactCount">0</span>
+        </div>
+        <div class="artifact-list" id="artifactList">
+          <div class="section-meta">No artifacts yet.</div>
+        </div>
+        <div id="artifactViewer" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="panel">
+        <div class="eyebrow accent" style="margin-bottom:10px;">Run history</div>
+        <div class="run-list" id="runHistory">
+          <div class="section-meta">No runs yet.</div>
+        </div>
+      </div>
+
+    </aside>
+
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<script>
+  (function() {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const b = p.get("apiBase");
+      if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+      else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+    } catch {}
+  })();
+</script>
+<script src="../creator-shell.js"></script>
+<script src="page.js"></script>
 </body>
 </html>
