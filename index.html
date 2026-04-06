@@ -55,6 +55,21 @@
     .multi-select-option label { cursor: pointer; flex: 1; }
     .multi-select-empty { padding: 8px 12px; font-size: 13px; color: var(--muted); }
 
+    /* ── Intent button ── */
+    .intent-btn {
+      min-width: 96px;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      transition: background 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .intent-btn--active {
+      background: rgba(110,231,255,0.15);
+      border-color: rgba(110,231,255,0.4);
+      color: var(--accent, #6ee7ff);
+    }
+
     /* ── Home layout — 3 columns at 1440p ── */
     .home-layout {
       display: grid;
@@ -258,6 +273,7 @@
               <span class="soft" id="composerStatus">Ready</span>
               <input type="file" id="fileUploadInput" />
               <button id="uploadBtn" type="button" title="Attach file">📎</button>
+              <button class="button intent-btn" id="intentBtn" type="button" title="Click to cycle: Auto → Research → Coding → Audit">Auto</button>
               <button class="button button--primary" id="sendBtn" type="button">Send</button>
             </div>
           </div>
