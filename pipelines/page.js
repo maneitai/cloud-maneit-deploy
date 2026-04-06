@@ -19,82 +19,87 @@ const ROLE_GROUPS = [
   {
     group: "Research",
     roles: [
-      { title: "Scout",             type: "input",      desc: "Initial broad search. Identifies relevant domains and sources." },
-      { title: "Web Crawler",       type: "input",      desc: "Deep web search and page fetching. Returns structured source material." },
-      { title: "Database Miner",    type: "input",      desc: "Targets specific databases, archives, or structured data sources." },
-      { title: "Source Validator",  type: "verifier",   desc: "Checks source credibility, provenance, and reliability." },
-      { title: "Citation Tracker",  type: "verifier",   desc: "Tracks citation chains and cross-references between sources." },
-      { title: "Comparator",        type: "auditor",    desc: "Compares findings across multiple scouts. Surfaces agreements and conflicts." },
-      { title: "Contradiction Finder", type: "auditor", desc: "Specifically hunts for contradictions and inconsistencies in source material." },
+      { title: "Scout",                type: "input",    desc: "Initial broad search. Identifies relevant domains and sources." },
+      { title: "Web Crawler",          type: "input",    desc: "Deep web search and page fetching. Returns structured source material." },
+      { title: "Database Miner",       type: "input",    desc: "Targets specific databases, archives, or structured data sources." },
+      { title: "Source Validator",     type: "verifier", desc: "Checks source credibility, provenance, and reliability." },
+      { title: "Citation Tracker",     type: "verifier", desc: "Tracks citation chains and cross-references between sources." },
+      { title: "Comparator",           type: "auditor",  desc: "Compares findings across multiple scouts. Surfaces agreements and conflicts." },
+      { title: "Contradiction Finder", type: "auditor",  desc: "Specifically hunts for contradictions and inconsistencies in source material." },
     ]
   },
   {
     group: "Analysis",
     roles: [
-      { title: "Analyst",           type: "planner",    desc: "Deep analysis of gathered material. Builds structured insights." },
-      { title: "Pattern Detector",  type: "planner",    desc: "Identifies recurring patterns, themes, and structures across sources." },
-      { title: "Evidence Weigher",  type: "verifier",   desc: "Assigns confidence levels to claims. Separates strong evidence from speculation." },
-      { title: "Cross Referencer",  type: "verifier",   desc: "Cross-references findings against known facts and other sources." },
+      { title: "Analyst",          type: "planner",  desc: "Deep analysis of gathered material. Builds structured insights." },
+      { title: "Pattern Detector", type: "planner",  desc: "Identifies recurring patterns, themes, and structures across sources." },
+      { title: "Evidence Weigher", type: "verifier", desc: "Assigns confidence levels to claims. Separates strong evidence from speculation." },
+      { title: "Cross Referencer", type: "verifier", desc: "Cross-references findings against known facts and other sources." },
     ]
   },
   {
     group: "Code",
     roles: [
-      { title: "Python Coder",      type: "coder",      desc: "Python implementation. General purpose, data, scripting, backend." },
-      { title: "JS Coder",          type: "coder",      desc: "JavaScript/TypeScript. Frontend, Node.js, tooling." },
-      { title: "C++ Coder",         type: "coder",      desc: "C++ implementation. Performance-critical, systems, game engine." },
-      { title: "HTML Coder",        type: "coder",      desc: "HTML/CSS markup and structure." },
-      { title: "Backend API Coder", type: "coder",      desc: "API design and implementation. REST, FastAPI, Express." },
-      { title: "Test Writer",       type: "verifier",   desc: "Writes tests for code output. Unit, integration, regression." },
-      { title: "Code Reviewer",     type: "auditor",    desc: "Reviews code for correctness, security, style, and edge cases." },
-      { title: "Resolver",          type: "planner",    desc: "Resolves conflicts between coder outputs. Picks or merges best result." },
+      { title: "Python Coder",      type: "coder",    desc: "Python implementation. General purpose, data, scripting, backend." },
+      { title: "JS Coder",          type: "coder",    desc: "JavaScript/TypeScript. Frontend, Node.js, tooling." },
+      { title: "C++ Coder",         type: "coder",    desc: "C++ implementation. Performance-critical, systems, game engine." },
+      { title: "C# Coder",          type: "coder",    desc: "C# implementation. Unity scripts, game systems, .NET." },
+      { title: "HTML Coder",        type: "coder",    desc: "HTML/CSS markup and structure." },
+      { title: "Backend API Coder", type: "coder",    desc: "API design and implementation. REST, FastAPI, Express." },
+      { title: "Test Writer",       type: "verifier", desc: "Writes tests for code output. Unit, integration, regression." },
+      { title: "Code Reviewer",     type: "auditor",  desc: "Reviews code for correctness, security, style, and edge cases." },
+      { title: "Resolver",          type: "planner",  desc: "Resolves conflicts between coder outputs. Picks or merges best result." },
     ]
   },
   {
     group: "Verification",
     roles: [
-      { title: "Verifier",          type: "verifier",   desc: "General purpose verification. Checks output against spec and contract." },
-      { title: "Fact Checker",      type: "verifier",   desc: "Checks factual claims against sources. Flags unsupported assertions." },
-      { title: "Canon Auditor",     type: "auditor",    desc: "Checks output against established canon, rules, or constraints." },
-      { title: "Quality Gate",      type: "verifier",   desc: "Hard pass/fail gate. Output must meet criteria to proceed." },
-      { title: "Strict Auditor",    type: "auditor",    desc: "Final audit before promotion. Applies maximum scrutiny." },
+      { title: "Verifier",      type: "verifier", desc: "General purpose verification. Checks output against spec and contract." },
+      { title: "Fact Checker",  type: "verifier", desc: "Checks factual claims against sources. Flags unsupported assertions." },
+      { title: "Canon Auditor", type: "auditor",  desc: "Checks output against established canon, rules, or constraints." },
+      { title: "Quality Gate",  type: "verifier", desc: "Hard pass/fail gate. Output must meet criteria to proceed." },
+      { title: "Strict Auditor",type: "auditor",  desc: "Final audit before promotion. Applies maximum scrutiny." },
     ]
   },
   {
     group: "Synthesis",
     roles: [
-      { title: "Synthesizer",       type: "planner",    desc: "Combines multiple verified outputs into a coherent whole." },
-      { title: "Report Builder",    type: "projection", desc: "Builds a structured report from synthesis output." },
-      { title: "Dossier Writer",    type: "projection", desc: "Produces a research dossier with provenance and confidence levels." },
-      { title: "Summary Writer",    type: "projection", desc: "Writes concise summaries of complex findings." },
+      { title: "Synthesizer",    type: "planner",    desc: "Combines multiple verified outputs into a coherent whole." },
+      { title: "Report Builder", type: "projection", desc: "Builds a structured report from synthesis output." },
+      { title: "Dossier Writer", type: "projection", desc: "Produces a research dossier with provenance and confidence levels." },
+      { title: "Summary Writer", type: "projection", desc: "Writes concise summaries of complex findings." },
     ]
   },
   {
     group: "Creative",
     roles: [
-      { title: "Lore Writer",       type: "coder",      desc: "Generates lore-consistent creative content." },
-      { title: "World Builder",     type: "planner",    desc: "Builds consistent world details, geography, factions, rules." },
-      { title: "Scene Writer",      type: "coder",      desc: "Writes scenes with correct POV, tone, and beat structure." },
-      { title: "Game Designer",     type: "planner",    desc: "Game mechanics, balance, progression, and system design." },
-      { title: "Dialogue Writer",   type: "coder",      desc: "Character dialogue with voice consistency." },
+      { title: "Lore Writer",     type: "coder",    desc: "Generates lore-consistent creative content." },
+      { title: "World Builder",   type: "planner",  desc: "Builds consistent world details, geography, factions, rules." },
+      { title: "Scene Writer",    type: "coder",    desc: "Writes scenes with correct POV, tone, and beat structure." },
+      { title: "Game Designer",   type: "planner",  desc: "Game mechanics, balance, progression, and system design." },
+      { title: "Dialogue Writer", type: "coder",    desc: "Character dialogue with voice consistency." },
     ]
   },
   {
     group: "Output",
     roles: [
-      { title: "Formatter",         type: "projection", desc: "Formats output to required spec, schema, or style." },
-      { title: "Exporter",          type: "projection", desc: "Packages output for delivery to downstream surface." },
+      { title: "Formatter",             type: "projection", desc: "Formats output to required spec, schema, or style." },
+      { title: "Exporter",              type: "projection", desc: "Packages output for delivery to downstream surface." },
       { title: "Training Pack Builder", type: "projection", desc: "Structures output as training data for model improvement." },
-      { title: "Eval Pack Builder", type: "projection", desc: "Structures output as evaluation dataset." },
+      { title: "Eval Pack Builder",     type: "projection", desc: "Structures output as evaluation dataset." },
     ]
   },
 ];
 
+// Flat role list for inspector dropdown
+const ALL_ROLES = ROLE_GROUPS.flatMap(g => g.roles.map(r => ({ ...r, group: g.group })));
+
 const PIPELINE_TYPES = [
   { id: "research",        label: "Research",        color: "#6ee7ff", portal: "research-core"  },
+  { id: "aitraining",      label: "AI Training",     color: "#a5f3fc", portal: "research-core"  },
   { id: "appcreation",     label: "App Creation",    color: "#b3ffd8", portal: "appcreator"     },
   { id: "portalcreation",  label: "Portal Creation", color: "#d4b8ff", portal: "portalcreator"  },
-  { id: "creativewriting", label: "Creative Writing", color: "#ffd0dc", portal: "lorecore"      },
+  { id: "creativewriting", label: "Creative Writing",color: "#ffd0dc", portal: "lorecore"       },
   { id: "gamedesign",      label: "Game Design",     color: "#ffe49f", portal: "game-designer"  },
 ];
 
@@ -108,8 +113,8 @@ const TYPE_COLORS = {
   projection: { badge: "#bfe0ff", bg: "rgba(96,165,250,0.16)"  },
 };
 
-const NODE_W = 200;
-const NODE_H = 120;
+const NODE_W = 210;
+const NODE_H = 130;
 
 // ── Preset pipeline templates ─────────────────────────────────────────────────
 
@@ -117,26 +122,55 @@ function _makeEdge(fromId, toId) {
   return { id: `e_${fromId}_${toId}`, from: fromId, to: toId };
 }
 
-function _node(id, title, type, desc, x, y, group = "") {
-  return { id, title, type, desc, group, model: "", x, y, notes: "", quorumRule: "single pass", timeout: "60s" };
+function _node(id, title, type, desc, x, y, group = "", role = "", stage = "") {
+  return { id, title, type, desc, group, role, stage, model: "", x, y, notes: "", quorumRule: "single pass", timeout: "60s" };
 }
 
 const PRESET_TEMPLATES = [
+  // ── Game Design ────────────────────────────────────────────────────────────
   {
-    id: "research",
-    label: "Research",
-    icon: "🔬",
-    desc: "Deep research with parallel scouts, cross-validation, and synthesis",
-    type: "research",
+    id: "gamedesign",
+    label: "Game Design",
+    icon: "🎮",
+    desc: "Full game design pipeline — brief to complete GDD, systems, code, and asset specs",
+    type: "gamedesign",
     build() {
-      const scout    = _node("n1", "Scout",               "input",      "Initial broad search. Identifies domains and sources.",          60,  60,  "Research");
-      const web1     = _node("n2", "Web Crawler A",       "input",      "Deep web fetch — primary source lane.",                         60,  240, "Research");
-      const web2     = _node("n3", "Web Crawler B",       "input",      "Deep web fetch — secondary source lane.",                       310, 240, "Research");
-      const val      = _node("n4", "Source Validator",    "verifier",   "Checks source credibility and provenance.",                     185, 420, "Research");
-      const contra   = _node("n5", "Contradiction Finder","auditor",    "Hunts contradictions and inconsistencies.",                     185, 600, "Research");
-      const synth    = _node("n6", "Synthesizer",         "planner",    "Combines verified findings into coherent structure.",           185, 780, "Synthesis");
-      const report   = _node("n7", "Report Builder",      "projection", "Builds final research report with provenance and confidence.", 185, 960, "Synthesis");
-      const nodes = [scout, web1, web2, val, contra, synth, report];
+      const planner  = _node("n1", "Game Planner",       "planner",    "Analyses brief, defines scope, systems list, and engine constraints.",        60,  60,  "Orchestration", "Planner",        "plan");
+      const designer = _node("n2", "Game Designer",      "planner",    "Writes full GDD — mechanics, progression, balance framework, win conditions.", 60,  240, "Creative",      "Game Designer",  "design");
+      const arch     = _node("n3", "Systems Architect",  "planner",    "Defines game system architecture, class hierarchy, data flow.",                310, 240, "Orchestration", "Planner",        "arch");
+      const csharp   = _node("n4", "C# Coder",           "coder",      "Implements all game scripts — mechanics, AI, UI, save/load, audio hooks.",    185, 420, "Code",          "C# Coder",       "codegen");
+      const data     = _node("n5", "Data Balancer",      "planner",    "Unit stats, progression curves, level configs, ScriptableObjects.",            60,  600, "Analysis",      "Analyst",        "data");
+      const assets   = _node("n6", "Asset Spec Writer",  "projection", "Image gen prompts, 3D model briefs, audio cues, VFX specs.",                   310, 600, "Output",        "Formatter",      "assets");
+      const verifier = _node("n7", "Game Verifier",      "verifier",   "Multi-model review — logic, balance, engine conventions, completeness.",       185, 780, "Verification",  "Verifier",       "verify");
+      const packager = _node("n8", "Project Packager",   "projection", "Assembles importable engine project — all files, folder structure, README.",   185, 960, "Output",        "Exporter",       "package");
+      const nodes = [planner, designer, arch, csharp, data, assets, verifier, packager];
+      const edges = [
+        _makeEdge("n1","n2"), _makeEdge("n1","n3"),
+        _makeEdge("n2","n4"), _makeEdge("n3","n4"),
+        _makeEdge("n4","n5"), _makeEdge("n4","n6"),
+        _makeEdge("n5","n7"), _makeEdge("n6","n7"),
+        _makeEdge("n7","n8"),
+      ];
+      return { nodes, edges };
+    }
+  },
+
+  // ── App Creation ───────────────────────────────────────────────────────────
+  {
+    id: "appcreation",
+    label: "App Creation",
+    icon: "💻",
+    desc: "Parallel implementation lanes with testing, code review, and final packaging",
+    type: "appcreation",
+    build() {
+      const planner  = _node("n1", "Planner",          "planner",    "Analyses requirements, defines architecture and component breakdown.",         185, 60,  "Orchestration", "Planner",        "plan");
+      const pyA      = _node("n2", "Python Coder A",   "coder",      "Primary implementation lane.",                                                60,  240, "Code",          "Python Coder",   "codegen");
+      const pyB      = _node("n3", "Python Coder B",   "coder",      "Alternative implementation — different approach or module.",                  310, 240, "Code",          "Python Coder",   "codegen");
+      const tests    = _node("n4", "Test Writer",      "verifier",   "Writes unit and integration tests for both lanes.",                           185, 420, "Verification",  "Test Writer",    "verify");
+      const review   = _node("n5", "Code Reviewer",    "auditor",    "Full code audit — correctness, security, edge cases.",                        185, 600, "Verification",  "Code Reviewer",  "verify");
+      const resolver = _node("n6", "Resolver",         "planner",    "Picks or merges the best implementation into coherent codebase.",             185, 780, "Code",          "Resolver",       "package");
+      const exporter = _node("n7", "Exporter",         "projection", "Final output packaging, documentation, and handoff.",                         185, 960, "Output",        "Exporter",       "package");
+      const nodes = [planner, pyA, pyB, tests, review, resolver, exporter];
       const edges = [
         _makeEdge("n1","n2"), _makeEdge("n1","n3"),
         _makeEdge("n2","n4"), _makeEdge("n3","n4"),
@@ -145,42 +179,22 @@ const PRESET_TEMPLATES = [
       return { nodes, edges };
     }
   },
-  {
-    id: "creativewriting",
-    label: "Creative Writing",
-    icon: "✍️",
-    desc: "Parallel creative lanes with canon audit and final synthesis",
-    type: "creativewriting",
-    build() {
-      const planner  = _node("n1", "Planner",         "planner",    "Breaks down the creative brief into scenes and structure.",   60,  60,  "Orchestration");
-      const lore1    = _node("n2", "Lore Writer A",   "coder",      "Primary creative lane — voice and narrative.",               60,  240, "Creative");
-      const lore2    = _node("n3", "Lore Writer B",   "coder",      "Secondary lane — alternative approach or chapter.",          310, 240, "Creative");
-      const auditor  = _node("n4", "Canon Auditor",   "auditor",    "Checks both lanes against canon, tone, and consistency.",   185, 420, "Verification");
-      const synth    = _node("n5", "Synthesizer",     "planner",    "Merges best elements from both lanes.",                     185, 600, "Synthesis");
-      const format   = _node("n6", "Formatter",       "projection", "Final polish, structure, and style conformance.",           185, 780, "Output");
-      const nodes = [planner, lore1, lore2, auditor, synth, format];
-      const edges = [
-        _makeEdge("n1","n2"), _makeEdge("n1","n3"),
-        _makeEdge("n2","n4"), _makeEdge("n3","n4"),
-        _makeEdge("n4","n5"), _makeEdge("n5","n6"),
-      ];
-      return { nodes, edges };
-    }
-  },
+
+  // ── Web / Portal ───────────────────────────────────────────────────────────
   {
     id: "webportal",
-    label: "Web Portal",
+    label: "Web / Portal",
     icon: "🌐",
-    desc: "Parallel frontend build lanes with code review and integration",
-    type: "appcreation",
+    desc: "Parallel frontend + backend build lanes with code review and integration",
+    type: "portalcreation",
     build() {
-      const planner  = _node("n1", "Planner",          "planner",    "Defines structure, stack, routes, and component breakdown.",    60,  60,  "Orchestration");
-      const backend  = _node("n2", "Backend API Coder","coder",      "FastAPI/Express backend, routes, models, DB layer.",            60,  240, "Code");
-      const jscoder  = _node("n3", "JS Coder",         "coder",      "Frontend JS, component logic, API wiring.",                    310, 240, "Code");
-      const htmlcss  = _node("n4", "HTML Coder",       "coder",      "HTML structure and CSS styling.",                              560, 240, "Code");
-      const reviewer = _node("n5", "Code Reviewer",    "auditor",    "Reviews all three lanes for correctness and integration.",     310, 420, "Verification");
-      const resolver = _node("n6", "Resolver",         "planner",    "Resolves conflicts, merges outputs into coherent codebase.",   310, 600, "Code");
-      const format   = _node("n7", "Formatter",        "projection", "Final output packaging and documentation.",                    310, 780, "Output");
+      const planner  = _node("n1", "Planner",           "planner",    "Defines structure, stack, routes, and component breakdown.",                   185, 60,  "Orchestration", "Planner",        "plan");
+      const backend  = _node("n2", "Backend API Coder", "coder",      "FastAPI/Express backend, routes, models, DB layer.",                           60,  240, "Code",          "Backend API Coder","codegen");
+      const jscoder  = _node("n3", "JS Coder",          "coder",      "Frontend JS, component logic, API wiring.",                                    310, 240, "Code",          "JS Coder",       "codegen");
+      const htmlcss  = _node("n4", "HTML Coder",        "coder",      "HTML structure and CSS styling.",                                              560, 240, "Code",          "HTML Coder",     "codegen");
+      const reviewer = _node("n5", "Code Reviewer",     "auditor",    "Reviews all three lanes for correctness and integration.",                     310, 420, "Verification",  "Code Reviewer",  "verify");
+      const resolver = _node("n6", "Resolver",          "planner",    "Resolves conflicts, merges outputs into coherent codebase.",                   310, 600, "Code",          "Resolver",       "package");
+      const format   = _node("n7", "Formatter",         "projection", "Final output packaging and documentation.",                                    310, 780, "Output",        "Formatter",      "package");
       const nodes = [planner, backend, jscoder, htmlcss, reviewer, resolver, format];
       const edges = [
         _makeEdge("n1","n2"), _makeEdge("n1","n3"), _makeEdge("n1","n4"),
@@ -190,47 +204,54 @@ const PRESET_TEMPLATES = [
       return { nodes, edges };
     }
   },
+
+  // ── Research ───────────────────────────────────────────────────────────────
   {
-    id: "localai",
-    label: "Local AI Integration",
-    icon: "🤖",
-    desc: "Parallel implementation lanes with testing and conflict resolution",
-    type: "appcreation",
+    id: "research",
+    label: "Research",
+    icon: "🔬",
+    desc: "Deep research with parallel scouts, cross-validation, synthesis, and final report",
+    type: "research",
     build() {
-      const analyst  = _node("n1", "Analyst",       "planner",    "Analyses requirements and defines integration spec.",          185, 60,  "Analysis");
-      const pyA      = _node("n2", "Python Coder A", "coder",     "Primary implementation lane.",                                60,  240, "Code");
-      const pyB      = _node("n3", "Python Coder B", "coder",     "Alternative implementation — different approach or section.", 310, 240, "Code");
-      const tests    = _node("n4", "Test Writer",    "verifier",  "Writes unit and integration tests for both lanes.",           185, 420, "Verification");
-      const review   = _node("n5", "Code Reviewer",  "auditor",   "Full code audit — correctness, security, edge cases.",       185, 600, "Verification");
-      const resolver = _node("n6", "Resolver",       "planner",   "Picks or merges the best implementation.",                   185, 780, "Code");
-      const nodes = [analyst, pyA, pyB, tests, review, resolver];
+      const scout    = _node("n1", "Scout",                "input",      "Initial broad search. Identifies relevant domains and sources.",              60,  60,  "Research",     "Scout",               "frame");
+      const web1     = _node("n2", "Web Crawler A",        "input",      "Deep web fetch — primary source lane.",                                       60,  240, "Research",     "Web Crawler",         "traverse");
+      const web2     = _node("n3", "Web Crawler B",        "input",      "Deep web fetch — secondary source lane.",                                     310, 240, "Research",     "Web Crawler",         "traverse");
+      const val      = _node("n4", "Source Validator",     "verifier",   "Checks source credibility and provenance.",                                   185, 420, "Verification", "Source Validator",    "verify");
+      const contra   = _node("n5", "Contradiction Finder", "auditor",    "Hunts contradictions and inconsistencies across sources.",                    185, 600, "Research",     "Contradiction Finder","verify");
+      const synth    = _node("n6", "Synthesizer",          "planner",    "Combines verified findings into coherent structure.",                         185, 780, "Synthesis",    "Synthesizer",         "synthesise");
+      const report   = _node("n7", "Report Builder",       "projection", "Builds final research report with provenance and confidence.",                185, 960, "Synthesis",    "Report Builder",      "compress");
+      const nodes = [scout, web1, web2, val, contra, synth, report];
       const edges = [
         _makeEdge("n1","n2"), _makeEdge("n1","n3"),
         _makeEdge("n2","n4"), _makeEdge("n3","n4"),
-        _makeEdge("n4","n5"), _makeEdge("n5","n6"),
+        _makeEdge("n4","n5"), _makeEdge("n5","n6"), _makeEdge("n6","n7"),
       ];
       return { nodes, edges };
     }
   },
+
+  // ── AI Training Data ───────────────────────────────────────────────────────
   {
-    id: "trainingdata",
-    label: "Model Training Data",
+    id: "aitraining",
+    label: "AI Training Data",
     icon: "🧠",
-    desc: "Data gathering, pattern analysis, and structured training/eval pack generation",
-    type: "research",
+    desc: "Data gathering, quality scoring, and structured training + eval pack generation",
+    type: "aitraining",
     build() {
-      const scout    = _node("n1", "Scout",                "input",      "Broad sweep — identifies relevant data domains.",               60,  60,  "Research");
-      const miner    = _node("n2", "Database Miner",       "input",      "Targets structured sources, archives, datasets.",               60,  240, "Research");
-      const pattern  = _node("n3", "Pattern Detector",     "planner",    "Identifies recurring patterns and quality signals.",            185, 420, "Analysis");
-      const weigher  = _node("n4", "Evidence Weigher",     "verifier",   "Assigns quality scores and confidence levels per sample.",      185, 600, "Analysis");
-      const dossier  = _node("n5", "Dossier Writer",       "projection", "Structured data dossier with provenance.",                     185, 780, "Synthesis");
-      const eval_    = _node("n6", "Eval Pack Builder",    "projection", "Builds evaluation dataset from high-confidence samples.",       60,  960, "Output");
-      const train    = _node("n7", "Training Pack Builder","projection", "Structures approved samples as model training data.",           310, 960, "Output");
-      const nodes = [scout, miner, pattern, weigher, dossier, eval_, train];
+      const scout    = _node("n1", "Scout",                  "input",      "Broad sweep — identifies relevant data domains and sources.",                60,  60,  "Research",   "Scout",                 "frame");
+      const miner    = _node("n2", "Database Miner",         "input",      "Targets structured sources, archives, and existing datasets.",               310, 60,  "Research",   "Database Miner",        "frame");
+      const pattern  = _node("n3", "Pattern Detector",       "planner",    "Identifies recurring patterns and quality signal markers.",                  185, 240, "Analysis",   "Pattern Detector",      "traverse");
+      const weigher  = _node("n4", "Evidence Weigher",       "verifier",   "Assigns quality scores and confidence levels per sample.",                   60,  420, "Analysis",   "Evidence Weigher",      "verify");
+      const contra   = _node("n5", "Contradiction Finder",   "auditor",    "Flags contradictory, ambiguous, or low-quality samples.",                    310, 420, "Verification","Contradiction Finder",  "verify");
+      const dossier  = _node("n6", "Dossier Writer",         "projection", "Structured data dossier with provenance and quality metadata.",              185, 600, "Synthesis",  "Dossier Writer",        "synthesise");
+      const evalpack = _node("n7", "Eval Pack Builder",      "projection", "Builds evaluation dataset from high-confidence samples.",                    60,  780, "Output",     "Eval Pack Builder",     "package");
+      const trainpack= _node("n8", "Training Pack Builder",  "projection", "Structures approved samples as model training data with metadata.",          310, 780, "Output",     "Training Pack Builder", "package");
+      const nodes = [scout, miner, pattern, weigher, contra, dossier, evalpack, trainpack];
       const edges = [
-        _makeEdge("n1","n2"), _makeEdge("n2","n3"),
-        _makeEdge("n3","n4"), _makeEdge("n4","n5"),
-        _makeEdge("n5","n6"), _makeEdge("n5","n7"),
+        _makeEdge("n1","n3"), _makeEdge("n2","n3"),
+        _makeEdge("n3","n4"), _makeEdge("n3","n5"),
+        _makeEdge("n4","n6"), _makeEdge("n5","n6"),
+        _makeEdge("n6","n7"), _makeEdge("n6","n8"),
       ];
       return { nodes, edges };
     }
@@ -310,11 +331,6 @@ async function callApi(path, method = "GET", payload = null) {
   } catch (e) { return { ok: false, error: String(e) }; }
 }
 
-function parseSurfaces(val) {
-  if (Array.isArray(val)) return val;
-  try { return JSON.parse(val || "[]"); } catch { return []; }
-}
-
 // ── Model pool ────────────────────────────────────────────────────────────────
 
 async function loadModels() {
@@ -332,6 +348,31 @@ function modelOptions(selected = "") {
   return [`<option value="">— no model —</option>`,
     ...state.availableModels.map(m =>
       `<option value="${esc(m.value)}" ${m.value === selected ? "selected" : ""}>${esc(m.label)}</option>`)
+  ].join("");
+}
+
+// ── Stage options (derived from active pipeline type) ─────────────────────────
+
+const STAGE_OPTIONS_BY_TYPE = {
+  gamedesign:      ["plan","design","arch","codegen","data","assets","verify","package"],
+  appcreation:     ["plan","codegen","verify","package"],
+  portalcreation:  ["plan","codegen","verify","package"],
+  research:        ["frame","traverse","synthesise","verify","compress","package"],
+  aitraining:      ["frame","traverse","verify","synthesise","package"],
+  creativewriting: ["premise","outline","draft","critique","revise","handoff"],
+};
+
+function stageOptions(selected = "") {
+  const stages = STAGE_OPTIONS_BY_TYPE[state.pipelineType] || ["plan","execute","verify","package"];
+  return [`<option value="">— no stage —</option>`,
+    ...stages.map(s => `<option value="${esc(s)}" ${s === selected ? "selected" : ""}>${esc(s)}</option>`)
+  ].join("");
+}
+
+function roleOptions(selected = "") {
+  return [`<option value="">— no role —</option>`,
+    ...ALL_ROLES.map(r =>
+      `<option value="${esc(r.title)}" ${r.title === selected ? "selected" : ""}>[${esc(r.group)}] ${esc(r.title)}</option>`)
   ].join("");
 }
 
@@ -391,8 +432,8 @@ function bindPanZoom() {
   canvas.addEventListener("pointerup", () => { if (!isPanning) return; isPanning = false; canvas.style.cursor = spaceDown ? "grab" : ""; saveState(); });
   canvas.addEventListener("pointercancel", () => { isPanning = false; });
 
-  qs("#zoomInBtn")?.addEventListener("click",  () => zoomBy(1.2));
-  qs("#zoomOutBtn")?.addEventListener("click", () => zoomBy(0.8));
+  qs("#zoomInBtn")?.addEventListener("click",    () => zoomBy(1.2));
+  qs("#zoomOutBtn")?.addEventListener("click",   () => zoomBy(0.8));
   qs("#zoomResetBtn")?.addEventListener("click", () => { state.panX = 0; state.panY = 0; state.zoom = 1; applyTransform(); saveState(); updateZoomLabel(); });
   qs("#fitBtn")?.addEventListener("click", fitToScreen);
 }
@@ -500,6 +541,8 @@ function renderNodes() {
     const isSelected = node.id === state.selectedNodeId;
     const isLinkSrc  = node.id === state.linkSource;
     const modelLabel = state.availableModels.find(m => m.value === node.model)?.label || node.model || "— no model —";
+    const roleLabel  = node.role  || "— no role —";
+    const stageLabel = node.stage || "— no stage —";
 
     const el = document.createElement("article");
     el.className = "pipeline-node"
@@ -514,6 +557,10 @@ function renderNodes() {
         <button class="node-del" data-del="${esc(node.id)}" title="Remove">✕</button>
       </div>
       <div class="node-title">${esc(node.title)}</div>
+      <div class="node-meta-row">
+        <span class="node-tag node-tag--role">${esc(roleLabel)}</span>
+        <span class="node-tag node-tag--stage">${esc(stageLabel)}</span>
+      </div>
       <div class="node-model">${esc(modelLabel)}</div>
       <div class="node-ports">
         <div class="port port-in"  data-node="${esc(node.id)}" data-side="in"></div>
@@ -533,7 +580,7 @@ function renderAll() {
   renderNodes();
   renderEdges();
   updateInspector();
-  renderPipelineSelector();
+  renderSavedPipelineSelector();
   renderPipelineTypePicker();
   renderPresetLibrary();
   updateToolbar();
@@ -545,14 +592,12 @@ function renderAll() {
 // ── Drag ──────────────────────────────────────────────────────────────────────
 
 function bindDrag() {
-  const canvas = qs("#pipelineCanvas"); if (!canvas) return;
-  let active = null, ox = 0, oy = 0, didMove = false;
-
   qsa(".pipeline-node").forEach(el => {
+    let active = false, ox = 0, oy = 0, didMove = false;
     el.addEventListener("pointerdown", e => {
       if (e.target.closest(".port") || e.target.closest(".node-del") || e.target.closest("select")) return;
       const node = state.nodes.find(n => n.id === el.dataset.nodeId); if (!node) return;
-      active = { node, el }; didMove = false;
+      active = true; didMove = false;
       const wp = screenToWorld(e.clientX, e.clientY);
       ox = wp.x - node.x; oy = wp.y - node.y;
       el.setPointerCapture(e.pointerId);
@@ -560,22 +605,23 @@ function bindDrag() {
       e.stopPropagation();
     });
     el.addEventListener("pointermove", e => {
-      if (!active || active.el !== el) return;
+      if (!active) return;
+      const node = state.nodes.find(n => n.id === el.dataset.nodeId); if (!node) return;
       const wp = screenToWorld(e.clientX, e.clientY);
-      active.node.x = Math.max(0, wp.x - ox);
-      active.node.y = Math.max(0, wp.y - oy);
-      el.style.left = active.node.x + "px";
-      el.style.top  = active.node.y + "px";
+      node.x = Math.max(0, wp.x - ox);
+      node.y = Math.max(0, wp.y - oy);
+      el.style.left = node.x + "px";
+      el.style.top  = node.y + "px";
       didMove = true;
       renderEdges();
     });
     el.addEventListener("pointerup", () => {
-      if (!active || active.el !== el) return;
+      if (!active) return;
       el.style.cursor = "";
       if (didMove) saveState();
-      active = null;
+      active = false;
     });
-    el.addEventListener("pointercancel", () => { active = null; });
+    el.addEventListener("pointercancel", () => { active = false; });
   });
 }
 
@@ -672,28 +718,57 @@ function selectNode(id) {
 function updateInspector() {
   const node = state.nodes.find(n => n.id === state.selectedNodeId);
   qs("#selectedNodeTitle").textContent = node?.title || "No node selected";
-  qs("#selectedNodeDesc").textContent  = node?.desc || (node ? `Type: ${node.type}` : "Select a node to inspect.");
-  qs("#inspectorQuorumRule").value     = node?.quorumRule || "single pass";
-  qs("#inspectorTimeout").value        = node?.timeout    || "60s";
-  qs("#inspectorNotes").value          = node?.notes      || "";
+  qs("#selectedNodeDesc").textContent  = node?.desc  || (node ? `Type: ${node.type}` : "Select a node to inspect.");
+
+  const qr = qs("#inspectorQuorumRule");
+  const to = qs("#inspectorTimeout");
+  const no = qs("#inspectorNotes");
+  if (qr) qr.value = node?.quorumRule || "single pass";
+  if (to) to.value = node?.timeout    || "60s";
+  if (no) no.value = node?.notes      || "";
 
   const wrap = qs("#inspectorModelWrap");
   if (!wrap) return;
+
   if (node) {
     wrap.innerHTML = `
-      <label class="inline-field">
-        <span class="soft">Assigned model</span>
-        <select class="select" id="inspectorModel" style="font-size:12px;">${modelOptions(node.model)}</select>
-      </label>
+      <div class="inspector-field-group">
+        <label class="inline-field">
+          <span class="soft">Role</span>
+          <select class="select" id="inspectorRole" style="font-size:12px;">${roleOptions(node.role)}</select>
+        </label>
+        <label class="inline-field">
+          <span class="soft">Stage</span>
+          <select class="select" id="inspectorStage" style="font-size:12px;">${stageOptions(node.stage)}</select>
+        </label>
+        <label class="inline-field">
+          <span class="soft">Model</span>
+          <select class="select" id="inspectorModel" style="font-size:12px;">${modelOptions(node.model)}</select>
+        </label>
+      </div>
       <div class="node-info-box">
         <span class="soft" style="font-size:11px;">${esc(node.desc || "")}</span>
       </div>`;
+
+    qs("#inspectorRole")?.addEventListener("change", e => {
+      const n = state.nodes.find(n => n.id === state.selectedNodeId);
+      if (!n) return;
+      n.role = e.target.value;
+      // Also update type to match selected role
+      const roleData = ALL_ROLES.find(r => r.title === e.target.value);
+      if (roleData) { n.type = roleData.type; n.group = roleData.group; }
+      saveState(); renderNodes();
+    });
+    qs("#inspectorStage")?.addEventListener("change", e => {
+      const n = state.nodes.find(n => n.id === state.selectedNodeId);
+      if (n) { n.stage = e.target.value; saveState(); renderNodes(); }
+    });
     qs("#inspectorModel")?.addEventListener("change", e => {
       const n = state.nodes.find(n => n.id === state.selectedNodeId);
       if (n) { n.model = e.target.value; saveState(); renderNodes(); }
     });
   } else {
-    wrap.innerHTML = `<span class="soft" style="font-size:12px;">Select a node to assign a model.</span>`;
+    wrap.innerHTML = `<span class="soft" style="font-size:12px;">Select a node to assign role, stage, and model.</span>`;
   }
 }
 
@@ -727,15 +802,14 @@ function renderPipelineTypePicker() {
   qsa(".type-pill", wrap).forEach(btn => {
     btn.addEventListener("click", () => {
       state.pipelineType = btn.dataset.type;
-      saveState(); renderPipelineTypePicker(); updateSaveBtn();
+      saveState(); renderPipelineTypePicker(); updateSaveBtn(); updateInspector();
     });
   });
 }
 
 function updateSaveBtn() {
   const btn = qs("#savePipelineBtn"); if (!btn) return;
-  const title = qs("#pipelineTitleInput")?.value.trim() || "";
-  btn.disabled = !title;
+  btn.disabled = !(qs("#pipelineTitleInput")?.value.trim() || "");
 }
 
 // ── Preset library ────────────────────────────────────────────────────────────
@@ -762,7 +836,8 @@ function loadPreset(presetId) {
   state.pipelineType = preset.type;
   state.selectedNodeId = null;
   state.panX = 0; state.panY = 0; state.zoom = 1;
-  if (qs("#pipelineTitleInput")) qs("#pipelineTitleInput").value = preset.label;
+  const titleEl = qs("#pipelineTitleInput");
+  if (titleEl) titleEl.value = preset.label;
   saveState(); renderAll();
   setTimeout(fitToScreen, 100);
   showToast(`${preset.icon} ${preset.label} preset loaded`, "good");
@@ -789,9 +864,11 @@ function renderRoleLibrary() {
 
 function spawnRoleNode(title, type, desc, group) {
   const count = state.nodes.length;
-  const cols = 4;
+  const cols = 3;
   const node = {
     id: uid(), title, type, desc, group,
+    role: title,
+    stage: "",
     model: state.availableModels[0]?.value || "",
     x: 40 + (count % cols) * (NODE_W + 40),
     y: 40 + Math.floor(count / cols) * (NODE_H + 60),
@@ -803,9 +880,9 @@ function spawnRoleNode(title, type, desc, group) {
   showToast(`${title} spawned`, "good");
 }
 
-// ── Pipeline selector ─────────────────────────────────────────────────────────
+// ── Saved pipeline selector ───────────────────────────────────────────────────
 
-function renderPipelineSelector() {
+function renderSavedPipelineSelector() {
   const sel = qs("#pipelineSelector"); if (!sel) return;
   sel.innerHTML = state.pipelines.length
     ? state.pipelines.map(p => `<option value="${esc(p.id)}" ${p.id===state.savedPipelineId?"selected":""}>${esc(p.title)}</option>`).join("")
@@ -821,7 +898,7 @@ async function refreshPipelines() {
     type: p.type || "",
     stages: p.stages,
   }));
-  saveState(); renderPipelineSelector();
+  saveState(); renderSavedPipelineSelector();
 }
 
 // ── Save / load ───────────────────────────────────────────────────────────────
@@ -846,8 +923,6 @@ async function savePipeline() {
   showToast(`"${title}" saved — available in ${portal}`, "good");
 }
 
-// ── Stage-list to canvas conversion ──────────────────────────────────────────
-
 function stageListToGraph(stages) {
   const typeMap = {
     input: "input", transform: "planner", build: "coder",
@@ -860,6 +935,8 @@ function stageListToGraph(stages) {
     type: typeMap[stage.kind] || "planner",
     desc: stage.summary || "",
     group: stage.kind || "",
+    role: stage.role || "",
+    stage: stage.id || "",
     model: (Array.isArray(stage.models) ? stage.models[0] : stage.model) || "",
     x: 40 + (i % cols) * (NODE_W + 60),
     y: 40 + Math.floor(i / cols) * (NODE_H + 80),
@@ -877,28 +954,23 @@ async function loadPipeline(id) {
   const found = state.pipelines.find(p => p.id === id);
   if (!found) return;
   try {
-    // stages may be already parsed (array/object) or a JSON string
     const raw = found.stages;
     const graph = (typeof raw === "string") ? JSON.parse(raw || "{}") : (raw || {});
-
     if (Array.isArray(graph.nodes)) {
-      // Standard canvas format saved by this tool
       state.nodes = graph.nodes;
       state.edges = graph.edges || [];
     } else if (Array.isArray(graph)) {
-      // Stage-list format from DB presets — convert to canvas
       const converted = stageListToGraph(graph);
       state.nodes = converted.nodes;
       state.edges = converted.edges;
     } else {
-      // Unknown / empty
       state.nodes = [];
       state.edges = [];
     }
-
     state.savedPipelineId = id;
     state.pipelineType = found.type || state.pipelineType;
-    if (qs("#pipelineTitleInput")) qs("#pipelineTitleInput").value = found.title || "";
+    const titleEl = qs("#pipelineTitleInput");
+    if (titleEl) titleEl.value = found.title || "";
     state.panX = 0; state.panY = 0; state.zoom = 1;
     saveState(); renderAll();
     setTimeout(fitToScreen, 100);
@@ -915,33 +987,32 @@ let _pollTimer = null;
 
 function renderRunPanel() {
   const wrap = qs("#runPanelWrap"); if (!wrap) return;
-
   const hasSaved = !!state.savedPipelineId;
   const hasNodes = state.nodes.length > 0;
-  const models = state.availableModels;
+  const models   = state.availableModels;
 
   wrap.innerHTML = `
     <article class="card">
       <div class="eyebrow" style="margin-bottom:10px;">Run pipeline</div>
-      ${!hasNodes ? `<p class="soft" style="font-size:12px;margin:0;">Build or load a pipeline first.</p>` : `
-        <div class="field-grid">
-          <label class="inline-field">
-            <span class="soft" style="font-size:11px;">Objective</span>
-            <textarea class="textarea" id="runObjective" placeholder="What should this pipeline produce or investigate…" style="min-height:70px;">${esc(state.runObjective)}</textarea>
-          </label>
-          <label class="inline-field">
-            <span class="soft" style="font-size:11px;">Override models (optional — leave blank to use per-node)</span>
-            <select class="select" id="runModel" style="font-size:12px;">
-              <option value="">Use per-node model assignments</option>
-              ${models.map(m => `<option value="${esc(m.value)}" ${state.runSelectedModels[0]===m.value?"selected":""}>${esc(m.label)}</option>`).join("")}
-            </select>
-          </label>
-          ${!hasSaved ? `<p class="soft" style="font-size:11px;margin:0;">Save the pipeline first to run it.</p>` : ""}
-          <button class="button button--primary" id="runPipelineBtn" type="button" ${!hasSaved ? "disabled" : ""}>
-            ▶ Run pipeline (${state.nodes.length} nodes)
-          </button>
-        </div>
-      `}
+      ${!hasNodes
+        ? `<p class="soft" style="font-size:12px;margin:0;">Build or load a pipeline first.</p>`
+        : `<div class="field-grid">
+            <label class="inline-field">
+              <span class="soft" style="font-size:11px;">Objective</span>
+              <textarea class="textarea" id="runObjective" placeholder="What should this pipeline produce or investigate…" style="min-height:70px;">${esc(state.runObjective)}</textarea>
+            </label>
+            <label class="inline-field">
+              <span class="soft" style="font-size:11px;">Override models (optional)</span>
+              <select class="select" id="runModel" style="font-size:12px;">
+                <option value="">Use per-node model assignments</option>
+                ${models.map(m => `<option value="${esc(m.value)}" ${state.runSelectedModels[0]===m.value?"selected":""}>${esc(m.label)}</option>`).join("")}
+              </select>
+            </label>
+            ${!hasSaved ? `<p class="soft" style="font-size:11px;margin:0;">Save the pipeline first to run it.</p>` : ""}
+            <button class="button button--primary" id="runPipelineBtn" type="button" ${!hasSaved ? "disabled" : ""}>
+              ▶ Run (${state.nodes.length} nodes)
+            </button>
+          </div>`}
     </article>
     <article class="card" id="runStatusCard" style="${state.runJobId ? "" : "display:none"}">
       <div class="eyebrow" style="margin-bottom:8px;">Run status</div>
@@ -949,8 +1020,8 @@ function renderRunPanel() {
     </article>
   `;
 
-  qs("#runObjective")?.addEventListener("input", e => { state.runObjective = e.target.value; saveState(); });
-  qs("#runModel")?.addEventListener("change", e => { state.runSelectedModels = e.target.value ? [e.target.value] : []; saveState(); });
+  qs("#runObjective")?.addEventListener("input",  e => { state.runObjective = e.target.value; saveState(); });
+  qs("#runModel")?.addEventListener("change",     e => { state.runSelectedModels = e.target.value ? [e.target.value] : []; saveState(); });
   qs("#runPipelineBtn")?.addEventListener("click", startRun);
 }
 
@@ -966,16 +1037,17 @@ async function startRun() {
     objective,
     selected_models: state.runSelectedModels,
     surface: "pipelines",
+    graph: { nodes: state.nodes, edges: state.edges },
   });
 
   if (!r.ok || !r.body?.job_id) {
     showToast("Failed to start run", "warn");
-    if (btn) { btn.disabled = false; btn.textContent = `▶ Run pipeline (${state.nodes.length} nodes)`; }
+    if (btn) { btn.disabled = false; btn.textContent = `▶ Run (${state.nodes.length} nodes)`; }
     return;
   }
 
   state.runJobId = r.body.job_id;
-  showToast(`Pipeline started — job ${state.runJobId}`, "good");
+  showToast(`Pipeline started — ${state.runJobId}`, "good");
   qs("#runStatusCard")?.style.removeProperty("display");
   startPolling();
 }
@@ -994,13 +1066,13 @@ async function pollRunStatus() {
   const job = r.body;
   const body = qs("#runStatusBody"); if (!body) return;
 
-  const statusColor = { queued: "#fbbf24", running: "#6ee7ff", completed: "#34d399", partial: "#fbbf24", failed: "#fb7185" }[job.status] || "#8ea0b5";
+  const statusColor = { queued:"#fbbf24", running:"#6ee7ff", completed:"#34d399", partial:"#fbbf24", failed:"#fb7185" }[job.status] || "#8ea0b5";
   const nodeStates = job.node_states || {};
 
   const nodeRows = state.nodes.map(node => {
     const ns = nodeStates[node.id] || {};
     const nsStatus = ns.status || "queued";
-    const dot = { queued: "⬜", running: "🔵", done: "✅", failed: "❌" }[nsStatus] || "⬜";
+    const dot = { queued:"⬜", running:"🔵", done:"✅", failed:"❌" }[nsStatus] || "⬜";
     return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
       <span style="font-size:14px;">${dot}</span>
       <span style="font-size:11px;color:#c8d8ec;flex:1;">${esc(node.title)}</span>
@@ -1010,24 +1082,21 @@ async function pollRunStatus() {
 
   body.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <span style="font-size:12px;font-weight:700;color:${statusColor};">${job.status?.toUpperCase()}</span>
+      <span style="font-size:12px;font-weight:700;color:${statusColor};">${(job.status||"").toUpperCase()}</span>
       <span style="font-size:11px;color:#8ea0b5;">${job.job_id}</span>
     </div>
     <div style="margin-bottom:10px;">${nodeRows}</div>
-    ${job.status === "completed" || job.status === "partial" ? `
-      <button class="button button--primary" id="viewArtifactsBtn" type="button" style="width:100%;margin-top:6px;">View artifacts</button>
-    ` : ""}
+    ${job.status === "completed" || job.status === "partial"
+      ? `<button class="button button--primary" id="viewArtifactsBtn" type="button" style="width:100%;margin-top:6px;">View artifacts</button>` : ""}
     ${job.error ? `<p style="color:#fb7185;font-size:11px;margin:6px 0 0;">${esc(job.error)}</p>` : ""}
   `;
 
-  qs("#viewArtifactsBtn")?.addEventListener("click", () => {
-    showArtifacts(state.savedPipelineId, state.runJobId);
-  });
+  qs("#viewArtifactsBtn")?.addEventListener("click", () => showArtifacts(state.savedPipelineId, state.runJobId));
 
-  if (job.status === "completed" || job.status === "failed" || job.status === "partial") {
+  if (["completed","failed","partial"].includes(job.status)) {
     clearInterval(_pollTimer);
     const btn = qs("#runPipelineBtn");
-    if (btn) { btn.disabled = false; btn.textContent = `▶ Run pipeline (${state.nodes.length} nodes)`; }
+    if (btn) { btn.disabled = false; btn.textContent = `▶ Run (${state.nodes.length} nodes)`; }
     showToast(`Pipeline ${job.status}`, job.status === "completed" ? "good" : "warn");
   }
 }
@@ -1035,7 +1104,6 @@ async function pollRunStatus() {
 async function showArtifacts(pipelineId, jobId) {
   const r = await callApi(`/api/artifacts?scope_type=pipeline&scope_public_id=${encodeURIComponent(pipelineId)}&job_public_id=${encodeURIComponent(jobId)}`);
   if (!r.ok) { showToast("Could not load artifacts", "warn"); return; }
-
   const items = r.body?.items || [];
   if (!items.length) { showToast("No artifacts yet", "warn"); return; }
 
@@ -1048,11 +1116,8 @@ async function showArtifacts(pipelineId, jobId) {
         <button class="button" id="closeArtifactModal" type="button">✕ Close</button>
       </div>
       <div class="artifact-tabs">
-        ${items.filter(a => a.artifact_type === "pipeline_output").map((a, i) => `
-          <button class="artifact-tab ${i===0?"artifact-tab--active":""}" data-idx="${i}" type="button">Final output</button>
-        `).join("")}
-        ${items.filter(a => a.artifact_type === "node_output").map((a, i) => `
-          <button class="artifact-tab" data-idx="${items.filter(a=>a.artifact_type==="pipeline_output").length + i}" type="button">${esc(a.title || `Node ${i+1}`)}</button>
+        ${items.map((a, i) => `
+          <button class="artifact-tab ${i===0?"artifact-tab--active":""}" data-idx="${i}" type="button">${esc(a.title || `Item ${i+1}`)}</button>
         `).join("")}
       </div>
       <div class="artifact-body" id="artifactBody">
@@ -1064,13 +1129,11 @@ async function showArtifacts(pipelineId, jobId) {
 
   qs("#closeArtifactModal", modal)?.addEventListener("click", () => modal.remove());
   modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
-
   qsa(".artifact-tab", modal).forEach(tab => {
     tab.addEventListener("click", () => {
       qsa(".artifact-tab", modal).forEach(t => t.classList.remove("artifact-tab--active"));
       tab.classList.add("artifact-tab--active");
-      const idx = parseInt(tab.dataset.idx);
-      const item = items[idx];
+      const item = items[parseInt(tab.dataset.idx)];
       qs("#artifactBody", modal).innerHTML = `<pre style="white-space:pre-wrap;font-size:12px;color:#c8d8ec;line-height:1.7;">${esc(item?.content || "")}</pre>`;
     });
   });
@@ -1102,7 +1165,7 @@ function bindEvents() {
     showToast("Canvas reset", "good");
   });
 
-  qs("#savePipelineBtn")?.addEventListener("click", savePipeline);
+  qs("#savePipelineBtn")?.addEventListener("click",   savePipeline);
   qs("#pipelineTitleInput")?.addEventListener("input", updateSaveBtn);
   qs("#loadPipelineBtn")?.addEventListener("click", () => {
     const id = qs("#pipelineSelector")?.value;
@@ -1118,8 +1181,8 @@ function bindEvents() {
   });
 
   qs("#inspectorQuorumRule")?.addEventListener("change", persistInspector);
-  qs("#inspectorTimeout")?.addEventListener("change", persistInspector);
-  qs("#inspectorNotes")?.addEventListener("input", persistInspector);
+  qs("#inspectorTimeout")?.addEventListener("change",   persistInspector);
+  qs("#inspectorNotes")?.addEventListener("input",      persistInspector);
 
   qs("#togglePortalPreviewBtn")?.addEventListener("click", () => {
     const p = qs(".portal-preview");
