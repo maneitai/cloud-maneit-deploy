@@ -1,7 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════
-   CREATOR SHELL v2 — Shared JS
-   Pipeline selector + model-per-role assignment
-   ═══════════════════════════════════════════════════════════════ */
+// creator-shell.js v2 — pipeline selector + model-per-role assignment
 
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
@@ -645,8 +642,6 @@ class CreatorShell {
         objective:       proj?.notes?.Goal || proj?.title || pipeline.name,
         selected_models: selectedModels,
         surface:         this.pageId,
-        pipeline_type:   pipeline.type || "",
-        graph:           { nodes, edges },
         ...overrides,
       },
     });
