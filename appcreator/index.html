@@ -3,21 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AppCreator — PM</title>
+  <title>Game Designer — PM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="../creator-shell.css" />
 </head>
-<body data-page="app">
+<body data-page="game">
 <div class="creator-shell">
 
   <header class="creator-header">
     <div class="header-brand">
-      <div class="brand-mark">AC</div>
+      <div class="brand-mark">GD</div>
       <div class="header-titles">
         <div class="eyebrow accent">Creator</div>
-        <h1>AppCreator</h1>
-        <p>Software production pipeline — scripts, desktop tools, Android apps, automation</p>
+        <h1>Game Designer</h1>
+        <p>Fully automated game production — design doc to importable engine project</p>
       </div>
     </div>
     <nav class="header-nav" aria-label="Primary">
@@ -25,11 +25,11 @@
       <a class="nav-link" href="../projects/">Projects</a>
       <a class="nav-link" href="../pipelines/">Pipelines</a>
       <a class="nav-link" href="../agent-factory/">Agent Factory</a>
-      <a class="nav-link nav-link--active" href="../appcreator/">AppCreator</a>
+      <a class="nav-link" href="../appcreator/">AppCreator</a>
       <a class="nav-link" href="../portalcreator/">PortalCreator</a>
       <a class="nav-link" href="../research-core/">Research Core</a>
       <a class="nav-link" href="../lorecore/">LoreCore</a>
-      <a class="nav-link" href="../game-designer/">Game Designer</a>
+      <a class="nav-link nav-link--active" href="../game-designer/">Game Designer</a>
       <a class="nav-link" href="../state/">State</a>
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
@@ -42,7 +42,7 @@
   <div class="job-status-bar" id="jobStatusBar">
     <div class="job-status-dot"></div>
     <div class="job-status-text">No active job</div>
-    <div class="job-status-meta">Select a project and launch a pipeline run</div>
+    <div class="job-status-meta">Select a project, pipeline, and engine target to launch</div>
     <span class="chip">idle</span>
   </div>
 
@@ -72,34 +72,70 @@
 
       <div class="panel">
         <div class="rail-section">
-          <div class="eyebrow" style="margin-bottom:10px;">Platform target</div>
+          <div class="eyebrow" style="margin-bottom:10px;">Engine target</div>
           <div class="target-selector" id="targetSelector">
-            <button class="target-btn active" data-target="script">
-              <span class="target-btn-icon">🐍</span>
+            <button class="target-btn active" data-target="unity">
+              <span class="target-btn-icon">🎮</span>
               <span class="target-btn-body">
-                <span class="target-btn-label">Script / CLI tool</span>
-                <span class="target-btn-desc">Python, Bash, PowerShell — runnable immediately</span>
+                <span class="target-btn-label">Unity</span>
+                <span class="target-btn-desc">C# scripts, ScriptableObjects, prefab specs, Unity project structure</span>
               </span>
             </button>
-            <button class="target-btn" data-target="desktop">
-              <span class="target-btn-icon">🖥️</span>
+            <button class="target-btn" data-target="unreal">
+              <span class="target-btn-icon">🔵</span>
               <span class="target-btn-body">
-                <span class="target-btn-label">Desktop app</span>
-                <span class="target-btn-desc">Electron, Tauri, or native Python GUI</span>
+                <span class="target-btn-label">Unreal Engine</span>
+                <span class="target-btn-desc">C++ / Blueprints, UE project files, asset specs</span>
               </span>
             </button>
-            <button class="target-btn" data-target="android">
-              <span class="target-btn-icon">📱</span>
+            <button class="target-btn" data-target="godot">
+              <span class="target-btn-icon">🌀</span>
               <span class="target-btn-body">
-                <span class="target-btn-label">Android app</span>
-                <span class="target-btn-desc">Kotlin/Java — complete project structure</span>
+                <span class="target-btn-label">Godot</span>
+                <span class="target-btn-desc">GDScript, scenes, resources, Godot project structure</span>
               </span>
             </button>
-            <button class="target-btn" data-target="service">
-              <span class="target-btn-icon">⚙️</span>
+            <button class="target-btn" data-target="custom">
+              <span class="target-btn-icon">⚡</span>
               <span class="target-btn-body">
-                <span class="target-btn-label">Background service</span>
-                <span class="target-btn-desc">Daemon, worker, automation bot</span>
+                <span class="target-btn-label">Custom engine</span>
+                <span class="target-btn-desc">Engine-agnostic specs, data formats, core systems</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="rail-section">
+          <div class="eyebrow" style="margin-bottom:10px;">Production scope</div>
+          <div class="target-selector" id="scopeSelector">
+            <button class="target-btn active" data-scope="full">
+              <span class="target-btn-icon">🏭</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Full production</span>
+                <span class="target-btn-desc">All systems — design doc to complete project</span>
+              </span>
+            </button>
+            <button class="target-btn" data-scope="code">
+              <span class="target-btn-icon">💻</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Code only</span>
+                <span class="target-btn-desc">Game systems, mechanics, AI — no assets</span>
+              </span>
+            </button>
+            <button class="target-btn" data-scope="design">
+              <span class="target-btn-icon">📋</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Design docs</span>
+                <span class="target-btn-desc">GDD, specs, balance sheets, lore</span>
+              </span>
+            </button>
+            <button class="target-btn" data-scope="assets">
+              <span class="target-btn-icon">🎨</span>
+              <span class="target-btn-body">
+                <span class="target-btn-label">Asset prompts</span>
+                <span class="target-btn-desc">Image gen prompts, audio briefs, 3D asset specs</span>
               </span>
             </button>
           </div>
@@ -111,58 +147,28 @@
     <!-- ══ CENTER ══ -->
     <main class="center-col" id="centerCol">
 
+      <!-- Pipeline selector — above stage list -->
+      <div id="pipelineSelector" class="pipeline-selector panel"></div>
+
       <div class="panel">
         <div class="pipeline-header">
           <div>
-            <div class="eyebrow accent">Pipeline</div>
-            <h2>Execution Plan</h2>
-            <p>Pipeline stages for the selected platform target. Configure per-run settings then launch.</p>
-          </div>
-          <div class="pipeline-actions">
-            <button class="btn" id="configToggleBtn">Configure run</button>
+            <div class="eyebrow accent">Production plan</div>
+            <h2 id="launchTitle">Select a project and pipeline</h2>
+            <p id="launchMeta">Pipeline produces complete importable engine project files.</p>
           </div>
         </div>
         <div id="stageList" class="stage-list">
-          <div class="section-meta">Select a project to see the pipeline.</div>
-        </div>
-      </div>
-
-      <div class="panel" id="runConfigPanel" style="display:none;">
-        <div class="eyebrow accent" style="margin-bottom:12px;">Per-run configuration</div>
-        <div class="run-config-grid" id="runConfigGrid">
-          <div class="config-toggle on" data-key="multi_source_verify">
-            <span class="config-toggle-label">Multi-source verify</span>
-            <span class="config-toggle-desc">Cross-verify critical outputs across 3 models</span>
-          </div>
-          <div class="config-toggle on" data-key="reasoning_layer">
-            <span class="config-toggle-label">Maneit reasoning</span>
-            <span class="config-toggle-desc">Full Maneit v1 layer on all models</span>
-          </div>
-          <div class="config-toggle on" data-key="test_generation">
-            <span class="config-toggle-label">Generate tests</span>
-            <span class="config-toggle-desc">Generate unit tests for all major components</span>
-          </div>
-          <div class="config-toggle" data-key="dry_run">
-            <span class="config-toggle-label">Dry run</span>
-            <span class="config-toggle-desc">Plan only — no output files written</span>
-          </div>
-          <div class="config-toggle on" data-key="save_artifacts">
-            <span class="config-toggle-label">Save artifacts</span>
-            <span class="config-toggle-desc">Persist all generated code to artifact store</span>
-          </div>
-          <div class="config-toggle on" data-key="lint_pass">
-            <span class="config-toggle-label">Lint pass</span>
-            <span class="config-toggle-desc">Run lint/format validation on generated code</span>
-          </div>
+          <div class="section-meta">Select a project to see the production plan.</div>
         </div>
       </div>
 
       <div class="launch-bar">
         <div class="launch-info">
-          <h3 id="launchTitle">Select a project and platform to launch</h3>
-          <p id="launchMeta">Pipeline will run fully automatically. Monitor and override from the right rail.</p>
+          <h3 id="launchTitleBar">Select a project, pipeline, and engine to launch</h3>
+          <p id="launchMetaBar">Pipeline will run fully automatically. Monitor from the right rail.</p>
         </div>
-        <button class="btn btn--launch" id="launchBtn" disabled>Launch Pipeline</button>
+        <button class="btn btn--launch" id="launchBtn" disabled>Launch Production</button>
       </div>
 
       <div class="panel">
