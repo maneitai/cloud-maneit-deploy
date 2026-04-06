@@ -61,8 +61,7 @@ body {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
   border-radius: 12px; padding: 10px 8px; cursor: pointer;
-  transition: .12s ease; text-align: center;
-  font-family: inherit;
+  transition: .12s ease; text-align: center; font-family: inherit;
 }
 .preset-card:hover { background: rgba(110,231,255,0.08); border-color: rgba(110,231,255,0.25); }
 .preset-icon { font-size: 20px; line-height: 1; }
@@ -116,8 +115,7 @@ body {
 }
 
 #canvasWorld {
-  position: absolute;
-  top: 0; left: 0;
+  position: absolute; top: 0; left: 0;
   width: 3000px; height: 2000px;
   transform-origin: 0 0;
 }
@@ -143,9 +141,9 @@ body {
   border: 1px solid rgba(255,255,255,0.09);
   box-shadow: 0 4px 20px rgba(0,0,0,0.4);
   cursor: grab; user-select: none; z-index: 2;
-  display: flex; flex-direction: column; gap: 5px;
+  display: flex; flex-direction: column; gap: 4px;
   transition: border-color 0.15s, box-shadow 0.15s;
-  min-height: 110px;
+  min-height: 130px;
 }
 .pipeline-node:active { cursor: grabbing; }
 .pipeline-node.is-selected { border-color: rgba(110,231,255,0.45); box-shadow: 0 0 0 2px rgba(110,231,255,0.12), 0 4px 20px rgba(0,0,0,0.4); }
@@ -158,6 +156,42 @@ body {
 .node-title { font-size: 12px; font-weight: 700; }
 .node-model { font-size: 10px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .node-info-box { margin-top: 6px; }
+
+/* ── Node role + stage tags ── */
+.node-meta-row {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 1px 0;
+}
+.node-tag {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+  max-width: 95px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.node-tag--role {
+  background: rgba(139, 92, 246, 0.18);
+  color: #d4b8ff;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.node-tag--stage {
+  background: rgba(52, 211, 153, 0.12);
+  color: #b3ffd8;
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+/* ── Inspector field group ── */
+.inspector-field-group {
+  display: grid;
+  gap: 10px;
+}
 
 /* ── Ports ── */
 .node-ports { display: flex; justify-content: space-between; align-items: center; margin-top: auto; padding-top: 4px; }
