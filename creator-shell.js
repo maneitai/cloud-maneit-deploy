@@ -1,706 +1,620 @@
 /* ═══════════════════════════════════════════════════════════════
-   CREATOR SHELL v2 — Shared JS
-   Pipeline selector + model-per-role assignment
+   CREATOR SHELL — Shared CSS
+   Used by: AppCreator, PortalCreator, GameDesigner, LoreCore, Research
    ═══════════════════════════════════════════════════════════════ */
 
-const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
+/* ── Accent palettes ── */
+:root {
+  --bg:            #05090f;
+  --bg-2:          #070d16;
+  --surface:       rgba(10, 18, 30, 0.92);
+  --surface-2:     rgba(14, 24, 38, 0.95);
+  --surface-3:     rgba(8, 15, 25, 0.98);
+  --border:        rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --text:          #e4edf8;
+  --muted:         #8a9eb8;
+  --soft:          #b8ccdf;
+  --shadow:        0 20px 60px rgba(0, 0, 0, 0.5);
+  --shadow-sm:     0 4px 16px rgba(0, 0, 0, 0.3);
+  --radius:        18px;
+  --radius-sm:     12px;
+  --radius-xs:     8px;
 
-async function api(path, opts = {}) {
-  const cfg = { method: "GET", headers: {}, ...opts };
-  if (cfg.body && typeof cfg.body !== "string") {
-    cfg.headers["Content-Type"] = "application/json";
-    cfg.body = JSON.stringify(cfg.body);
-  }
-  try {
-    const res = await fetch(`${PM_API_BASE}${path}`, cfg);
-    const ct = res.headers.get("content-type") || "";
-    const body = ct.includes("application/json") ? await res.json() : await res.text();
-    return { ok: res.ok, status: res.status, body };
-  } catch (e) {
-    return { ok: false, status: 0, error: String(e) };
-  }
+  --accent:        #4eb8ff;
+  --accent-2:      #7dd4ff;
+  --accent-dim:    rgba(78, 184, 255, 0.12);
+  --accent-border: rgba(78, 184, 255, 0.28);
+  --accent-glow:   rgba(78, 184, 255, 0.06);
+
+  --good:          #52d98c;
+  --good-dim:      rgba(82, 217, 140, 0.12);
+  --warn:          #f2bf61;
+  --warn-dim:      rgba(242, 191, 97, 0.12);
+  --bad:           #f07070;
+  --bad-dim:       rgba(240, 112, 112, 0.12);
 }
 
-const qs  = (s, r = document) => r.querySelector(s);
-const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
-const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
-const uid = () => Math.random().toString(36).slice(2,10);
-
-function showToast(msg, tone = "good") {
-  const t = qs("#toast"); if (!t) return;
-  t.textContent = msg;
-  t.className = `toast ${tone} is-visible`;
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => t.classList.remove("is-visible"), 3000);
+body[data-page="portal"] {
+  --accent:        #4eb8ff;
+  --accent-2:      #7dd4ff;
+  --accent-dim:    rgba(78, 184, 255, 0.12);
+  --accent-border: rgba(78, 184, 255, 0.28);
+  --accent-glow:   rgba(78, 184, 255, 0.05);
+  --page-bg-1:     rgba(20, 80, 160, 0.14);
+  --page-bg-2:     rgba(10, 60, 120, 0.08);
 }
 
-function timeAgo(iso) {
-  const d = new Date(iso);
-  const diff = (Date.now() - d) / 1000;
-  if (diff < 60) return "just now";
-  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
-  return `${Math.floor(diff/86400)}d ago`;
+body[data-page="app"] {
+  --accent:        #3fd9c8;
+  --accent-2:      #6eeadb;
+  --accent-dim:    rgba(63, 217, 200, 0.12);
+  --accent-border: rgba(63, 217, 200, 0.28);
+  --accent-glow:   rgba(63, 217, 200, 0.05);
+  --page-bg-1:     rgba(15, 100, 90, 0.14);
+  --page-bg-2:     rgba(10, 70, 65, 0.08);
 }
 
-// ── Role → pool role_tags mapping ────────────────────────────────────────────
-const ROLE_POOL_MAP = {
-  "Planner":               ["planner", "lead", "creative_lead"],
-  "Builder":               ["coder", "builder"],
-  "Verifier":              ["verifier", "critic"],
-  "Architect":             ["planner", "creative_lead"],
-  "Designer":              ["creative_lead", "planner"],
-  "Researcher":            ["planner", "reasoning"],
-  "Synthesiser":           ["creative_lead", "planner"],
-  "Critic":                ["verifier", "critic"],
-  "Writer":                ["creative_lead"],
-  "Story Architect":       ["creative_lead", "planner"],
-  "Worldbuilder":          ["creative_lead"],
-  "Character Smith":       ["creative_lead"],
-  "Drafting Partner":      ["creative_lead", "planner"],
-  "Continuity Verifier":   ["verifier"],
-  "Observer":              ["planner"],
-  "Triage":                ["verifier"],
-};
-
-function _roleMatches(modelRoles, pipelineRole) {
-  const targets = ROLE_POOL_MAP[pipelineRole] || [pipelineRole.toLowerCase()];
-  return modelRoles.some(r => targets.includes(r.toLowerCase()));
+body[data-page="game"] {
+  --accent:        #f5a623;
+  --accent-2:      #ffc55a;
+  --accent-dim:    rgba(245, 166, 35, 0.12);
+  --accent-border: rgba(245, 166, 35, 0.28);
+  --accent-glow:   rgba(245, 166, 35, 0.05);
+  --page-bg-1:     rgba(120, 70, 10, 0.16);
+  --page-bg-2:     rgba(80, 45, 5, 0.08);
 }
 
-// ── Stage kind → node type mapping ───────────────────────────────────────────
-const KIND_TYPE_MAP = {
-  input: "input",
-  transform: "planner",
-  build: "coder",
-  verify: "verifier",
-  branch: "branch",
-  handoff: "projection",
-};
+body[data-page="lorecore"] {
+  --accent:        #c084fc;
+  --accent-2:      #d8a8ff;
+  --accent-dim:    rgba(192, 132, 252, 0.12);
+  --accent-border: rgba(192, 132, 252, 0.28);
+  --accent-glow:   rgba(192, 132, 252, 0.05);
+  --page-bg-1:     rgba(80, 30, 120, 0.16);
+  --page-bg-2:     rgba(50, 15, 80, 0.08);
+}
 
-// ── Stage kind → preferred pipeline role ─────────────────────────────────────
-const KIND_ROLE_MAP = {
-  input:     "Researcher",
-  transform: "Planner",
-  build:     "Builder",
-  verify:    "Verifier",
-  branch:    "Planner",
-  handoff:   "Builder",
-};
+body[data-page="research"] {
+  --accent:        #34d399;
+  --accent-2:      #6ee7b7;
+  --accent-dim:    rgba(52, 211, 153, 0.12);
+  --accent-border: rgba(52, 211, 153, 0.28);
+  --accent-glow:   rgba(52, 211, 153, 0.05);
+  --page-bg-1:     rgba(10, 100, 70, 0.16);
+  --page-bg-2:     rgba(5, 65, 45, 0.08);
+}
 
-// ── CreatorShell ──────────────────────────────────────────────────────────────
-class CreatorShell {
-  constructor(pageId) {
-    this.pageId = pageId;
-    this.state = {
-      // Projects
-      projects: [],
-      activeProjectId: localStorage.getItem(`creator_${pageId}_project`) || null,
-      activeProject: null,
-      // Pipelines
-      pipelines: [],
-      activePipelineId: localStorage.getItem(`creator_${pageId}_pipeline`) || null,
-      activePipeline: null,
-      pipelineModels: [],     // [{role, alias}]
-      availableModels: [],    // pool models tagged pipeline/pipelines
-      // Jobs / artifacts
-      jobs: [],
-      activeJobId: null,
-      artifacts: [],
-        activeArtifactId: null,
-      pollInterval: null,
-      // Stage status overlay
-      stages: [],
-      logLines: [],
-      // Subclass extras
-      activeTarget: null,
-    };
-  }
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: dark; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(ellipse at 20% 0%, var(--page-bg-1, rgba(20,80,160,0.14)), transparent 40%),
+    radial-gradient(ellipse at 80% 0%, var(--page-bg-2, rgba(10,60,120,0.08)), transparent 35%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+}
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; border: none; background: none; }
+a { color: inherit; text-decoration: none; }
+p { margin: 0; }
+h1, h2, h3, h4 { margin: 0; font-weight: 700; letter-spacing: -0.03em; }
 
-  // ════════════════════════════════════════════════════════════════
-  // PIPELINE SELECTOR
-  // ════════════════════════════════════════════════════════════════
+/* ── Page shell ── */
+.creator-shell {
+  width: min(1760px, calc(100vw - 24px));
+  margin: 14px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-  async loadPipelines() {
-    const TYPE_MAP = {
-      game:     ["game","Game"],
-      app:      ["app","App"],
-      portal:   ["portal","Portal"],
-      lorecore: ["lore","Lore","creative","Creative"],
-      research: ["research","Research"],
-    };
-    const myTypes = TYPE_MAP[this.pageId] || [];
+/* ── Header ── */
+.creator-header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+.header-brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  width: 44px; height: 44px; border-radius: 14px;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 800; letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--accent-dim), rgba(255,255,255,0.04));
+  border: 1px solid var(--accent-border);
+  color: var(--accent-2);
+  flex-shrink: 0;
+}
+.header-titles { display: flex; flex-direction: column; gap: 2px; }
+.header-titles .eyebrow { color: var(--accent); margin-bottom: 0; }
+.header-titles h1 { font-size: 18px; line-height: 1.1; }
+.header-titles p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.header-nav { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+.nav-link {
+  padding: 7px 11px; border-radius: 10px;
+  border: 1px solid transparent;
+  color: var(--muted); font-size: 12px; font-weight: 600;
+  transition: .15s ease;
+}
+.nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); border-color: var(--border); }
+.nav-link--active { color: var(--accent-2); background: var(--accent-dim); border-color: var(--accent-border); }
+.header-controls { display: flex; gap: 8px; align-items: center; }
 
-    const [pr, mr] = await Promise.all([
-      api("/api/pipelines"),
-      api("/api/model-pool/models"),
-    ]);
+/* ── Job status bar ── */
+.job-status-bar {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  min-height: 46px;
+}
+.job-status-bar.has-job { border-color: var(--accent-border); }
+.job-status-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); flex-shrink: 0;
+}
+.job-status-dot.running { background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 1.4s ease infinite; }
+.job-status-dot.good  { background: var(--good); }
+.job-status-dot.bad   { background: var(--bad); }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+.job-status-text { color: var(--text); font-weight: 600; }
+.job-status-meta { color: var(--muted); }
 
-    if (pr.ok) {
-      const all = Array.isArray(pr.body?.items) ? pr.body.items : [];
-      this.state.pipelines = all.filter(p => {
-        const portals = (p.compatible_portals || []).map(x => x.toLowerCase());
-        const ptype = (p.type || "").toLowerCase();
-        return myTypes.some(t =>
-          portals.some(x => x.includes(t.toLowerCase())) ||
-          ptype.includes(t.toLowerCase())
-        );
-      });
-    }
+/* ── Main layout ── */
+.creator-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 280px;
+  gap: 12px;
+  align-items: start;
+}
 
-    if (mr.ok) {
-      const items = Array.isArray(mr.body?.items) ? mr.body.items : [];
-      this.state.availableModels = items.filter(m => {
-        if (!m.enabled) return false;
-        let surfaces = m.surface_allowlist || [];
-        if (typeof surfaces === "string") {
-          try { surfaces = JSON.parse(surfaces); } catch { surfaces = []; }
-        }
-        return surfaces.includes("pipeline") || surfaces.includes("pipelines");
-      });
-    }
+/* ── Panels ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+.panel--flush   { padding: 0; }
+.panel--accent  { border-color: var(--accent-border); background: linear-gradient(180deg, var(--surface), var(--surface-3)); }
 
-    // Restore or auto-select pipeline
-    const saved = this.state.pipelines.find(p => p.public_id === this.state.activePipelineId);
-    const first = this.state.pipelines[0];
-    const active = saved || first || null;
-    if (active) {
-      this.state.activePipeline = active;
-      this.state.activePipelineId = active.public_id;
-      this._initPipelineModels(active);
-    }
+/* ── Left rail ── */
+.left-rail {
+  display: flex; flex-direction: column; gap: 12px;
+  position: sticky; top: 14px;
+}
+.rail-section { display: flex; flex-direction: column; gap: 8px; }
+.rail-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.rail-head h3 { font-size: 13px; color: var(--soft); }
 
-    this.renderPipelineSelector();
-  }
+/* Project list */
+.project-list { display: flex; flex-direction: column; gap: 4px; }
+.project-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted); font-size: 12px; font-weight: 600;
+  text-align: left; width: 100%;
+  transition: .15s ease;
+}
+.project-item:hover { background: rgba(255,255,255,0.04); color: var(--text); border-color: var(--border); }
+.project-item.active { background: var(--accent-dim); color: var(--accent-2); border-color: var(--accent-border); }
+.project-item-icon { font-size: 16px; flex-shrink: 0; }
+.project-item-body { flex: 1; min-width: 0; }
+.project-item-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.project-item-meta { font-size: 10px; color: var(--muted); font-weight: 400; }
+.project-item.active .project-item-meta { color: var(--accent); }
 
-  _initPipelineModels(pipeline) {
-    const roles = pipeline.required_agent_roles || [];
-    const savedKey = `creator_${this.pageId}_models_${pipeline.public_id}`;
-    const saved = JSON.parse(localStorage.getItem(savedKey) || "null");
-    if (saved && Array.isArray(saved)) {
-      this.state.pipelineModels = saved;
-      return;
-    }
-    // Auto-assign: first model whose role_tags match the pipeline role
-    this.state.pipelineModels = roles.map(role => {
-      const match = this.state.availableModels.find(m => {
-        const mRoles = m.role_tags || m.capability_tags || [];
-        return _roleMatches(mRoles, role);
-      });
-      return { role, alias: match?.alias || "" };
-    });
-  }
+/* Plan card */
+.plan-card {
+  padding: 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-3);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.plan-field { display: flex; flex-direction: column; gap: 3px; }
+.plan-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+.plan-field-value { font-size: 12px; color: var(--soft); line-height: 1.4; }
+.plan-field-value.accent { color: var(--accent-2); font-weight: 600; }
 
-  _savePipelineModels() {
-    if (!this.state.activePipelineId) return;
-    localStorage.setItem(
-      `creator_${this.pageId}_models_${this.state.activePipelineId}`,
-      JSON.stringify(this.state.pipelineModels)
-    );
-  }
+/* Target selector */
+.target-selector { display: flex; flex-direction: column; gap: 6px; }
+.target-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-3);
+  color: var(--muted); font-size: 12px; font-weight: 600;
+  text-align: left; width: 100%; transition: .15s ease;
+}
+.target-btn:hover { border-color: var(--accent-border); color: var(--text); }
+.target-btn.active { border-color: var(--accent-border); background: var(--accent-dim); color: var(--accent-2); }
+.target-btn-icon { font-size: 18px; flex-shrink: 0; }
+.target-btn-body { flex: 1; }
+.target-btn-label { display: block; }
+.target-btn-desc { font-size: 11px; color: var(--muted); font-weight: 400; }
+.target-btn.active .target-btn-desc { color: var(--accent); }
 
-  renderPipelineSelector() {
-    const el = qs("#pipelineSelector"); if (!el) return;
+/* ── Center column ── */
+.center-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 
-    const pipeline = this.state.activePipeline;
-    const roles = pipeline?.required_agent_roles || [];
-    const stages = pipeline?.stages || [];
+/* ════════════════════════════════════════════════════════════════
+   PIPELINE SELECTOR — above stage list
+   ════════════════════════════════════════════════════════════════ */
+.pipeline-selector {
+  padding: 14px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--accent-dim), rgba(0,0,0,0));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
-    el.innerHTML = `
-      <div class="ps-header">
-        <div class="ps-title-row">
-          <span class="eyebrow accent">Pipeline</span>
-          <select class="select select--sm" id="pipelineDropdown">
-            ${!this.state.pipelines.length
-              ? `<option value="">No compatible pipelines</option>`
-              : this.state.pipelines.map(p => `
-                  <option value="${esc(p.public_id)}" ${p.public_id === this.state.activePipelineId ? "selected" : ""}>
-                    ${esc(p.name)}
-                  </option>`).join("")}
-          </select>
-        </div>
-        ${pipeline?.description ? `<div class="ps-desc">${esc(pipeline.description)}</div>` : ""}
-      </div>
+.ps-header { display: flex; flex-direction: column; gap: 6px; }
 
-      ${stages.length ? `
-        <div class="ps-stages">
-          ${stages.map(s => `<span class="ps-stage-chip">${esc(s.title || s.id)}</span>`).join("")}
-        </div>` : ""}
+.ps-title-row {
+  display: flex; align-items: center; gap: 12px;
+}
+.ps-title-row .eyebrow { flex-shrink: 0; }
+.ps-title-row .select { flex: 1; }
 
-      ${roles.length ? `
-        <div class="ps-roles">
-          <div class="ps-roles-label">Model per role</div>
-          <div class="ps-roles-list">
-            ${roles.map(role => {
-              const assignment = this.state.pipelineModels.find(m => m.role === role) || {};
-              return `
-                <div class="ps-role-row">
-                  <span class="ps-role-name">${esc(role)}</span>
-                  <select class="select select--sm ps-model-select" data-role="${esc(role)}">
-                    <option value="">— auto —</option>
-                    ${this.state.availableModels.map(m => `
-                      <option value="${esc(m.alias)}" ${m.alias === assignment.alias ? "selected" : ""}>
-                        ${esc(m.name || m.alias)}
-                      </option>`).join("")}
-                  </select>
-                </div>`;
-            }).join("")}
-          </div>
-        </div>` : ""}
-    `;
+.ps-desc {
+  font-size: 12px; color: var(--muted); line-height: 1.4;
+  padding-left: 2px;
+}
 
-    qs("#pipelineDropdown")?.addEventListener("change", e => {
-      const found = this.state.pipelines.find(p => p.public_id === e.target.value);
-      if (!found) return;
-      this.state.activePipeline = found;
-      this.state.activePipelineId = found.public_id;
-      localStorage.setItem(`creator_${this.pageId}_pipeline`, found.public_id);
-      this._initPipelineModels(found);
-      this.renderPipelineSelector();
-      this.updateLaunchBar();
-    });
+/* Stage chips */
+.ps-stages {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.ps-stage-chip {
+  display: inline-flex; align-items: center;
+  padding: 3px 10px; border-radius: 999px;
+  font-size: 11px; font-weight: 600;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  white-space: nowrap;
+}
 
-    qsa(".ps-model-select").forEach(sel => {
-      sel.addEventListener("change", () => {
-        const role = sel.dataset.role;
-        const existing = this.state.pipelineModels.find(m => m.role === role);
-        if (existing) existing.alias = sel.value;
-        else this.state.pipelineModels.push({ role, alias: sel.value });
-        this._savePipelineModels();
-      });
-    });
-  }
+/* Role → model assignments */
+.ps-roles { display: flex; flex-direction: column; gap: 6px; }
+.ps-roles-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--muted); font-weight: 700;
+}
+.ps-roles-list { display: flex; flex-direction: column; gap: 5px; }
+.ps-role-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+.ps-role-name {
+  font-size: 12px; font-weight: 600; color: var(--soft);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
-  // Build node-level model map for pipeline executor
-  _buildModelAssignments() {
-    const pipeline = this.state.activePipeline;
-    if (!pipeline) return {};
-    const roles = pipeline.required_agent_roles || [];
-    return (pipeline.stages || []).reduce((map, s, i) => {
-      const preferredRole = KIND_ROLE_MAP[s.kind] || roles[i % Math.max(roles.length, 1)] || roles[0];
-      const assignment = this.state.pipelineModels.find(m => m.role === preferredRole);
-      const fallback   = this.state.pipelineModels.find(m => m.alias);
-      map[s.id] = assignment?.alias || fallback?.alias || "";
-      return map;
-    }, {});
-  }
+/* ── Stage pipeline ── */
+.pipeline-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 12px; margin-bottom: 16px;
+}
+.pipeline-header h2 { font-size: 20px; }
+.pipeline-header p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.pipeline-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
-  // ════════════════════════════════════════════════════════════════
-  // PROJECTS
-  // ════════════════════════════════════════════════════════════════
+.stage-list { display: flex; flex-direction: column; gap: 8px; }
 
-  async loadProjects() {
-    const r = await api("/api/projects");
-    if (!r.ok) return;
-    const all = Array.isArray(r.body?.items) ? r.body.items : [];
-    this.state.projects = all.filter(p => {
-      const portal = (p.target_portal || "").toLowerCase();
-      if (this.pageId === "portal")   return portal.includes("portal");
-      if (this.pageId === "app")      return portal.includes("app");
-      if (this.pageId === "game")     return portal.includes("game");
-      if (this.pageId === "lorecore") return portal.includes("lore") || portal.includes("creative");
-      if (this.pageId === "research") return portal.includes("research");
-      return true;
-    });
-    this.renderProjectList();
+.stage-item {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  transition: .15s ease;
+  cursor: pointer;
+}
+.stage-item:hover { border-color: var(--border-strong); }
+.stage-item.active { border-color: var(--accent-border); background: linear-gradient(180deg, var(--accent-dim), transparent); }
+.stage-item.running { border-color: var(--accent-border); animation: stage-pulse 2s ease infinite; }
+.stage-item.done { border-color: rgba(82,217,140,0.25); }
+.stage-item.failed { border-color: rgba(240,112,112,0.25); }
+@keyframes stage-pulse {
+  0%,100% { box-shadow: 0 0 0 0 var(--accent-glow); }
+  50% { box-shadow: 0 0 0 4px var(--accent-glow); }
+}
+.stage-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 700;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  color: var(--muted); flex-shrink: 0;
+}
+.stage-item.active .stage-num,
+.stage-item.running .stage-num { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent-2); }
+.stage-item.done .stage-num    { background: var(--good-dim); border-color: rgba(82,217,140,0.3); color: var(--good); }
+.stage-item.failed .stage-num  { background: var(--bad-dim); border-color: rgba(240,112,112,0.3); color: var(--bad); }
+.stage-body { min-width: 0; }
+.stage-title { font-size: 13px; font-weight: 700; color: var(--text); }
+.stage-desc  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.stage-item.active .stage-title { color: var(--accent-2); }
+.stage-status {
+  font-size: 11px; font-weight: 700; padding: 4px 8px;
+  border-radius: 999px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); white-space: nowrap;
+}
+.stage-status.running { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+.stage-status.done    { color: var(--good); border-color: rgba(82,217,140,0.3); background: var(--good-dim); }
+.stage-status.failed  { color: var(--bad); border-color: rgba(240,112,112,0.3); background: var(--bad-dim); }
 
-    const saved = this.state.projects.find(p => p.public_id === this.state.activeProjectId);
-    if (saved) {
-      await this.selectProject(saved.public_id);
-    } else if (this.state.projects[0]) {
-      await this.selectProject(this.state.projects[0].public_id);
-    } else {
-      this.renderEmptyState();
-    }
-  }
+/* Stage config */
+.stage-config {
+  padding: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--accent-dim), transparent);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.stage-config-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.stage-config-title  { font-size: 14px; font-weight: 700; color: var(--accent-2); }
+.stage-config-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-  async selectProject(pid) {
-    this.state.activeProjectId = pid;
-    localStorage.setItem(`creator_${this.pageId}_project`, pid);
-    this.state.activeProject = this.state.projects.find(p => p.public_id === pid) || null;
-    this.renderProjectList();
-    this.renderProjectPlan();
-    this.renderPipeline();
-    this.loadJobs();
-  }
+/* Launch bar */
+.launch-bar {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: linear-gradient(180deg, var(--accent-dim), rgba(0,0,0,0));
+}
+.launch-info h3 { font-size: 14px; color: var(--accent-2); }
+.launch-info p  { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-  renderProjectList() {
-    const el = qs("#projectList"); if (!el) return;
-    if (!this.state.projects.length) {
-      el.innerHTML = `<div class="section-meta" style="padding:8px 4px;">No projects yet — create one in Projects.</div>`;
-      return;
-    }
-    el.innerHTML = this.state.projects.map(p => `
-      <button class="project-item ${p.public_id === this.state.activeProjectId ? "active" : ""}" data-pid="${esc(p.public_id)}">
-        <span class="project-item-icon">${this.projectIcon()}</span>
-        <span class="project-item-body">
-          <span class="project-item-title">${esc(p.title)}</span>
-          <span class="project-item-meta">${esc(p.status || "Draft")} · ${esc(p.type || "")}</span>
-        </span>
-      </button>
-    `).join("");
-    qsa(".project-item[data-pid]", el).forEach(btn => {
-      btn.addEventListener("click", () => this.selectProject(btn.dataset.pid));
-    });
-  }
+/* Exec log */
+.exec-log {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 200px; overflow-y: auto;
+  padding: 12px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 11px;
+}
+.log-line        { color: var(--soft); line-height: 1.6; }
+.log-line.accent { color: var(--accent-2); }
+.log-line.good   { color: var(--good); }
+.log-line.warn   { color: var(--warn); }
+.log-line.bad    { color: var(--bad); }
+.log-line.muted  { color: var(--muted); }
 
-  renderProjectPlan() {
-    const el = qs("#projectPlan"); if (!el) return;
-    const p = this.state.activeProject;
-    if (!p) { el.innerHTML = `<div class="section-meta">Select a project.</div>`; return; }
-    const notes = typeof p.notes === "object" ? p.notes : {};
-    const goal        = notes.Goal || notes.goal || "";
-    const modules     = notes.Modules || notes.modules || "";
-    const constraints = notes.Constraints || notes.constraints || "";
-    const nextAction  = p.next_action || "";
-    el.innerHTML = `
-      <div class="plan-card">
-        <div class="plan-field">
-          <span class="plan-field-label">Goal</span>
-          <span class="plan-field-value accent">${esc(goal || p.title)}</span>
-        </div>
-        ${modules     ? `<div class="plan-field"><span class="plan-field-label">Modules</span><span class="plan-field-value">${esc(modules).replace(/\n/g,"<br>")}</span></div>` : ""}
-        ${constraints ? `<div class="plan-field"><span class="plan-field-label">Constraints</span><span class="plan-field-value">${esc(constraints).replace(/\n/g,"<br>")}</span></div>` : ""}
-        ${nextAction  ? `<div class="plan-field"><span class="plan-field-label">Next action</span><span class="plan-field-value">${esc(nextAction)}</span></div>` : ""}
-      </div>
-    `;
-  }
+/* Run config */
+.run-config-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.config-toggle {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-3);
+  cursor: pointer; transition: .15s;
+}
+.config-toggle:hover { border-color: var(--border-strong); }
+.config-toggle.on    { border-color: var(--accent-border); background: var(--accent-dim); }
+.config-toggle-label { font-size: 11px; font-weight: 700; color: var(--soft); }
+.config-toggle.on .config-toggle-label { color: var(--accent-2); }
+.config-toggle-desc  { font-size: 10px; color: var(--muted); line-height: 1.4; }
 
-  // ════════════════════════════════════════════════════════════════
-  // JOBS
-  // ════════════════════════════════════════════════════════════════
+/* ── Right rail ── */
+.right-rail { display: flex; flex-direction: column; gap: 12px; }
 
-  async loadJobs() {
-    if (!this.state.activeProjectId) return;
-    const r = await api(`/api/production/jobs?subject_public_id=${this.state.activeProjectId}`);
-    if (!r.ok) return;
-    this.state.jobs = Array.isArray(r.body?.items) ? r.body.items : [];
-    this.renderJobMonitor();
-    this.renderRunHistory();
-    this.updateJobStatusBar();
-    const running = this.state.jobs.find(j => j.status === "running" || j.status === "queued");
-    if (running && !this.state.pollInterval) this.startPolling(running.public_id);
-  }
+/* Model activity */
+.job-monitor { display: flex; flex-direction: column; gap: 8px; }
+.model-activity-list { display: flex; flex-direction: column; gap: 6px; }
+.model-activity-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: var(--radius-xs);
+  border: 1px solid var(--border); background: var(--surface-3);
+  font-size: 11px;
+}
+.model-activity-item.active { border-color: var(--accent-border); background: var(--accent-dim); }
+.model-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.model-dot.active { background: var(--accent); box-shadow: 0 0 6px var(--accent); animation: pulse 1.4s ease infinite; }
+.model-dot.done   { background: var(--good); }
+.model-name { font-weight: 700; color: var(--soft); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.model-task { color: var(--muted); font-size: 10px; }
+.model-activity-item.active .model-name { color: var(--accent-2); }
+.model-activity-item.active .model-task { color: var(--accent); }
 
-  async loadJobDetail(jobId) {
-    const r = await api(`/api/production/jobs/${jobId}`);
-    if (!r.ok) return null;
-    return r.body;
-  }
+/* Artifacts */
+.artifact-list { display: flex; flex-direction: column; gap: 6px; }
+.artifact-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 10px 12px; border-radius: var(--radius-xs);
+  border: 1px solid var(--border); background: var(--surface-3);
+  cursor: pointer; transition: .15s; width: 100%; text-align: left;
+}
+.artifact-item:hover { border-color: var(--accent-border); }
+.artifact-item.active { border-color: var(--accent-border); background: var(--accent-dim); }
+.artifact-title { font-size: 12px; font-weight: 700; color: var(--text); }
+.artifact-meta  { font-size: 10px; color: var(--muted); }
+.artifact-item.active .artifact-title { color: var(--accent-2); }
 
-  startPolling(jobId) {
-    this.state.activeJobId = jobId;
-    this.state.pollInterval = setInterval(async () => {
-      const detail = await this.loadJobDetail(jobId);
-      if (!detail) return;
-      const job       = detail.job || detail;
-      const events    = detail.events || [];
-      const artifacts = detail.artifacts || [];
+.artifact-viewer-panel { display: flex; flex-direction: column; gap: 10px; }
+.artifact-viewer-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+}
+.artifact-viewer-body {
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 11px; line-height: 1.6;
+  white-space: pre-wrap; word-break: break-all;
+  max-height: 400px; overflow-y: auto;
+  padding: 12px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  color: var(--soft);
+}
 
-      const idx = this.state.jobs.findIndex(j => j.public_id === jobId);
-      if (idx >= 0) this.state.jobs[idx] = job;
-      this.state.artifacts = artifacts;
+/* Run history */
+.run-list { display: flex; flex-direction: column; gap: 6px; }
+.run-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 9px 11px; border-radius: var(--radius-xs);
+  border: 1px solid var(--border); background: var(--surface-3);
+  font-size: 11px; cursor: pointer; text-align: left; width: 100%;
+  transition: .15s;
+}
+.run-item:hover { border-color: var(--border-strong); }
+.run-title { font-weight: 700; color: var(--soft); }
+.run-meta  { color: var(--muted); }
 
-      this.updateStagesFromEvents(events);
-      this.appendEvents(events);
-      this.renderJobMonitor();
-      this.updateJobStatusBar();
-      this.renderArtifacts();
+/* ── Shared components ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--surface-3);
+  color: var(--text); font-size: 13px; font-weight: 600;
+  transition: .15s ease; white-space: nowrap;
+}
+.btn:hover    { background: rgba(255,255,255,0.06); border-color: var(--border-strong); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn--primary {
+  background: linear-gradient(135deg, var(--accent-dim), rgba(0,0,0,0.2));
+  border-color: var(--accent-border); color: var(--accent-2);
+}
+.btn--primary:hover { filter: brightness(1.1); }
+.btn--launch {
+  padding: 12px 24px; font-size: 14px;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 60%, white));
+  border-color: var(--accent); color: #05090f; font-weight: 800;
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.btn--launch:hover  { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 6px 24px color-mix(in srgb, var(--accent) 40%, transparent); }
+.btn--launch:active { transform: translateY(0); }
+.btn--sm     { padding: 5px 10px; font-size: 11px; border-radius: var(--radius-xs); }
+.btn--danger { border-color: rgba(240,112,112,0.3); color: var(--bad); }
+.btn--danger:hover { background: var(--bad-dim); }
+.btn-row     { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
-      if (["completed","failed","interrupted"].includes(job.status)) {
-        clearInterval(this.state.pollInterval);
-        this.state.pollInterval = null;
-        this.renderPipeline();
-        showToast(job.status === "completed" ? "Job complete" : `Job ${job.status}`,
-          job.status === "completed" ? "good" : "warn");
-      }
-    }, 2500);
-  }
+.input, .select, .textarea {
+  width: 100%;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  background: rgba(0,0,0,0.3); color: var(--text);
+  padding: 8px 11px; font: inherit; font-size: 13px;
+  outline: none; transition: border-color .15s;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.select--sm { padding: 5px 8px; font-size: 12px; border-radius: var(--radius-xs); }
+.select { cursor: pointer; }
+.textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
+.textarea--tall { min-height: 200px; }
+.textarea--code { font-family: ui-monospace, monospace; font-size: 12px; min-height: 300px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 
-  _pollPipelineRun(jobId) {
-    this.state.activeJobId = jobId;
-    this.state.pollInterval = setInterval(async () => {
-      const r = await api(`/api/pipelines/runs/${jobId}`);
-      if (!r.ok) return;
-      const run = r.body;
+.eyebrow { font-size: 10px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); font-weight: 700; }
+.eyebrow.accent { color: var(--accent); }
+.section-title { font-size: 15px; font-weight: 700; color: var(--soft); }
+.section-meta  { font-size: 12px; color: var(--muted); margin-top: 3px; }
 
-      Object.entries(run.node_states || {}).forEach(([nid, ns]) => {
-        const key = `node_${nid}_${ns.status}`;
-        if (!this.state.logLines.find(l => l.id === key)) {
-          this.state.logLines.push({
-            id: key,
-            text: `[${nid}] ${ns.status}${ns.error ? ` — ${ns.error}` : ""}`,
-            tone: ns.status === "done" ? "good" : ns.status === "failed" ? "bad" : "muted",
-            time: ns.finished_at || ns.started_at || new Date().toISOString(),
-          });
-        }
-      });
-      this.renderExecLog();
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 9px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04); color: var(--muted);
+}
+.chip.good   { color: var(--good); background: var(--good-dim); border-color: rgba(82,217,140,0.25); }
+.chip.warn   { color: var(--warn); background: var(--warn-dim); border-color: rgba(242,191,97,0.25); }
+.chip.bad    { color: var(--bad);  background: var(--bad-dim);  border-color: rgba(240,112,112,0.25); }
+.chip.accent { color: var(--accent-2); background: var(--accent-dim); border-color: var(--accent-border); }
 
-      if (["completed","failed","partial"].includes(run.status)) {
-        clearInterval(this.state.pollInterval);
-        this.state.pollInterval = null;
-        showToast(run.status === "completed" ? "Pipeline complete" : `Pipeline ${run.status}`,
-          run.status === "completed" ? "good" : "warn");
-        if (run.final_output) {
-          this.state.artifacts.unshift({
-            public_id: uid(),
-            title: `Pipeline output — ${run.pipeline_id}`,
-            artifact_type: "pipeline_output",
-            content: run.final_output,
-            created_at: new Date().toISOString(),
-          });
-          this.renderArtifacts();
-        }
-      }
-    }, 2500);
-  }
+.toast {
+  position: fixed; right: 18px; bottom: 18px; z-index: 100;
+  min-width: 220px; max-width: 360px;
+  padding: 11px 14px; border-radius: var(--radius-sm);
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text); font-size: 13px; box-shadow: var(--shadow);
+  opacity: 0; pointer-events: none; transform: translateY(8px);
+  transition: .18s ease;
+}
+.toast.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.toast.good { border-color: rgba(82,217,140,0.3); }
+.toast.warn { border-color: rgba(242,191,97,0.3); }
+.toast.bad  { border-color: rgba(240,112,112,0.3); }
 
-  updateStagesFromEvents(events) {
-    events.forEach(ev => {
-      const stage = this.state.stages.find(s => s.id === ev.stage_id);
-      if (!stage) return;
-      if (ev.event_type === "stage_start")    stage.status = "running";
-      if (ev.event_type === "stage_complete") stage.status = "done";
-      if (ev.event_type === "stage_fail")     stage.status = "failed";
-    });
-    this.renderPipeline();
-  }
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; padding: 60px 20px; text-align: center;
+}
+.empty-icon   { font-size: 48px; }
+.empty-state h2 { font-size: 20px; }
+.empty-state p  { color: var(--muted); font-size: 13px; }
 
-  appendEvents(events) {
-    const existing = new Set(this.state.logLines.map(l => l.id));
-    events.forEach(ev => {
-      if (existing.has(ev.public_id)) return;
-      this.state.logLines.push({
-        id: ev.public_id,
-        text: `[${ev.stage_id || "system"}] ${ev.message}`,
-        tone: ev.status === "error" ? "bad" : ev.status === "complete" ? "good" : "muted",
-        time: ev.created_at,
-      });
-    });
-    this.renderExecLog();
-  }
+.new-project-form {
+  padding: 14px; border-radius: var(--radius-sm);
+  border: 1px solid var(--accent-border); background: var(--accent-dim);
+  display: flex; flex-direction: column; gap: 10px;
+}
 
-  renderExecLog() {
-    const el = qs("#execLog"); if (!el) return;
-    const lines = this.state.logLines.slice(-50).reverse();
-    el.innerHTML = lines.length
-      ? lines.map(l => `<div class="log-line ${l.tone}">${esc(l.text)}</div>`).join("")
-      : `<div class="log-line muted">No activity yet.</div>`;
-  }
+.progress-bar { height: 3px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.progress-fill {
+  height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width .5s ease;
+}
 
-  updateJobStatusBar() {
-    const bar = qs("#jobStatusBar"); if (!bar) return;
-    const running = this.state.jobs.find(j => j.status === "running");
-    const latest  = this.state.jobs[0];
-    if (running) {
-      bar.className = "job-status-bar has-job";
-      bar.innerHTML = `
-        <div class="job-status-dot running"></div>
-        <div class="job-status-text">${esc(running.title || "Running")}</div>
-        <div class="job-status-meta">Stage ${running.current_stage || "—"} · ${running.progress || 0}%</div>
-        <div class="progress-bar" style="width:120px"><div class="progress-fill" style="width:${running.progress||0}%"></div></div>`;
-    } else if (latest) {
-      const tone = latest.status === "completed" ? "good" : latest.status === "failed" ? "bad" : "";
-      bar.className = "job-status-bar";
-      bar.innerHTML = `
-        <div class="job-status-dot ${tone}"></div>
-        <div class="job-status-text">${esc(latest.title || "No active job")}</div>
-        <div class="job-status-meta">${esc(latest.status)} · ${timeAgo(latest.updated_at)}</div>
-        <span class="chip ${tone}">${esc(latest.status)}</span>`;
-    } else {
-      bar.className = "job-status-bar";
-      bar.innerHTML = `
-        <div class="job-status-dot"></div>
-        <div class="job-status-text">No jobs</div>
-        <div class="job-status-meta">Select a project and pipeline, then launch</div>
-        <span class="chip">idle</span>`;
-    }
-  }
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
 
-  renderJobMonitor() {
-    const el = qs("#modelActivityList"); if (!el) return;
-    const running = this.state.jobs.find(j => j.status === "running");
-    if (!running) { el.innerHTML = `<div class="section-meta" style="padding:4px;">No active job.</div>`; return; }
-    let participants = [];
-    try { participants = JSON.parse(running.panel_plan || "[]"); } catch {}
-    if (!participants.length) { el.innerHTML = `<div class="log-line muted">Job running — model assignments loading…</div>`; return; }
-    el.innerHTML = participants.map((p, i) => `
-      <div class="model-activity-item ${i === 0 ? "active" : ""}">
-        <div class="model-dot ${i === 0 ? "active" : "done"}"></div>
-        <span class="model-name">${esc(p.model || p.alias || "Model")}</span>
-        <span class="model-task">${esc(p.role || "worker")}</span>
-      </div>`).join("");
-  }
-
-  renderArtifacts() {
-    const el = qs("#artifactList"); if (!el) return;
-    if (!this.state.artifacts.length) { el.innerHTML = `<div class="section-meta" style="padding:4px;">No artifacts yet.</div>`; return; }
-    el.innerHTML = this.state.artifacts.map(a => `
-      <button class="artifact-item ${a.public_id === this.state.activeArtifactId ? "active" : ""}" data-artifact-id="${esc(a.public_id)}">
-        <span class="artifact-title">${esc(a.title)}</span>
-        <span class="artifact-meta">${esc(a.artifact_type)} · ${timeAgo(a.created_at)}</span>
-      </button>`).join("");
-    qsa(".artifact-item[data-artifact-id]", el).forEach(btn => {
-      btn.addEventListener("click", () => this.openArtifact(btn.dataset.artifactId));
-    });
-  }
-
-  openArtifact(id) {
-    this.state.activeArtifactId = id;
-    this.renderArtifacts();
-    const artifact = this.state.artifacts.find(a => a.public_id === id);
-    const el = qs("#artifactViewer"); if (!el) return;
-    if (!artifact) { el.innerHTML = ""; return; }
-    el.innerHTML = `
-      <div class="artifact-viewer-panel">
-        <div class="artifact-viewer-head">
-          <div>
-            <div class="eyebrow">${esc(artifact.artifact_type)}</div>
-            <div class="section-title">${esc(artifact.title)}</div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn--sm" id="copyArtifactBtn">Copy</button>
-            <button class="btn btn--sm btn--primary" id="downloadArtifactBtn">Download</button>
-          </div>
-        </div>
-        <pre class="artifact-viewer-body">${esc(artifact.content || "")}</pre>
-      </div>`;
-    qs("#copyArtifactBtn")?.addEventListener("click", () => {
-      navigator.clipboard.writeText(artifact.content || "");
-      showToast("Copied", "good");
-    });
-    qs("#downloadArtifactBtn")?.addEventListener("click", () => {
-      const blob = new Blob([artifact.content || ""], { type: "text/plain" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = `${artifact.title || "artifact"}.txt`; a.click();
-      URL.revokeObjectURL(url);
-    });
-  }
-
-  renderRunHistory() {
-    const el = qs("#runHistory"); if (!el) return;
-    if (!this.state.jobs.length) { el.innerHTML = `<div class="section-meta" style="padding:4px;">No runs yet.</div>`; return; }
-    el.innerHTML = this.state.jobs.slice(0, 8).map(j => `
-      <button class="run-item" data-job-id="${esc(j.public_id)}">
-        <span class="run-title">${esc(j.title || "Run")}</span>
-        <span class="run-meta">${esc(j.status)} · ${timeAgo(j.updated_at)}</span>
-      </button>`).join("");
-    qsa(".run-item[data-job-id]", el).forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const detail = await this.loadJobDetail(btn.dataset.jobId);
-        if (detail) {
-          this.state.artifacts = detail.artifacts || [];
-          this.appendEvents(detail.events || []);
-          this.renderArtifacts();
-          showToast("Run loaded", "good");
-        }
-      });
-    });
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // LAUNCH
-  // ════════════════════════════════════════════════════════════════
-
-  async launchJob(overrides = {}) {
-    if (!this.state.activeProjectId) { showToast("Select a project first", "warn"); return; }
-    if (!this.state.activePipeline)  { showToast("Select a pipeline first", "warn"); return; }
-
-    const proj     = this.state.activeProject;
-    const pipeline = this.state.activePipeline;
-
-    // Build graph with per-node model assignments
-    const modelMap   = this._buildModelAssignments();
-    const rawStages  = pipeline.stages || [];
-    const nodes = rawStages.map((s, i) => ({
-      id:          s.id || `n_${i}`,
-      title:       s.title || s.id,
-      type:        KIND_TYPE_MAP[s.kind] || "planner",
-      desc:        s.summary || "",
-      group:       s.kind || "",
-      model:       modelMap[s.id] || "",
-      x: 0, y: 0,
-      notes:       "",
-      quorumRule:  "single pass",
-      timeout:     "120s",
-    }));
-    const edges = nodes.slice(1).map((n, i) => ({
-      id:   `e_${nodes[i].id}_${n.id}`,
-      from: nodes[i].id,
-      to:   n.id,
-    }));
-
-    const selectedModels = [...new Set(
-      this.state.pipelineModels.map(m => m.alias).filter(Boolean)
-    )];
-
-    const launchBtn = qs("#launchBtn");
-    if (launchBtn) { launchBtn.disabled = true; launchBtn.textContent = "Launching…"; }
-
-    const r = await api(`/api/pipelines/${pipeline.public_id}/run`, {
-      method: "POST",
-      body: {
-        objective:       proj?.notes?.Goal || proj?.title || pipeline.name,
-        selected_models: selectedModels,
-        surface:         this.pageId,
-        pipeline_type:   pipeline.type || "",
-        graph:           { nodes, edges },
-        ...overrides,
-      },
-    });
-
-    if (launchBtn) { launchBtn.disabled = false; launchBtn.textContent = this.launchLabel(); }
-
-    if (!r.ok) {
-      showToast(`Launch failed: ${r.body?.detail || r.status}`, "warn");
-      return;
-    }
-
-    const { job_id } = r.body;
-    this.addLog(`Pipeline launched: ${job_id} via ${pipeline.name}`, "accent");
-    showToast("Pipeline launched", "good");
-    this._pollPipelineRun(job_id);
-  }
-
-  addLog(text, tone = "muted") {
-    this.state.logLines.push({ id: uid(), text, tone, time: new Date().toISOString() });
-    this.renderExecLog();
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // OVERRIDES IN SUBCLASSES
-  // ════════════════════════════════════════════════════════════════
-
-  projectIcon()  { return "📁"; }
-  launchLabel()  { return "Launch Pipeline"; }
-  renderPipeline()       {}
-  renderTargetSelector() {}
-  updateLaunchBar()      {}
-
-  renderEmptyState() {
-    const el = qs("#centerCol"); if (!el) return;
-    el.innerHTML = `
-      <div class="panel empty-state">
-        <div class="empty-icon">${this.projectIcon()}</div>
-        <h2>No projects</h2>
-        <p>Go to Projects to create one, then come back to launch a pipeline run.</p>
-        <a href="../projects/" class="btn btn--primary">Open Projects</a>
-      </div>`;
-  }
-
-  // ════════════════════════════════════════════════════════════════
-  // INIT
-  // ════════════════════════════════════════════════════════════════
-
-  async init() {
-    this.bindCommonEvents();
-    await Promise.all([this.loadProjects(), this.loadPipelines()]);
-  }
-
-  bindCommonEvents() {
-    qs("#launchBtn")?.addEventListener("click",   () => this.launchJob());
-    qs("#refreshBtn")?.addEventListener("click",  () => this.loadJobs());
-  }
+/* ── Responsive ── */
+@media (max-width: 1400px) {
+  .creator-layout { grid-template-columns: 260px 1fr 260px; }
+  .run-config-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 1200px) {
+  .creator-header { grid-template-columns: 1fr; }
+  .header-nav { justify-content: flex-start; }
+  .creator-layout { grid-template-columns: 240px 1fr; }
+  .right-rail { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; }
+  .ps-role-row { grid-template-columns: 120px 1fr; }
+}
+@media (max-width: 900px) {
+  .creator-layout { grid-template-columns: 1fr; }
+  .left-rail { position: static; }
+  .right-rail { grid-template-columns: 1fr; }
+  .stage-config-grid, .field-grid-2, .field-grid-3, .run-config-grid { grid-template-columns: 1fr; }
+  .ps-role-row { grid-template-columns: 1fr; }
+  .ps-role-name { font-size: 11px; }
 }
