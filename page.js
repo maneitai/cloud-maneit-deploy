@@ -27,7 +27,7 @@ const defaultState = {
     {day:"Sat",date:"29",items:[{title:"Reset / planning",tone:"warn"}]},
     {day:"Sun",date:"30",items:[{title:"Open creative block",tone:"good"}]}
   ],
-  activeModels:[], availableModels:[], bootstrapped:false
+  activeModels:[], availableModels:[], bootstrapped:false, intentMode:"auto"
 };
 
 function qs(s, r=document) { return r.querySelector(s); }
@@ -309,7 +309,8 @@ async function loadThreadHistory(id) {
     if (!res.ok) return;
     const msgs = Array.isArray(res.body?.messages) ? res.body.messages : [];
     // FIX: fully replace — never merge with streaming data, never reverse
-    threadCache[id] = msgs.map(m => ({
+    const SYSTEM_GREETING = "New operator thread ready. Pick participants, ask a question, or export an idea into production.";
+    threadCache[id] = msgs.filter(m => (m.content||"") !== SYSTEM_GREETING).map(m => ({
       id: m.message_public_id||safeId("msg"),
       role: m.role||"assistant",
       head: m.role==="user" ? "User" : (m.selected_worker_name||m.selected_model||"Assistant"),
@@ -403,7 +404,7 @@ async function sendAndStream() {
   let currentModelName = selectedModels[0]||"Assistant";
   createStreamingBubble(currentModelName);
 
-  const params = new URLSearchParams({prompt:text, mode:state.mode, models:selectedModels.join(",")});
+  const params = new URLSearchParams({prompt:text, mode:state.mode, models:selectedModels.join(","), intent:state.intentMode||"auto"});
   const url = `${PM_API_BASE}/api/home/sessions/${encodeURIComponent(state.selectedChatId)}/stream?${params}`;
   let fullContent = "";
 
@@ -445,6 +446,16 @@ async function sendAndStream() {
             appendStreamChunk(event.text); fullContent+=event.text;
           } else if (event.type==="done") {
             fullContent=event.content||fullContent;
+          } else if (event.type==="intent_route") {
+            const label = event.model || event.intent || "";
+            if (label) {
+              const head = qs("#streamHead");
+              if (head) {
+                const nm = head.querySelector(".stream-head-name");
+                if (nm) nm.textContent = label;
+              }
+              currentModelName = label;
+            }
           } else if (event.type==="error") {
             appendStreamChunk(`\n\n⚠️ ${event.message}`); fullContent+=`\n\n⚠️ ${event.message}`;
           }
@@ -738,9 +749,32 @@ async function bootstrapHome() {
   }
 }
 
+const INTENT_CYCLE = ["auto","research","coding","audit"];
+const INTENT_LABELS = {auto:"Auto",research:"🔬 Research",coding:"💻 Coding",audit:"🔍 Audit"};
+
+function updateIntentButton() {
+  const btn = qs("#intentBtn");
+  if (!btn) return;
+  btn.textContent = INTENT_LABELS[state.intentMode||"auto"] || "Auto";
+  btn.dataset.intent = state.intentMode||"auto";
+  btn.className = "button intent-btn" + (state.intentMode && state.intentMode!=="auto" ? " intent-btn--active" : "");
+}
+
+function bindIntentButton() {
+  const btn = qs("#intentBtn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    const idx = INTENT_CYCLE.indexOf(state.intentMode||"auto");
+    state.intentMode = INTENT_CYCLE[(idx+1) % INTENT_CYCLE.length];
+    saveState();
+    updateIntentButton();
+  });
+  updateIntentButton();
+}
+
 function init() {
   renderAll(); bindModeCards(); bindSelectors(); bindProjectTags(); bindTodoControls();
-  bindChatButtons(); bindSendButton(); bindExportButton(); bindDropZone(); initDragResize();
+  bindChatButtons(); bindSendButton(); bindExportButton(); bindDropZone(); initDragResize(); bindIntentButton();
   bootstrapHome();
 }
 
