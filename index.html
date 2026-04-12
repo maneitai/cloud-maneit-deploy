@@ -75,15 +75,13 @@
       display: grid;
       grid-template-columns: 290px 1fr 340px;
       grid-template-areas:
-        "left  center right"
-        "cal   cal    cal";
+        "left  center right";
       gap: 16px;
       align-items: start;
     }
     .panel-left    { grid-area: left; }
     .panel-center  { grid-area: center; }
     .panel-right   { grid-area: right; }
-    .calendar-panel { grid-area: cal; }
 
     .home-chat-card { display: flex; flex-direction: column; }
 
@@ -93,8 +91,7 @@
         grid-template-columns: 280px 1fr;
         grid-template-areas:
           "left  center"
-          "left  right"
-          "cal   cal";
+          "left  right";
       }
     }
 
@@ -105,8 +102,7 @@
         grid-template-areas:
           "left"
           "center"
-          "right"
-          "cal";
+          "right";
       }
     }
   </style>
@@ -265,75 +261,45 @@
             </div>
           </div>
         </article>
+
+        <article class="card card--compact" style="margin-top:12px;">
+          <div class="eyebrow">Export to Projects</div>
+          <div class="field-grid">
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input class="input" id="exportTitle" placeholder="Project title..." style="flex:1;min-width:160px;" />
+              <div class="chip-row" id="projectTypeTags">
+                <button class="button tag-button tag-button--active" type="button" data-tag="App">App</button>
+                <button class="button tag-button" type="button" data-tag="Web">Web</button>
+                <button class="button tag-button" type="button" data-tag="Game">Game</button>
+                <button class="button tag-button" type="button" data-tag="Writing">Writing</button>
+                <button class="button tag-button" type="button" data-tag="Research">Research</button>
+                <button class="button tag-button" type="button" data-tag="System">System</button>
+              </div>
+              <button class="button button--primary" id="exportBtn" type="button">Export</button>
+            </div>
+            <textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
+          </div>
+        </article>
       </main>
 
-      <!-- ── RIGHT — export + todos ── -->
+      <!-- ── RIGHT — todos only ── -->
       <aside class="panel panel-right">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Export + Todos</h2>
+            <h2>Todos</h2>
           </div>
-          <span class="status-chip status-chip--warn">Thread support</span>
         </div>
-
-        <div class="stack stack--md">
-          <article class="card card--compact">
-            <div class="eyebrow">Export to Projects</div>
-            <div class="field-grid">
-              <label class="inline-field">
-                <span class="soft">Project title</span>
-                <input class="input" id="exportTitle" placeholder="Name the project..." />
-              </label>
-
-              <div class="inline-field">
-                <span class="soft">Project type</span>
-                <div class="chip-row" id="projectTypeTags">
-                  <button class="button tag-button tag-button--active" type="button" data-tag="App">App</button>
-                  <button class="button tag-button" type="button" data-tag="Web">Web</button>
-                  <button class="button tag-button" type="button" data-tag="Game">Game</button>
-                  <button class="button tag-button" type="button" data-tag="Writing">Writing</button>
-                  <button class="button tag-button" type="button" data-tag="Research">Research</button>
-                  <button class="button tag-button" type="button" data-tag="System">System</button>
-                </div>
-              </div>
-
-              <label class="inline-field">
-                <span class="soft">Export note</span>
-                <textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
-              </label>
-
-              <button class="button button--primary" id="exportBtn" type="button">Export to Projects</button>
-            </div>
-          </article>
-
-          <article class="card card--compact">
-            <div class="eyebrow">Todo list</div>
-            <div class="todo-list" id="todoList"></div>
-            <div class="inline-field" style="margin-top: 8px;">
-              <span class="soft">Add todo</span>
-              <div class="todo-add-row">
-                <input class="input" id="todoInput" placeholder="Add a quick todo..." />
-                <button class="button" id="addTodoBtn" type="button">Add</button>
-              </div>
-            </div>
-          </article>
+        <div class="todo-list" id="todoList"></div>
+        <div class="inline-field" style="margin-top: 8px;">
+          <span class="soft">Add todo</span>
+          <div class="todo-add-row">
+            <input class="input" id="todoInput" placeholder="Add a quick todo..." />
+            <button class="button" id="addTodoBtn" type="button">Add</button>
+          </div>
         </div>
       </aside>
-
-      <!-- ── BOTTOM — calendar full width ── -->
-      <section class="panel calendar-panel">
-        <div class="section-title">
-          <div>
-            <div class="eyebrow">Bottom zone</div>
-            <h2>Calendar</h2>
-          </div>
-          <span class="status-chip status-chip--good">Weekly view</span>
-        </div>
-        <div class="calendar-grid" id="calendarGrid"></div>
-      </section>
-
-    </section>
+</section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
