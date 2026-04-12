@@ -855,7 +855,7 @@ body {
   word-break: break-word;
 }
 
-/* ── Left panel — sticky, flex, scrollable history ── */
+/* ── Left panel — sticky, capped height, scrollable history ── */
 .panel-left {
   position: sticky;
   top: 18px;
@@ -866,47 +866,21 @@ body {
 }
 
 .panel-left .section-title { flex-shrink: 0; }
-
-.hist-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted);
-  padding: 0 4px 5px;
-  flex-shrink: 0;
-}
-
-.hist-section {
-  display: flex;
-  flex-direction: column;
-  padding-top: 10px;
-  margin-top: 6px;
-  border-top: 1px solid rgba(255,255,255,0.05);
-  flex-shrink: 0;
-}
-
-.hist-section--grow {
+.panel-left .card:nth-child(1) { flex-shrink: 0; }
+.panel-left .card:nth-child(2) { flex-shrink: 0; }
+.panel-left .card:nth-child(3) { flex-shrink: 0; }
+.panel-left .card:last-child {
   flex: 1;
   min-height: 0;
   overflow: hidden;
-}
-
-/* Fixed-height pinned/projects — just their content, no scroll */
-.chat-history-list--fixed {
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
-/* Recent history — scrollable */
-.chat-history-list--scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
+.panel-left .card:last-child .chat-history-list {
   flex: 1;
   min-height: 0;
-  padding-right: 2px;
+  overflow-y: auto;
 }
 
 ::-webkit-scrollbar { width: 4px; }
