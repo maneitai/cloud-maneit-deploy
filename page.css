@@ -928,3 +928,29 @@ body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+
+/* ── History item text truncation ── */
+.history-item { overflow: hidden; }
+.history-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+.history-link__title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Header compress ── */
+.page-header { padding: 10px 16px; }
+.page-header h1 { font-size: 15px; }
+.page-header p { display: none; }
+.brand-mark { width: 32px; height: 32px; font-size: 11px; }
+.global-nav { gap: 4px; }
+.nav-link { padding: 6px 9px; font-size: 12px; }
+
+/* ── Chat thread taller ── */
+.chat-thread { min-height: 460px; max-height: 640px; }
+
+/* ── History matches chat height ── */
+#chatHistoryList { max-height: 580px; overflow-y: auto; }
+#pinnedChatsList { max-height: 140px; overflow-y: auto; }
+#projectFolderList { max-height: 100px; overflow-y: auto; }
+
+/* ── Bubble width constrained ── */
+.bubble--user { max-width: 72%; box-sizing: border-box; }
+.bubble--assistant { max-width: 100%; width: 100%; box-sizing: border-box; overflow-wrap: break-word; word-break: break-word; }
+.chat-thread { overflow-x: hidden; }
