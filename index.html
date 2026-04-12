@@ -134,9 +134,7 @@
       </nav>
 
       <div class="header-actions">
-        <span class="chip">Daily driver</span>
-        <span class="chip">Chat-first</span>
-        <span class="chip">Continuity-first</span>
+        <span class="chip" id="globalStatusChip">Loading</span>
       </div>
     </header>
 
@@ -199,33 +197,15 @@
           </div>
         </div>
 
-        <section class="workspace-kpis">
-          <article class="metric-card metric-card--mode is-active" data-mode="single">
-            <span class="soft">Mode</span>
-            <strong>Single</strong>
-          </article>
-          <article class="metric-card metric-card--mode" data-mode="multi">
-            <span class="soft">Mode</span>
-            <strong>Multi</strong>
-          </article>
-          <article class="metric-card metric-card--mode" data-mode="discussion">
-            <span class="soft">Mode</span>
-            <strong>Discussion</strong>
-          </article>
-          <article class="metric-card">
-            <span class="soft">Export target</span>
-            <strong>Projects</strong>
-          </article>
-        </section>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <button class="button mode-tab mode-tab--active" data-mode="single" type="button">Single</button>
+          <button class="button mode-tab" data-mode="multi" type="button">Multi</button>
+          <button class="button mode-tab" data-mode="discussion" type="button">Discussion</button>
+        </div>
 
         <article class="card card--compact" style="margin-bottom: 12px;">
-          <div class="eyebrow">Model selection</div>
-          <label class="inline-field">
-            <span class="soft">Model</span>
-            <select class="select" id="singleModel">
-              <option value="">Loading models...</option>
-            </select>
-          </label>
+          <div class="eyebrow">Model</div>
+          <div id="modelSelectArea"></div>
           <div class="mode-help" id="modeHelpText" style="margin-top:8px;">
             <strong>Single:</strong> one selected model answers directly.
           </div>
@@ -235,8 +215,8 @@
           <div class="eyebrow">Thread</div>
 
           <div class="chat-thread" id="chatThread">
-            <div class="chat-bubble chat-bubble--assistant">
-              <div class="chat-bubble-head">Home daily driver</div>
+            <div class="bubble bubble--assistant">
+              <div class="bubble-head">Home daily driver</div>
               <p>Select an existing chat or create a new one to begin.</p>
             </div>
           </div>
@@ -252,6 +232,7 @@
               <input type="file" id="fileUploadInput" />
               <button id="uploadBtn" type="button" title="Attach file">📎</button>
               <button class="button intent-btn" id="intentBtn" type="button" title="Click to cycle: Auto → Research → Coding → Audit">Auto</button>
+              <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
               <button class="button button--primary" id="sendBtn" type="button">Send</button>
             </div>
           </div>
@@ -261,7 +242,16 @@
           <div class="eyebrow">Export to Projects</div>
           <div class="field-grid">
             <label class="inline-field"><span class="soft">Project title</span><input class="input" id="exportTitle" placeholder="Name the project..." /></label>
-            <div class="inline-field"><span class="soft">Project type</span><div class="chip-row" id="projectTypeTags"><button class="button tag-button tag-button--active" type="button" data-tag="App">App</button><button class="button tag-button" type="button" data-tag="Web">Web</button><button class="button tag-button" type="button" data-tag="Game">Game</button><button class="button tag-button" type="button" data-tag="Writing">Writing</button><button class="button tag-button" type="button" data-tag="Research">Research</button><button class="button tag-button" type="button" data-tag="System">System</button></div></div>
+            <div class="inline-field"><span class="soft">Project type</span>
+              <div class="chip-row" id="projectTypeTags">
+                <button class="button tag" type="button" data-tag="App">App</button>
+                <button class="button tag" type="button" data-tag="Web">Web</button>
+                <button class="button tag" type="button" data-tag="Game">Game</button>
+                <button class="button tag" type="button" data-tag="Writing">Writing</button>
+                <button class="button tag" type="button" data-tag="Research">Research</button>
+                <button class="button tag" type="button" data-tag="System">System</button>
+              </div>
+            </div>
             <label class="inline-field"><span class="soft">Export note</span><textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea></label>
             <button class="button button--primary" id="exportBtn" type="button">Export to Projects</button>
           </div>
