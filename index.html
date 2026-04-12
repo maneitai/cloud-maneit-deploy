@@ -152,21 +152,35 @@
           <span class="status-chip status-chip--good">History</span>
         </div>
 
-        <input class="input" id="chatSearch" placeholder="Search chats..." style="width:100%;margin-bottom:12px;" />
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Search</div>
+            <label class="inline-field">
+              <span class="soft">Search chats</span>
+              <input class="input" id="chatSearch" placeholder="Search title..." />
+            </label>
+          </article>
 
-        <div class="hist-section">
-          <div class="hist-label">Pinned</div>
-          <div class="chat-history-list chat-history-list--fixed" id="pinnedChatsList"></div>
-        </div>
+          <article class="card card--compact">
+            <div class="section-title section-title--tight">
+              <div><div class="eyebrow">Pinned</div></div>
+            </div>
+            <div class="chat-history-list" id="pinnedChatsList"></div>
+          </article>
 
-        <div class="hist-section">
-          <div class="hist-label">Projects</div>
-          <div class="chat-history-list chat-history-list--fixed" id="projectFolderList"></div>
-        </div>
+          <article class="card card--compact">
+            <div class="section-title section-title--tight">
+              <div><div class="eyebrow">Project folder</div></div>
+            </div>
+            <div class="chat-history-list" id="projectFolderList"></div>
+          </article>
 
-        <div class="hist-section hist-section--grow">
-          <div class="hist-label">Recent</div>
-          <div class="chat-history-list chat-history-list--scroll" id="chatHistoryList"></div>
+          <article class="card card--compact">
+            <div class="section-title section-title--tight">
+              <div><div class="eyebrow">History</div></div>
+            </div>
+            <div class="chat-history-list" id="chatHistoryList"></div>
+          </article>
         </div>
       </aside>
 
@@ -206,31 +220,13 @@
 
         <article class="card card--compact" style="margin-bottom: 12px;">
           <div class="eyebrow">Model selection</div>
-          <div class="field-grid field-grid--triple">
-            <label class="inline-field">
-              <span class="soft">Single model</span>
-              <select class="select" id="singleModel">
-                <option value="">Loading models...</option>
-              </select>
-            </label>
-
-            <div class="inline-field">
-              <span class="soft">Multi-model set</span>
-              <div class="multi-select-wrapper">
-                <button class="multi-select-trigger" id="multiModelTrigger" type="button">Select models...</button>
-                <div class="multi-select-dropdown" id="multiModelDropdown"></div>
-              </div>
-            </div>
-
-            <div class="inline-field">
-              <span class="soft">Discussion specialists</span>
-              <div class="multi-select-wrapper">
-                <button class="multi-select-trigger" id="discussionTrigger" type="button">Select specialists...</button>
-                <div class="multi-select-dropdown" id="discussionDropdown"></div>
-              </div>
-            </div>
-          </div>
-          <div class="mode-help" id="modeHelpText">
+          <label class="inline-field">
+            <span class="soft">Model</span>
+            <select class="select" id="singleModel">
+              <option value="">Loading models...</option>
+            </select>
+          </label>
+          <div class="mode-help" id="modeHelpText" style="margin-top:8px;">
             <strong>Single:</strong> one selected model answers directly.
           </div>
         </article>
@@ -256,7 +252,6 @@
               <input type="file" id="fileUploadInput" />
               <button id="uploadBtn" type="button" title="Attach file">📎</button>
               <button class="button intent-btn" id="intentBtn" type="button" title="Click to cycle: Auto → Research → Coding → Audit">Auto</button>
-              <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
               <button class="button button--primary" id="sendBtn" type="button">Send</button>
             </div>
           </div>
@@ -265,41 +260,40 @@
         <article class="card card--compact" style="margin-top:12px;">
           <div class="eyebrow">Export to Projects</div>
           <div class="field-grid">
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-              <input class="input" id="exportTitle" placeholder="Project title..." style="flex:1;min-width:160px;" />
-              <div class="chip-row" id="projectTypeTags">
-                <button class="button tag-button tag-button--active" type="button" data-tag="App">App</button>
-                <button class="button tag-button" type="button" data-tag="Web">Web</button>
-                <button class="button tag-button" type="button" data-tag="Game">Game</button>
-                <button class="button tag-button" type="button" data-tag="Writing">Writing</button>
-                <button class="button tag-button" type="button" data-tag="Research">Research</button>
-                <button class="button tag-button" type="button" data-tag="System">System</button>
-              </div>
-              <button class="button button--primary" id="exportBtn" type="button">Export</button>
-            </div>
-            <textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
+            <label class="inline-field"><span class="soft">Project title</span><input class="input" id="exportTitle" placeholder="Name the project..." /></label>
+            <div class="inline-field"><span class="soft">Project type</span><div class="chip-row" id="projectTypeTags"><button class="button tag-button tag-button--active" type="button" data-tag="App">App</button><button class="button tag-button" type="button" data-tag="Web">Web</button><button class="button tag-button" type="button" data-tag="Game">Game</button><button class="button tag-button" type="button" data-tag="Writing">Writing</button><button class="button tag-button" type="button" data-tag="Research">Research</button><button class="button tag-button" type="button" data-tag="System">System</button></div></div>
+            <label class="inline-field"><span class="soft">Export note</span><textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea></label>
+            <button class="button button--primary" id="exportBtn" type="button">Export to Projects</button>
           </div>
         </article>
       </main>
 
-      <!-- ── RIGHT — todos only ── -->
+      <!-- ── RIGHT — export + todos ── -->
       <aside class="panel panel-right">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Todos</h2>
+            <h2>Export + Todos</h2>
           </div>
+          <span class="status-chip status-chip--warn">Thread support</span>
         </div>
-        <div class="todo-list" id="todoList"></div>
-        <div class="inline-field" style="margin-top: 8px;">
-          <span class="soft">Add todo</span>
-          <div class="todo-add-row">
-            <input class="input" id="todoInput" placeholder="Add a quick todo..." />
-            <button class="button" id="addTodoBtn" type="button">Add</button>
-          </div>
+
+        <div class="stack stack--md">
+<article class="card card--compact">
+            <div class="eyebrow">Todo list</div>
+            <div class="todo-list" id="todoList"></div>
+            <div class="inline-field" style="margin-top: 8px;">
+              <span class="soft">Add todo</span>
+              <div class="todo-add-row">
+                <input class="input" id="todoInput" placeholder="Add a quick todo..." />
+                <button class="button" id="addTodoBtn" type="button">Add</button>
+              </div>
+            </div>
+          </article>
         </div>
       </aside>
-</section>
+
+    </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
