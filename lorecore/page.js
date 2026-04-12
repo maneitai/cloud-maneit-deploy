@@ -567,66 +567,82 @@ async function runExtractAndSave(scope, bookId, libraryId) {
 
   if (!bookId) { showToast("Select a book first", "warn"); return; }
 
-  const sessionId = state.selectedSessionId;
-  if (!sessionId || sessionId === FREE_SESSION_ID) {
-    if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "⚠ No active session. Open a session first."; }
+  const msgs = state.messages;
+  if (!msgs.length) {
+    if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = "⚠ No messages to extract from."; }
     return;
   }
 
-  if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = `Extracting ${scope} from session…`; }
+  if (statusEl) { statusEl.style.display = "block"; statusEl.textContent = `Extracting ${scope}…`; }
   if (btn) btn.disabled = true;
-
-  // Hide book picker if shown
   const picker = qs("#extractBookPicker");
   if (picker) picker.innerHTML = "";
 
-  const r = await api("/api/lorecore/extract-and-save", {
-    method: "POST",
-    body: {
-      session_public_id: sessionId,
-      book_public_id: bookId,
-      library_public_id: libraryId || "LIB-3001",
-      scope: scope,
+  const conv = msgs.map(m => `${m.role}: ${m.content}`).join("\n");
+  const lib = libraryId || "LIB-3001";
+
+  // Which entity types to extract
+  const TYPE_MAP = { all:["character","world","scene"], characters:["character"], worlds:["world"], scenes:["scene"], notes:["note"] };
+  const types = TYPE_MAP[scope] || ["character"];
+
+  const EXTRACT_PROMPTS = {
+    character: `Extract ALL character profiles mentioned in this conversation. Return ONLY a JSON array (not object) where each item has: name, role, description, traits (string array), arc, voice. Return [] if none found.\n\nConversation:\n`,
+    world:     `Extract world/setting details from this conversation. Return ONLY a JSON array where each item has: name, description, tone, rules, factions. Return [] if none found.\n\nConversation:\n`,
+    scene:     `Extract scene descriptions from this conversation. Return ONLY a JSON array where each item has: title, description, pov, beats (string array), outcome. Return [] if none found.\n\nConversation:\n`,
+    note:      `Summarize key points from this conversation. Return ONLY a JSON array where each item has: title, description. Return [] if none found.\n\nConversation:\n`,
+  };
+  const SAVE_ROUTES_MAP = { character:"/api/lorecore/characters", world:"/api/lorecore/worlds", scene:"/api/lorecore/scenes", note:null };
+  const LIST_KEYS = { character:"characters", world:"worlds", scene:"scenes", note:"notes" };
+
+  const created = { characters:[], worlds:[], scenes:[], notes:[] };
+
+  for (const type of types) {
+    if (statusEl) statusEl.textContent = `Extracting ${type}s…`;
+    const extractR = await api("/api/lorecore/extract", {
+      method: "POST",
+      body: { entity_type: type, conversation: conv, prompt: EXTRACT_PROMPTS[type] + conv, book_public_id: bookId }
+    });
+    if (!extractR.ok) continue;
+
+    let items = extractR.body?.extracted ?? extractR.body;
+    if (typeof items === "string") {
+      try { items = JSON.parse(items.replace(/```json|```/g,"").trim()); } catch { continue; }
     }
-  });
+    if (!Array.isArray(items)) items = items && typeof items === "object" ? [items] : [];
+
+    const saveRoute = SAVE_ROUTES_MAP[type];
+    if (!saveRoute) continue;
+    const listKey = LIST_KEYS[type];
+
+    for (const item of items) {
+      const title = item.name || item.title || type;
+      const saveR = await api(saveRoute, {
+        method: "POST",
+        body: { ...item, title, name: title, book_public_id: bookId, library_public_id: lib }
+      });
+      if (saveR.ok) created[listKey].push(saveR.body);
+    }
+  }
 
   if (btn) btn.disabled = false;
 
-  if (!r.ok) {
-    const detail = r.body?.detail || `Error ${r.status}`;
-    if (statusEl) statusEl.textContent = `✗ ${detail}`;
-    showToast(`Extraction failed`, "warn");
-    return;
-  }
-
-  const result = r.body;
-  const created = result.created || {};
   const parts = [];
-  if ((created.characters || []).length) parts.push(`${created.characters.length} character${created.characters.length !== 1 ? "s" : ""}`);
-  if ((created.world || []).length) parts.push(`${created.world.length} world record`);
-  if ((created.scenes || []).length) parts.push(`${created.scenes.length} scene${created.scenes.length !== 1 ? "s" : ""}`);
-  if ((created.notes || []).length) parts.push(`${created.notes.length} note${created.notes.length !== 1 ? "s" : ""}`);
+  if (created.characters.length) parts.push(`${created.characters.length} character${created.characters.length!==1?"s":""}`);
+  if (created.worlds.length) parts.push(`${created.worlds.length} world record${created.worlds.length!==1?"s":""}`);
+  if (created.scenes.length) parts.push(`${created.scenes.length} scene${created.scenes.length!==1?"s":""}`);
+  if (created.notes.length) parts.push(`${created.notes.length} note${created.notes.length!==1?"s":""}`);
 
   const summary = parts.length ? `✓ Saved: ${parts.join(", ")}` : "✓ Complete — no new entities found";
   if (statusEl) statusEl.textContent = summary;
-  showToast(summary, "good");
+  showToast(summary, parts.length ? "good" : "warn");
 
-  // Switch to that book and reload entities
   if (state.selectedBookId !== bookId) {
-    state.selectedBookId = bookId;
-    state.freeMode = false;
-    renderBookList();
-    updateScopeChip();
+    state.selectedBookId = bookId; state.freeMode = false;
+    renderBookList(); updateScopeChip();
   }
   await loadBookEntities(bookId);
 
-  // Switch to the tab that got the most data
-  const counts = {
-    characters: (created.characters||[]).length,
-    worlds: (created.world||[]).length,
-    scenes: (created.scenes||[]).length,
-    notes: (created.notes||[]).length,
-  };
+  const counts = { characters: created.characters.length, worlds: created.worlds.length, scenes: created.scenes.length, notes: created.notes.length };
   const topTab = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
   if (topTab && topTab[1] > 0) switchTab(topTab[0]);
 }
