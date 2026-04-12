@@ -3,163 +3,357 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Maneit — Home</title>
+  <title>PM — Home</title>
+  <meta name="description" content="Daily-driver AI workspace with compact history, central chat, export, todo and calendar." />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
+  <style>
+    /* ── Multi-select dropdown ── */
+    .multi-select-wrapper { position: relative; }
+    .multi-select-trigger {
+      width: 100%;
+      text-align: left;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .multi-select-trigger:hover { border-color: rgba(110,231,255,0.24); }
+    .multi-select-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 200;
+      background: #0b1520;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      max-height: 240px;
+      overflow-y: auto;
+      padding: 4px 0;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+    }
+    .multi-select-dropdown.is-open { display: block; }
+    .multi-select-option {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .multi-select-option:hover { background: rgba(255,255,255,0.05); }
+    .multi-select-option input[type="checkbox"] { margin: 0; cursor: pointer; accent-color: var(--accent); }
+    .multi-select-option label { cursor: pointer; flex: 1; }
+    .multi-select-empty { padding: 8px 12px; font-size: 13px; color: var(--muted); }
+
+    /* ── Intent button ── */
+    .intent-btn {
+      min-width: 96px;
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 10px;
+      transition: background 0.15s, border-color 0.15s;
+      flex-shrink: 0;
+    }
+    .intent-btn--active {
+      background: rgba(110,231,255,0.15);
+      border-color: rgba(110,231,255,0.4);
+      color: var(--accent, #6ee7ff);
+    }
+
+    /* ── Home layout — 3 columns at 1440p ── */
+    .home-layout {
+      display: grid;
+      grid-template-columns: 290px 1fr 340px;
+      grid-template-areas:
+        "left  center right"
+        "cal   cal    cal";
+      gap: 16px;
+      align-items: start;
+    }
+    .panel-left    { grid-area: left; }
+    .panel-center  { grid-area: center; }
+    .panel-right   { grid-area: right; }
+    .calendar-panel { grid-area: cal; }
+
+    .home-chat-card { display: flex; flex-direction: column; }
+
+    /* ── 1650px ── */
+    @media (max-width: 1650px) {
+      .home-layout {
+        grid-template-columns: 280px 1fr;
+        grid-template-areas:
+          "left  center"
+          "left  right"
+          "cal   cal";
+      }
+    }
+
+    /* ── 1180px ── */
+    @media (max-width: 1180px) {
+      .home-layout {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+          "left"
+          "center"
+          "right"
+          "cal";
+      }
+    }
+  </style>
 </head>
 <body>
-<div class="page-shell">
-
-  <header class="page-header">
-    <div class="brand">
-      <div class="brand-mark">M</div>
-      <div class="header-copy">
-        <div class="eyebrow">Maneit OS</div>
-        <h1>Home</h1>
-      </div>
-    </div>
-    <nav class="global-nav" aria-label="Primary">
-      <a class="nav-link nav-link--active" href="./">Home</a>
-      <a class="nav-link" href="./projects/">Projects</a>
-      <a class="nav-link" href="./pipelines/">Pipelines</a>
-      <a class="nav-link" href="./agent-factory/">Agent Factory</a>
-      <a class="nav-link" href="./appcreator/">AppCreator</a>
-      <a class="nav-link" href="./portalcreator/">PortalCreator</a>
-      <a class="nav-link" href="./research-core/">Research Core</a>
-      <a class="nav-link" href="./lorecore/">LoreCore</a>
-      <a class="nav-link" href="./game-designer/">Game Designer</a>
-      <a class="nav-link" href="./state/">State</a>
-      <a class="nav-link" href="./settings/">Settings</a>
-    </nav>
-    <div class="header-actions">
-      <span class="status-chip" id="globalStatusChip">Loading</span>
-    </div>
-  </header>
-
-  <div class="home-layout">
-
-    <!-- ── LEFT: history ── -->
-    <aside class="panel panel-left">
-      <div class="panel-head">
-        <span class="eyebrow">Chats</span>
-        <button class="btn-icon" id="newChatBtn" title="New chat">+</button>
-      </div>
-      <input class="input search-input" id="chatSearch" placeholder="Search..." autocomplete="off" />
-      <div class="history-section">
-        <div class="history-label">Pinned</div>
-        <div class="history-list" id="pinnedChatsList"></div>
-      </div>
-      <div class="history-section">
-        <div class="history-label">Projects</div>
-        <div class="history-list" id="projectFolderList"></div>
-      </div>
-      <div class="history-section history-section--grow">
-        <div class="history-label">Recent</div>
-        <div class="history-list history-list--scroll" id="chatHistoryList"></div>
-      </div>
-    </aside>
-
-    <!-- ── CENTER: chat ── -->
-    <main class="panel panel-center">
-
-      <!-- Mode + model bar -->
-      <div class="chat-controls">
-        <div class="mode-tabs">
-          <button class="mode-tab mode-tab--active" data-mode="single">Single</button>
-          <button class="mode-tab" data-mode="multi">Multi</button>
-          <button class="mode-tab" data-mode="discussion">Discussion</button>
-        </div>
-        <div class="model-select-area" id="modelSelectArea">
-          <select class="select select--compact" id="singleModel"><option>Loading...</option></select>
-        </div>
-        <div class="chat-header-actions">
-          <button class="btn-sm" id="branchChatBtn">Branch</button>
-          <button class="btn-sm btn-sm--accent" id="pinChatBtn">Pin</button>
+  <div class="page-shell">
+    <header class="page-header">
+      <div class="brand">
+        <div class="brand-mark">PM</div>
+        <div class="header-copy">
+          <div class="eyebrow">PM</div>
+          <h1>Home</h1>
+          <p>Daily-driver chat surface — history left, chat centre, export and todos right, calendar bottom.</p>
         </div>
       </div>
 
-      <!-- Thread -->
-      <div class="chat-thread" id="chatThread">
-        <div class="bubble bubble--assistant">
-          <div class="bubble-head">Maneit</div>
-          <p>Select a chat or start a new one.</p>
-        </div>
+      <nav class="global-nav" aria-label="Primary">
+        <a class="nav-link nav-link--active" href="./">Home</a>
+        <a class="nav-link" href="./projects/">Projects</a>
+        <a class="nav-link" href="./pipelines/">Pipelines</a>
+        <a class="nav-link" href="./agent-factory/">Agent Factory</a>
+        <a class="nav-link" href="./appcreator/">AppCreator</a>
+        <a class="nav-link" href="./portalcreator/">PortalCreator</a>
+        <a class="nav-link" href="./research-core/">Research Core</a>
+        <a class="nav-link" href="./lorecore/">LoreCore</a>
+        <a class="nav-link" href="./game-designer/">Game Designer</a>
+        <a class="nav-link" href="./state/">State</a>
+        <a class="nav-link" href="./settings/">Settings</a>
+      </nav>
+
+      <div class="header-actions">
+        <span class="chip">Daily driver</span>
+        <span class="chip">Chat-first</span>
+        <span class="chip">Continuity-first</span>
       </div>
+    </header>
 
-      <div class="resize-handle" id="chatResizeHandle"></div>
+    <section class="home-layout">
 
-      <!-- Composer -->
-      <div class="composer" id="composerArea">
-        <div id="uploadPill"></div>
-        <textarea class="composer-input" id="composerInput" placeholder="Ask anything. Shift+Enter for new line. Drop a file to analyse."></textarea>
-        <div class="composer-bar">
-          <span class="composer-status" id="composerStatus">Ready</span>
-          <input type="file" id="fileUploadInput" style="display:none" />
-          <button class="btn-icon" id="uploadBtn" title="Attach file">📎</button>
-          <button class="btn-sm" id="intentBtn" data-intent="auto">Auto</button>
-          <button class="btn-sm" id="stopBtn" style="display:none">Stop</button>
-          <button class="btn-sm btn-sm--send" id="sendBtn">Send</button>
-        </div>
-      </div>
-
-      <!-- Export — below composer -->
-      <div class="export-panel">
-        <div class="export-panel-head">
-          <span class="eyebrow">Export to Projects</span>
-        </div>
-        <div class="export-row">
-          <input class="input input--flex" id="exportTitle" placeholder="Project title..." />
-          <div class="tag-group" id="projectTypeTags">
-            <button class="tag tag--active" data-tag="App">App</button>
-            <button class="tag" data-tag="Web">Web</button>
-            <button class="tag" data-tag="Game">Game</button>
-            <button class="tag" data-tag="Writing">Writing</button>
-            <button class="tag" data-tag="Research">Research</button>
-            <button class="tag" data-tag="System">System</button>
+      <!-- ── LEFT — chat history ── -->
+      <aside class="panel panel-left">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Left rail</div>
+            <h2>Chats</h2>
           </div>
-          <button class="btn-sm btn-sm--accent" id="exportBtn">Export</button>
+          <span class="status-chip status-chip--good">History</span>
         </div>
-        <textarea class="input input--note" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
-      </div>
 
-    </main>
+        <input class="input" id="chatSearch" placeholder="Search chats..." style="width:100%;margin-bottom:12px;" />
 
-    <!-- ── RIGHT: artifacts + todos ── -->
-    <aside class="panel panel-right">
-      <div class="right-tabs">
-        <button class="right-tab right-tab--active" data-panel="todos">Todos</button>
-        <button class="right-tab" data-panel="artifacts">Artifacts</button>
-      </div>
-
-      <div class="right-panel-content" id="rightPanelTodos">
-        <div class="todo-list" id="todoList"></div>
-        <div class="todo-add">
-          <input class="input" id="todoInput" placeholder="Add todo..." />
-          <button class="btn-sm btn-sm--accent" id="addTodoBtn">Add</button>
+        <div class="hist-section">
+          <div class="hist-label">Pinned</div>
+          <div class="chat-history-list chat-history-list--fixed" id="pinnedChatsList"></div>
         </div>
-      </div>
 
-      <div class="right-panel-content" id="rightPanelArtifacts" style="display:none">
-        <div class="artifacts-list" id="artifactsList">
-          <div class="empty-state">No artifacts yet. Exports and pipeline outputs appear here.</div>
+        <div class="hist-section">
+          <div class="hist-label">Projects</div>
+          <div class="chat-history-list chat-history-list--fixed" id="projectFolderList"></div>
         </div>
-      </div>
-    </aside>
 
+        <div class="hist-section hist-section--grow">
+          <div class="hist-label">Recent</div>
+          <div class="chat-history-list chat-history-list--scroll" id="chatHistoryList"></div>
+        </div>
+      </aside>
+
+      <!-- ── CENTER — chat ── -->
+      <main class="panel panel-center">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Center surface</div>
+            <h2>Home chat</h2>
+            <p class="muted">Single · Multi · Discussion</p>
+          </div>
+          <div class="button-row">
+            <button class="button" id="newChatBtn" type="button">New chat</button>
+            <button class="button" id="branchChatBtn" type="button">Branch</button>
+            <button class="button button--primary" id="pinChatBtn" type="button">Pin / unpin</button>
+          </div>
+        </div>
+
+        <section class="workspace-kpis">
+          <article class="metric-card metric-card--mode is-active" data-mode="single">
+            <span class="soft">Mode</span>
+            <strong>Single</strong>
+          </article>
+          <article class="metric-card metric-card--mode" data-mode="multi">
+            <span class="soft">Mode</span>
+            <strong>Multi</strong>
+          </article>
+          <article class="metric-card metric-card--mode" data-mode="discussion">
+            <span class="soft">Mode</span>
+            <strong>Discussion</strong>
+          </article>
+          <article class="metric-card">
+            <span class="soft">Export target</span>
+            <strong>Projects</strong>
+          </article>
+        </section>
+
+        <article class="card card--compact" style="margin-bottom: 12px;">
+          <div class="eyebrow">Model selection</div>
+          <div class="field-grid field-grid--triple">
+            <label class="inline-field">
+              <span class="soft">Single model</span>
+              <select class="select" id="singleModel">
+                <option value="">Loading models...</option>
+              </select>
+            </label>
+
+            <div class="inline-field">
+              <span class="soft">Multi-model set</span>
+              <div class="multi-select-wrapper">
+                <button class="multi-select-trigger" id="multiModelTrigger" type="button">Select models...</button>
+                <div class="multi-select-dropdown" id="multiModelDropdown"></div>
+              </div>
+            </div>
+
+            <div class="inline-field">
+              <span class="soft">Discussion specialists</span>
+              <div class="multi-select-wrapper">
+                <button class="multi-select-trigger" id="discussionTrigger" type="button">Select specialists...</button>
+                <div class="multi-select-dropdown" id="discussionDropdown"></div>
+              </div>
+            </div>
+          </div>
+          <div class="mode-help" id="modeHelpText">
+            <strong>Single:</strong> one selected model answers directly.
+          </div>
+        </article>
+
+        <article class="card home-chat-card">
+          <div class="eyebrow">Thread</div>
+
+          <div class="chat-thread" id="chatThread">
+            <div class="chat-bubble chat-bubble--assistant">
+              <div class="chat-bubble-head">Home daily driver</div>
+              <p>Select an existing chat or create a new one to begin.</p>
+            </div>
+          </div>
+
+          <div id="chatResizeHandle" title="Drag to resize chat"></div>
+
+          <div class="composer-box" id="composerArea">
+            <div class="soft" style="font-size:12px;">Enter sends · Shift+Enter new line · drag a file to analyse it</div>
+            <div id="uploadPill"></div>
+            <textarea class="textarea composer-textarea" id="composerInput" placeholder="Write here. Multi sends to all selected models. Discussion lets specialists join when relevant."></textarea>
+            <div class="composer-actions">
+              <span class="soft" id="composerStatus">Ready</span>
+              <input type="file" id="fileUploadInput" />
+              <button id="uploadBtn" type="button" title="Attach file">📎</button>
+              <button class="button intent-btn" id="intentBtn" type="button" title="Click to cycle: Auto → Research → Coding → Audit">Auto</button>
+              <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
+              <button class="button button--primary" id="sendBtn" type="button">Send</button>
+            </div>
+          </div>
+        </article>
+      </main>
+
+      <!-- ── RIGHT — export + todos ── -->
+      <aside class="panel panel-right">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Right rail</div>
+            <h2>Export + Todos</h2>
+          </div>
+          <span class="status-chip status-chip--warn">Thread support</span>
+        </div>
+
+        <div class="stack stack--md">
+          <article class="card card--compact">
+            <div class="eyebrow">Export to Projects</div>
+            <div class="field-grid">
+              <label class="inline-field">
+                <span class="soft">Project title</span>
+                <input class="input" id="exportTitle" placeholder="Name the project..." />
+              </label>
+
+              <div class="inline-field">
+                <span class="soft">Project type</span>
+                <div class="chip-row" id="projectTypeTags">
+                  <button class="button tag-button tag-button--active" type="button" data-tag="App">App</button>
+                  <button class="button tag-button" type="button" data-tag="Web">Web</button>
+                  <button class="button tag-button" type="button" data-tag="Game">Game</button>
+                  <button class="button tag-button" type="button" data-tag="Writing">Writing</button>
+                  <button class="button tag-button" type="button" data-tag="Research">Research</button>
+                  <button class="button tag-button" type="button" data-tag="System">System</button>
+                </div>
+              </div>
+
+              <label class="inline-field">
+                <span class="soft">Export note</span>
+                <textarea class="textarea textarea--sm" id="exportNote" placeholder="What should Projects inherit from this chat?"></textarea>
+              </label>
+
+              <button class="button button--primary" id="exportBtn" type="button">Export to Projects</button>
+            </div>
+          </article>
+
+          <article class="card card--compact">
+            <div class="eyebrow">Todo list</div>
+            <div class="todo-list" id="todoList"></div>
+            <div class="inline-field" style="margin-top: 8px;">
+              <span class="soft">Add todo</span>
+              <div class="todo-add-row">
+                <input class="input" id="todoInput" placeholder="Add a quick todo..." />
+                <button class="button" id="addTodoBtn" type="button">Add</button>
+              </div>
+            </div>
+          </article>
+        </div>
+      </aside>
+
+      <!-- ── BOTTOM — calendar full width ── -->
+      <section class="panel calendar-panel">
+        <div class="section-title">
+          <div>
+            <div class="eyebrow">Bottom zone</div>
+            <h2>Calendar</h2>
+          </div>
+          <span class="status-chip status-chip--good">Weekly view</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </section>
+
+    </section>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
   </div>
-</div>
 
-<div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-<script>
-(function(){
-  try {
-    const p=new URLSearchParams(window.location.search), b=p.get("apiBase");
-    if(b){window.PM_API_BASE=b.replace(/\/+$/,"");localStorage.setItem("PM_API_BASE",window.PM_API_BASE);}
-    else{const s=localStorage.getItem("PM_API_BASE");if(s)window.PM_API_BASE=s;}
-  } catch{}
-})();
-</script>
-<script src="page.js"></script>
+  <script>
+  (function () {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const apiBase = params.get("apiBase");
+      if (apiBase) {
+        const normalized = apiBase.replace(/\/+$/, "");
+        window.PM_API_BASE = normalized;
+        localStorage.setItem("PM_API_BASE", normalized);
+      } else {
+        const saved = localStorage.getItem("PM_API_BASE");
+        if (saved) window.PM_API_BASE = saved;
+      }
+    } catch (error) {}
+  })();
+  </script>
+  <script src="page.js"></script>
 </body>
 </html>
