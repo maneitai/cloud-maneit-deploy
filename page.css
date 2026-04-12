@@ -126,7 +126,8 @@ body {
   border-radius: 10px;
 }
 
-.history-section { display: flex; flex-direction: column; gap: 4px; }
+.history-section { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border-2); }
+.history-section:first-of-type { margin-top: 0; padding-top: 0; border-top: none; }
 .history-section--grow { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
 .history-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); padding: 2px 4px; }
 
