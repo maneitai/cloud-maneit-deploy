@@ -949,3 +949,45 @@ body {
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+
+/* ── Inline mode select in composer ── */
+.mode-select-inline {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  max-width: 160px;
+}
+
+/* ── Left panel — stretches to match center panel height ── */
+.home-layout {
+  align-items: stretch !important;
+}
+.panel-left {
+  position: sticky;
+  top: 18px;
+  max-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-left .stack {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-left .stack > .card:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.panel-left .stack > .card:last-child .chat-history-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: none !important;
+}
