@@ -184,16 +184,23 @@
       <!-- ── CENTER — chat ── -->
       <main class="panel panel-center">
         <div class="section-title">
-          <div>
-            <div class="eyebrow">Center surface</div>
-            <h2>Home chat</h2>
-            <p class="muted">Single · Multi · Discussion</p>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="surface-tab surface-tab--active" id="tabChat" type="button">💬 Chat</button>
+            <button class="surface-tab" id="tabDiscussion" type="button">🗣 Discussion</button>
           </div>
           <div class="button-row">
             <button class="button" id="newChatBtn" type="button">New chat</button>
             <button class="button" id="branchChatBtn" type="button">Branch</button>
             <button class="button button--primary" id="pinChatBtn" type="button">Pin / unpin</button>
           </div>
+        </div>
+
+        <!-- Discussion model picker — shown only in Discussion mode -->
+        <div id="discussionPanel" style="display:none;margin-bottom:12px;">
+          <article class="card card--compact">
+            <div class="eyebrow">Discussion specialists</div>
+            <div id="discussionModelPicker" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+          </article>
         </div>
 
 
@@ -223,17 +230,17 @@
               <span class="soft" id="composerStatus">Ready</span>
               <input type="file" id="fileUploadInput" />
               <button id="uploadBtn" type="button" title="Attach file">📎</button>
-              <select class="select mode-select-inline" id="modeSelect" title="Mode">
-                <option value="chat">💬 Chat</option>
-                <option value="multi">👥 Multi</option>
-                <option value="discussion">🗣 Discussion</option>
+              <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
+              <button class="button button--primary" id="sendBtn" type="button">Send</button>
+            </div>
+            <!-- Background job launcher — always visible below composer -->
+            <div class="bg-job-row">
+              <select class="select bg-job-select" id="bgJobType">
                 <option value="deep_research">🔬 Deep Research</option>
                 <option value="deep_reasoning">🧠 Deep Reasoning</option>
                 <option value="system_analysis">🔍 System Analysis</option>
               </select>
-              <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
-              <button class="button button--primary" id="launchJobBtn" type="button" style="display:none;background:linear-gradient(135deg,rgba(52,211,153,0.18),rgba(110,231,255,0.18));border-color:rgba(52,211,153,0.3);">Launch</button>
-              <button class="button button--primary" id="sendBtn" type="button">Send</button>
+              <button class="button bg-job-btn" id="launchJobBtn" type="button">Launch in background</button>
             </div>
           </div>
         </article>
