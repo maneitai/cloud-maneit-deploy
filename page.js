@@ -3,7 +3,7 @@ const PM_HOME_KEY = "PM_HOME_V8";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 const DEFAULT_MODEL = "gemma-3-4b-it-q8-0";
 
-const MODE_STATUS = { chat: "Ready", deep_research: "Research ready", deep_reasoning: "Reasoning ready", system_analysis: "Analysis ready" };
+const MODE_STATUS = { chat: "Ready", multi: "Multi ready", discussion: "Discussion ready", deep_research: "Research ready", deep_reasoning: "Reasoning ready", system_analysis: "Analysis ready" };
 const TOOL_ICONS = {
   web_search:"🔍", web_fetch:"🌐", web_crawl:"🕷️", run_python:"🐍", read_file:"📂",
   read_server_file:"🗄️", list_server_files:"📁", grep_files:"🔎", query_database:"🗃️",
@@ -45,6 +45,8 @@ const defaultState = {
   selectedChatId: "",
   mode: "chat",
   singleModel: DEFAULT_MODEL,
+  multiModels: [],
+  discussionModels: [],
   selectedProjectType: "App",
   chats: { pinned:[], projectFolder:[], history:[] },
   availableModels: [],
@@ -65,6 +67,8 @@ function loadState() {
       },
       availableModels: Array.isArray(p?.availableModels) ? p.availableModels : [],
       backgroundJobs: Array.isArray(p?.backgroundJobs) ? p.backgroundJobs : [],
+      multiModels: Array.isArray(p?.multiModels) ? p.multiModels : [],
+      discussionModels: Array.isArray(p?.discussionModels) ? p.discussionModels : [],
     };
   } catch { return clone(defaultState); }
 }
@@ -363,8 +367,13 @@ async function sendAndStream() {
   const modelAlias = state.singleModel || DEFAULT_MODEL;
   createStreamingBubble(modelAlias);
 
+  const isBackground = ["deep_research","deep_reasoning","system_analysis"].includes(state.mode);
+  const sendMode = (state.mode==="multi"||state.mode==="discussion") ? state.mode : "single";
+  const sendModels = sendMode==="multi" ? (state.multiModels.length ? state.multiModels : [modelAlias]).join(",")
+    : sendMode==="discussion" ? (state.discussionModels.length ? state.discussionModels : [modelAlias]).join(",")
+    : modelAlias;
   const params = new URLSearchParams({
-    prompt:text, mode:"single", models:modelAlias, intent:"auto"
+    prompt:text, mode:sendMode, models:sendModels, intent:"auto"
   });
   const url = `${PM_API_BASE}/api/home/sessions/${encodeURIComponent(state.selectedChatId)}/stream?${params}`;
   let fullContent = "";
@@ -558,10 +567,7 @@ function initDragResize() {
   document.addEventListener("mouseup", ()=>{ if(!dragging) return; dragging=false; document.body.style.cursor=""; document.body.style.userSelect=""; localStorage.setItem(KEY,Math.round(thread.getBoundingClientRect().height)); });
 }
 
-function syncHistoryHeight(h) {
-  const histList = qs("#chatHistoryList");
-  if (histList) histList.style.maxHeight = Math.max(120, h - 80) + "px";
-}
+function syncHistoryHeight(h) { /* height managed by CSS flex */ }
 
 // ─── Drop zone ────────────────────────────────────────────────────────────────
 function bindDropZone() {
@@ -613,12 +619,13 @@ function bindAll() {
   qs("#modeSelect")?.addEventListener("change", e=>{
     state.mode = e.target.value; saveState();
     const s=qs("#composerStatus"); if(s) s.textContent=MODE_STATUS[state.mode]||"Ready";
-    const placeholder = state.mode==="chat" ? "Write here..." : `Describe your ${state.mode.replace("_"," ")} task…`;
+    const isBackground = ["deep_research","deep_reasoning","system_analysis"].includes(state.mode);
+    const placeholder = isBackground ? `Describe your ${state.mode.replace(/_/g," ")} task…` : "Write here…";
     const ci=qs("#composerInput"); if(ci) ci.placeholder=placeholder;
     const launchBtn = qs("#launchJobBtn");
-    if (launchBtn) launchBtn.style.display = state.mode==="chat" ? "none" : "";
+    if (launchBtn) launchBtn.style.display = isBackground ? "" : "none";
     const sendBtn = qs("#sendBtn");
-    if (sendBtn) sendBtn.style.display = state.mode==="chat" ? "" : "none";
+    if (sendBtn) sendBtn.style.display = isBackground ? "none" : "";
   });
 
   // Launch background job
