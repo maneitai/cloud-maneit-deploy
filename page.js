@@ -43,9 +43,8 @@ function renderMarkdown(text) {
 // ─── State ────────────────────────────────────────────────────────────────────
 const defaultState = {
   selectedChatId: "",
-  mode: "chat",
+  surface: "chat",
   singleModel: DEFAULT_MODEL,
-  multiModels: [],
   discussionModels: [],
   selectedProjectType: "App",
   chats: { pinned:[], projectFolder:[], history:[] },
@@ -67,8 +66,8 @@ function loadState() {
       },
       availableModels: Array.isArray(p?.availableModels) ? p.availableModels : [],
       backgroundJobs: Array.isArray(p?.backgroundJobs) ? p.backgroundJobs : [],
-      multiModels: Array.isArray(p?.multiModels) ? p.multiModels : [],
       discussionModels: Array.isArray(p?.discussionModels) ? p.discussionModels : [],
+      surface: p?.surface || "chat",
     };
   } catch { return clone(defaultState); }
 }
@@ -367,10 +366,9 @@ async function sendAndStream() {
   const modelAlias = state.singleModel || DEFAULT_MODEL;
   createStreamingBubble(modelAlias);
 
-  const isBackground = ["deep_research","deep_reasoning","system_analysis"].includes(state.mode);
-  const sendMode = (state.mode==="multi"||state.mode==="discussion") ? state.mode : "single";
-  const sendModels = sendMode==="multi" ? (state.multiModels.length ? state.multiModels : [modelAlias]).join(",")
-    : sendMode==="discussion" ? (state.discussionModels.length ? state.discussionModels : [modelAlias]).join(",")
+  const sendMode = state.surface==="discussion" ? "discussion" : "single";
+  const sendModels = state.surface==="discussion"
+    ? (state.discussionModels.length ? state.discussionModels : [modelAlias]).join(",")
     : modelAlias;
   const params = new URLSearchParams({
     prompt:text, mode:sendMode, models:sendModels, intent:"auto"
@@ -553,6 +551,29 @@ function renderAll() {
     const c = getChatById(state.selectedChatId);
     if (c?.title && !["New chat","Home chat","Untitled"].includes(c.title)) exportTitle.value=c.title;
   }
+  renderDiscussionPicker();
+  setSurface(state.surface||"chat");
+}
+
+function renderDiscussionPicker() {
+  const root = qs("#discussionModelPicker"); if (!root) return;
+  const all = state.availableModels;
+  if (!all.length) { root.innerHTML=`<span class="soft" style="font-size:12px;">No models available</span>`; return; }
+  root.innerHTML = all.map(m => {
+    const active = state.discussionModels.includes(m.value);
+    return `<button class="button disc-model-btn${active?" disc-model-btn--active":""}" data-alias="${escapeHtml(m.value)}" type="button">${escapeHtml(m.label||m.value)}</button>`;
+  }).join("");
+  qsa(".disc-model-btn", root).forEach(btn => {
+    btn.addEventListener("click", ()=>{
+      const alias = btn.getAttribute("data-alias");
+      if (state.discussionModels.includes(alias)) {
+        state.discussionModels = state.discussionModels.filter(a=>a!==alias);
+      } else {
+        state.discussionModels = [...state.discussionModels, alias];
+      }
+      saveState(); renderDiscussionPicker();
+    });
+  });
 }
 
 // ─── Drag resize ──────────────────────────────────────────────────────────────
@@ -615,24 +636,26 @@ function bindAll() {
   qs("#stopBtn")?.addEventListener("click", stopStream);
   qs("#chatSearch")?.addEventListener("input", renderHistory);
 
-  // Mode selector
-  qs("#modeSelect")?.addEventListener("change", e=>{
-    state.mode = e.target.value; saveState();
-    const s=qs("#composerStatus"); if(s) s.textContent=MODE_STATUS[state.mode]||"Ready";
-    const isBackground = ["deep_research","deep_reasoning","system_analysis"].includes(state.mode);
-    const placeholder = isBackground ? `Describe your ${state.mode.replace(/_/g," ")} task…` : "Write here…";
-    const ci=qs("#composerInput"); if(ci) ci.placeholder=placeholder;
-    const launchBtn = qs("#launchJobBtn");
-    if (launchBtn) launchBtn.style.display = isBackground ? "" : "none";
-    const sendBtn = qs("#sendBtn");
-    if (sendBtn) sendBtn.style.display = isBackground ? "none" : "";
-  });
+  // Surface tabs: Chat vs Discussion
+  function setSurface(surface) {
+    state.surface = surface; saveState();
+    qs("#tabChat")?.classList.toggle("surface-tab--active", surface==="chat");
+    qs("#tabDiscussion")?.classList.toggle("surface-tab--active", surface==="discussion");
+    const dp = qs("#discussionPanel");
+    if (dp) dp.style.display = surface==="discussion" ? "" : "none";
+    const s=qs("#composerStatus"); if(s) s.textContent=surface==="discussion"?"Discussion ready":"Ready";
+    const ci=qs("#composerInput");
+    if (ci) ci.placeholder = surface==="discussion" ? "All selected specialists will see this and respond…" : "Write here. Gemma4 answers directly.";
+  }
+  qs("#tabChat")?.addEventListener("click", ()=>setSurface("chat"));
+  qs("#tabDiscussion")?.addEventListener("click", ()=>setSurface("discussion"));
 
   // Launch background job
   qs("#launchJobBtn")?.addEventListener("click", async()=>{
     const input=qs("#composerInput"); const text=(input?.value||"").trim();
     if (!text) { showToast("Describe the task first","warn"); return; }
-    await launchBackgroundJob(text, state.mode);
+    const jobType = qs("#bgJobType")?.value || "deep_research";
+    await launchBackgroundJob(text, jobType);
     if (input) input.value="";
   });
 
