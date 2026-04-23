@@ -541,6 +541,17 @@ function renderThread() {
   root.scrollTop = root.scrollHeight;
 }
 
+function setSurface(surface) {
+  state.surface = surface; saveState();
+  qs("#tabChat")?.classList.toggle("surface-tab--active", surface==="chat");
+  qs("#tabDiscussion")?.classList.toggle("surface-tab--active", surface==="discussion");
+  const dp = qs("#discussionPanel");
+  if (dp) dp.style.display = surface==="discussion" ? "" : "none";
+  const s=qs("#composerStatus"); if(s) s.textContent=surface==="discussion"?"Discussion ready":"Ready";
+  const ci=qs("#composerInput");
+  if (ci) ci.placeholder = surface==="discussion" ? "All selected specialists will see this and respond…" : "Write here. Gemma4 answers directly.";
+}
+
 function renderAll() {
   ensureSelectedChatExists();
   renderHistory(); renderThread(); renderJobs(); hydrateModelSelector();
@@ -636,17 +647,6 @@ function bindAll() {
   qs("#stopBtn")?.addEventListener("click", stopStream);
   qs("#chatSearch")?.addEventListener("input", renderHistory);
 
-  // Surface tabs: Chat vs Discussion
-  function setSurface(surface) {
-    state.surface = surface; saveState();
-    qs("#tabChat")?.classList.toggle("surface-tab--active", surface==="chat");
-    qs("#tabDiscussion")?.classList.toggle("surface-tab--active", surface==="discussion");
-    const dp = qs("#discussionPanel");
-    if (dp) dp.style.display = surface==="discussion" ? "" : "none";
-    const s=qs("#composerStatus"); if(s) s.textContent=surface==="discussion"?"Discussion ready":"Ready";
-    const ci=qs("#composerInput");
-    if (ci) ci.placeholder = surface==="discussion" ? "All selected specialists will see this and respond…" : "Write here. Gemma4 answers directly.";
-  }
   qs("#tabChat")?.addEventListener("click", ()=>setSurface("chat"));
   qs("#tabDiscussion")?.addEventListener("click", ()=>setSurface("discussion"));
 
@@ -702,7 +702,7 @@ async function bootstrapHome() {
 }
 
 function init() {
-  renderAll(); bindAll(); bindDropZone(); initDragResize();
+  bindAll(); bindDropZone(); initDragResize(); renderAll();
   bootstrapHome();
 }
 
