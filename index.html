@@ -196,14 +196,7 @@
           </div>
         </div>
 
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
-          <select class="select" id="modeSelect" style="flex:1;">
-            <option value="chat">💬 Chat</option>
-            <option value="deep_research">🔬 Deep Research</option>
-            <option value="deep_reasoning">🧠 Deep Reasoning</option>
-            <option value="system_analysis">🔍 System Analysis</option>
-          </select>
-        </div>
+
 
         <article class="card card--compact" style="margin-bottom: 12px;">
           <div class="eyebrow">Model</div>
@@ -230,7 +223,14 @@
               <span class="soft" id="composerStatus">Ready</span>
               <input type="file" id="fileUploadInput" />
               <button id="uploadBtn" type="button" title="Attach file">📎</button>
-              <button class="button intent-btn" id="intentBtn" type="button" title="Click to cycle: Auto → Research → Coding → Audit">Auto</button>
+              <select class="select mode-select-inline" id="modeSelect" title="Mode">
+                <option value="chat">💬 Chat</option>
+                <option value="multi">👥 Multi</option>
+                <option value="discussion">🗣 Discussion</option>
+                <option value="deep_research">🔬 Deep Research</option>
+                <option value="deep_reasoning">🧠 Deep Reasoning</option>
+                <option value="system_analysis">🔍 System Analysis</option>
+              </select>
               <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
               <button class="button button--primary" id="launchJobBtn" type="button" style="display:none;background:linear-gradient(135deg,rgba(52,211,153,0.18),rgba(110,231,255,0.18));border-color:rgba(52,211,153,0.3);">Launch</button>
               <button class="button button--primary" id="sendBtn" type="button">Send</button>
