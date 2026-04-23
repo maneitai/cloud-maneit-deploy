@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PM — Home</title>
-  <meta name="description" content="Daily-driver AI workspace with compact history, central chat, export, todo and calendar." />
+  <meta name="description" content="Maneit OS — Home" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
   <style>
@@ -134,7 +134,6 @@
       </nav>
 
       <div class="header-actions">
-        <span class="chip" id="globalStatusChip">Loading</span>
       </div>
     </header>
 
@@ -197,10 +196,13 @@
           </div>
         </div>
 
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <button class="button mode-tab mode-tab--active" data-mode="single" type="button">Single</button>
-          <button class="button mode-tab" data-mode="multi" type="button">Multi</button>
-          <button class="button mode-tab" data-mode="discussion" type="button">Discussion</button>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+          <select class="select" id="modeSelect" style="flex:1;">
+            <option value="chat">💬 Chat</option>
+            <option value="deep_research">🔬 Deep Research</option>
+            <option value="deep_reasoning">🧠 Deep Reasoning</option>
+            <option value="system_analysis">🔍 System Analysis</option>
+          </select>
         </div>
 
         <article class="card card--compact" style="margin-bottom: 12px;">
@@ -230,6 +232,7 @@
               <button id="uploadBtn" type="button" title="Attach file">📎</button>
               <button class="button intent-btn" id="intentBtn" type="button" title="Click to cycle: Auto → Research → Coding → Audit">Auto</button>
               <button class="button" id="stopBtn" type="button" style="display:none;border-color:rgba(251,113,133,0.3);color:#fb7185;">Stop</button>
+              <button class="button button--primary" id="launchJobBtn" type="button" style="display:none;background:linear-gradient(135deg,rgba(52,211,153,0.18),rgba(110,231,255,0.18));border-color:rgba(52,211,153,0.3);">Launch</button>
               <button class="button button--primary" id="sendBtn" type="button">Send</button>
             </div>
           </div>
@@ -255,28 +258,17 @@
         </article>
       </main>
 
-      <!-- ── RIGHT — export + todos ── -->
+      <!-- ── RIGHT — background jobs ── -->
       <aside class="panel panel-right">
         <div class="section-title">
           <div>
             <div class="eyebrow">Right rail</div>
-            <h2>Export + Todos</h2>
+            <h2>Background Jobs</h2>
           </div>
-          <span class="status-chip status-chip--warn">Thread support</span>
+          <span class="status-chip" id="globalStatusChip">Loading</span>
         </div>
-
-        <div class="stack stack--md">
-<article class="card card--compact">
-            <div class="eyebrow">Todo list</div>
-            <div class="todo-list" id="todoList"></div>
-            <div class="inline-field" style="margin-top: 8px;">
-              <span class="soft">Add todo</span>
-              <div class="todo-add-row">
-                <input class="input" id="todoInput" placeholder="Add a quick todo..." />
-                <button class="button" id="addTodoBtn" type="button">Add</button>
-              </div>
-            </div>
-          </article>
+        <div class="job-list" id="jobsList">
+          <div class="job-empty">No background jobs yet.</div>
         </div>
       </aside>
 
