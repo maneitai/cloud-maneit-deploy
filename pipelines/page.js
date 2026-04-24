@@ -116,147 +116,21 @@ const TYPE_COLORS = {
 const NODE_W = 210;
 const NODE_H = 130;
 
-// ── Preset pipeline templates ─────────────────────────────────────────────────
+// ── Preset pipeline templates — loaded from API ───────────────────────────────
+// Presets are now DB-driven. state.pipelines is the source of truth.
+// PRESET_TEMPLATES removed — see renderPresetLibrary() and loadPreset() below.
 
-function _makeEdge(fromId, toId) {
-  return { id: `e_${fromId}_${toId}`, from: fromId, to: toId };
-}
+const _PRESET_ICONS = {
+  creative_writing: "✍️",
+  game_design:      "🎮",
+  windows_software: "💻",
+  research:         "🔬",
+  web_design:       "🌐",
+};
 
-function _node(id, title, type, desc, x, y, group = "", role = "", stage = "") {
-  return { id, title, type, desc, group, role, stage, model: "", x, y, notes: "", quorumRule: "single pass", timeout: "60s" };
-}
+// Presets loaded from DB — see renderPresetLibrary()
 
-const PRESET_TEMPLATES = [
-  // ── Game Design ────────────────────────────────────────────────────────────
-  {
-    id: "gamedesign",
-    label: "Game Design",
-    icon: "🎮",
-    desc: "Full game design pipeline — brief to complete GDD, systems, code, and asset specs",
-    type: "gamedesign",
-    build() {
-      const planner  = _node("n1", "Game Planner",       "planner",    "Analyses brief, defines scope, systems list, and engine constraints.",        60,  60,  "Orchestration", "Planner",        "plan");
-      const designer = _node("n2", "Game Designer",      "planner",    "Writes full GDD — mechanics, progression, balance framework, win conditions.", 60,  240, "Creative",      "Game Designer",  "design");
-      const arch     = _node("n3", "Systems Architect",  "planner",    "Defines game system architecture, class hierarchy, data flow.",                310, 240, "Orchestration", "Planner",        "arch");
-      const csharp   = _node("n4", "C# Coder",           "coder",      "Implements all game scripts — mechanics, AI, UI, save/load, audio hooks.",    185, 420, "Code",          "C# Coder",       "codegen");
-      const data     = _node("n5", "Data Balancer",      "planner",    "Unit stats, progression curves, level configs, ScriptableObjects.",            60,  600, "Analysis",      "Analyst",        "data");
-      const assets   = _node("n6", "Asset Spec Writer",  "projection", "Image gen prompts, 3D model briefs, audio cues, VFX specs.",                   310, 600, "Output",        "Formatter",      "assets");
-      const verifier = _node("n7", "Game Verifier",      "verifier",   "Multi-model review — logic, balance, engine conventions, completeness.",       185, 780, "Verification",  "Verifier",       "verify");
-      const packager = _node("n8", "Project Packager",   "projection", "Assembles importable engine project — all files, folder structure, README.",   185, 960, "Output",        "Exporter",       "package");
-      const nodes = [planner, designer, arch, csharp, data, assets, verifier, packager];
-      const edges = [
-        _makeEdge("n1","n2"), _makeEdge("n1","n3"),
-        _makeEdge("n2","n4"), _makeEdge("n3","n4"),
-        _makeEdge("n4","n5"), _makeEdge("n4","n6"),
-        _makeEdge("n5","n7"), _makeEdge("n6","n7"),
-        _makeEdge("n7","n8"),
-      ];
-      return { nodes, edges };
-    }
-  },
 
-  // ── App Creation ───────────────────────────────────────────────────────────
-  {
-    id: "appcreation",
-    label: "App Creation",
-    icon: "💻",
-    desc: "Parallel implementation lanes with testing, code review, and final packaging",
-    type: "appcreation",
-    build() {
-      const planner  = _node("n1", "Planner",          "planner",    "Analyses requirements, defines architecture and component breakdown.",         185, 60,  "Orchestration", "Planner",        "plan");
-      const pyA      = _node("n2", "Python Coder A",   "coder",      "Primary implementation lane.",                                                60,  240, "Code",          "Python Coder",   "codegen");
-      const pyB      = _node("n3", "Python Coder B",   "coder",      "Alternative implementation — different approach or module.",                  310, 240, "Code",          "Python Coder",   "codegen");
-      const tests    = _node("n4", "Test Writer",      "verifier",   "Writes unit and integration tests for both lanes.",                           185, 420, "Verification",  "Test Writer",    "verify");
-      const review   = _node("n5", "Code Reviewer",    "auditor",    "Full code audit — correctness, security, edge cases.",                        185, 600, "Verification",  "Code Reviewer",  "verify");
-      const resolver = _node("n6", "Resolver",         "planner",    "Picks or merges the best implementation into coherent codebase.",             185, 780, "Code",          "Resolver",       "package");
-      const exporter = _node("n7", "Exporter",         "projection", "Final output packaging, documentation, and handoff.",                         185, 960, "Output",        "Exporter",       "package");
-      const nodes = [planner, pyA, pyB, tests, review, resolver, exporter];
-      const edges = [
-        _makeEdge("n1","n2"), _makeEdge("n1","n3"),
-        _makeEdge("n2","n4"), _makeEdge("n3","n4"),
-        _makeEdge("n4","n5"), _makeEdge("n5","n6"), _makeEdge("n6","n7"),
-      ];
-      return { nodes, edges };
-    }
-  },
-
-  // ── Web / Portal ───────────────────────────────────────────────────────────
-  {
-    id: "webportal",
-    label: "Web / Portal",
-    icon: "🌐",
-    desc: "Parallel frontend + backend build lanes with code review and integration",
-    type: "portalcreation",
-    build() {
-      const planner  = _node("n1", "Planner",           "planner",    "Defines structure, stack, routes, and component breakdown.",                   185, 60,  "Orchestration", "Planner",        "plan");
-      const backend  = _node("n2", "Backend API Coder", "coder",      "FastAPI/Express backend, routes, models, DB layer.",                           60,  240, "Code",          "Backend API Coder","codegen");
-      const jscoder  = _node("n3", "JS Coder",          "coder",      "Frontend JS, component logic, API wiring.",                                    310, 240, "Code",          "JS Coder",       "codegen");
-      const htmlcss  = _node("n4", "HTML Coder",        "coder",      "HTML structure and CSS styling.",                                              560, 240, "Code",          "HTML Coder",     "codegen");
-      const reviewer = _node("n5", "Code Reviewer",     "auditor",    "Reviews all three lanes for correctness and integration.",                     310, 420, "Verification",  "Code Reviewer",  "verify");
-      const resolver = _node("n6", "Resolver",          "planner",    "Resolves conflicts, merges outputs into coherent codebase.",                   310, 600, "Code",          "Resolver",       "package");
-      const format   = _node("n7", "Formatter",         "projection", "Final output packaging and documentation.",                                    310, 780, "Output",        "Formatter",      "package");
-      const nodes = [planner, backend, jscoder, htmlcss, reviewer, resolver, format];
-      const edges = [
-        _makeEdge("n1","n2"), _makeEdge("n1","n3"), _makeEdge("n1","n4"),
-        _makeEdge("n2","n5"), _makeEdge("n3","n5"), _makeEdge("n4","n5"),
-        _makeEdge("n5","n6"), _makeEdge("n6","n7"),
-      ];
-      return { nodes, edges };
-    }
-  },
-
-  // ── Research ───────────────────────────────────────────────────────────────
-  {
-    id: "research",
-    label: "Research",
-    icon: "🔬",
-    desc: "Deep research with parallel scouts, cross-validation, synthesis, and final report",
-    type: "research",
-    build() {
-      const scout    = _node("n1", "Scout",                "input",      "Initial broad search. Identifies relevant domains and sources.",              60,  60,  "Research",     "Scout",               "frame");
-      const web1     = _node("n2", "Web Crawler A",        "input",      "Deep web fetch — primary source lane.",                                       60,  240, "Research",     "Web Crawler",         "traverse");
-      const web2     = _node("n3", "Web Crawler B",        "input",      "Deep web fetch — secondary source lane.",                                     310, 240, "Research",     "Web Crawler",         "traverse");
-      const val      = _node("n4", "Source Validator",     "verifier",   "Checks source credibility and provenance.",                                   185, 420, "Verification", "Source Validator",    "verify");
-      const contra   = _node("n5", "Contradiction Finder", "auditor",    "Hunts contradictions and inconsistencies across sources.",                    185, 600, "Research",     "Contradiction Finder","verify");
-      const synth    = _node("n6", "Synthesizer",          "planner",    "Combines verified findings into coherent structure.",                         185, 780, "Synthesis",    "Synthesizer",         "synthesise");
-      const report   = _node("n7", "Report Builder",       "projection", "Builds final research report with provenance and confidence.",                185, 960, "Synthesis",    "Report Builder",      "compress");
-      const nodes = [scout, web1, web2, val, contra, synth, report];
-      const edges = [
-        _makeEdge("n1","n2"), _makeEdge("n1","n3"),
-        _makeEdge("n2","n4"), _makeEdge("n3","n4"),
-        _makeEdge("n4","n5"), _makeEdge("n5","n6"), _makeEdge("n6","n7"),
-      ];
-      return { nodes, edges };
-    }
-  },
-
-  // ── AI Training Data ───────────────────────────────────────────────────────
-  {
-    id: "aitraining",
-    label: "AI Training Data",
-    icon: "🧠",
-    desc: "Data gathering, quality scoring, and structured training + eval pack generation",
-    type: "aitraining",
-    build() {
-      const scout    = _node("n1", "Scout",                  "input",      "Broad sweep — identifies relevant data domains and sources.",                60,  60,  "Research",   "Scout",                 "frame");
-      const miner    = _node("n2", "Database Miner",         "input",      "Targets structured sources, archives, and existing datasets.",               310, 60,  "Research",   "Database Miner",        "frame");
-      const pattern  = _node("n3", "Pattern Detector",       "planner",    "Identifies recurring patterns and quality signal markers.",                  185, 240, "Analysis",   "Pattern Detector",      "traverse");
-      const weigher  = _node("n4", "Evidence Weigher",       "verifier",   "Assigns quality scores and confidence levels per sample.",                   60,  420, "Analysis",   "Evidence Weigher",      "verify");
-      const contra   = _node("n5", "Contradiction Finder",   "auditor",    "Flags contradictory, ambiguous, or low-quality samples.",                    310, 420, "Verification","Contradiction Finder",  "verify");
-      const dossier  = _node("n6", "Dossier Writer",         "projection", "Structured data dossier with provenance and quality metadata.",              185, 600, "Synthesis",  "Dossier Writer",        "synthesise");
-      const evalpack = _node("n7", "Eval Pack Builder",      "projection", "Builds evaluation dataset from high-confidence samples.",                    60,  780, "Output",     "Eval Pack Builder",     "package");
-      const trainpack= _node("n8", "Training Pack Builder",  "projection", "Structures approved samples as model training data with metadata.",          310, 780, "Output",     "Training Pack Builder", "package");
-      const nodes = [scout, miner, pattern, weigher, contra, dossier, evalpack, trainpack];
-      const edges = [
-        _makeEdge("n1","n3"), _makeEdge("n2","n3"),
-        _makeEdge("n3","n4"), _makeEdge("n3","n5"),
-        _makeEdge("n4","n6"), _makeEdge("n5","n6"),
-        _makeEdge("n6","n7"), _makeEdge("n6","n8"),
-      ];
-      return { nodes, edges };
-    }
-  },
-];
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -351,21 +225,14 @@ function modelOptions(selected = "") {
   ].join("");
 }
 
-// ── Stage options (derived from active pipeline type) ─────────────────────────
-
-const STAGE_OPTIONS_BY_TYPE = {
-  gamedesign:      ["plan","design","arch","codegen","data","assets","verify","package"],
-  appcreation:     ["plan","codegen","verify","package"],
-  portalcreation:  ["plan","codegen","verify","package"],
-  research:        ["frame","traverse","synthesise","verify","compress","package"],
-  aitraining:      ["frame","traverse","verify","synthesise","package"],
-  creativewriting: ["premise","outline","draft","critique","revise","handoff"],
-};
-
+// Stage options derived from loaded pipeline stages (not hardcoded)
 function stageOptions(selected = "") {
-  const stages = STAGE_OPTIONS_BY_TYPE[state.pipelineType] || ["plan","execute","verify","package"];
+  const found = state.pipelines.find(p => p.id === state.savedPipelineId);
+  const stages = found?.stageList || [];
+  const opts = stages.map(s => s.id).filter(Boolean);
+  if (!opts.length) return `<option value="">— no stage —</option>`;
   return [`<option value="">— no stage —</option>`,
-    ...stages.map(s => `<option value="${esc(s)}" ${s === selected ? "selected" : ""}>${esc(s)}</option>`)
+    ...opts.map(s => `<option value="${esc(s)}" ${s === selected ? "selected" : ""}>${esc(s)}</option>`)
   ].join("");
 }
 
@@ -812,35 +679,42 @@ function updateSaveBtn() {
   btn.disabled = !(qs("#pipelineTitleInput")?.value.trim() || "");
 }
 
-// ── Preset library ────────────────────────────────────────────────────────────
+// ── Preset library — DB driven ────────────────────────────────────────────────
 
 function renderPresetLibrary() {
   const container = qs("#presetLibraryContainer"); if (!container) return;
-  container.innerHTML = PRESET_TEMPLATES.map(t => `
-    <button class="preset-card" data-preset="${esc(t.id)}" type="button" title="${esc(t.desc)}">
-      <span class="preset-icon">${t.icon}</span>
-      <span class="preset-label">${esc(t.label)}</span>
-    </button>`).join("");
+  if (!state.pipelines.length) {
+    container.innerHTML = `<span class="soft" style="font-size:11px;">Loading pipelines…</span>`;
+    return;
+  }
+  container.innerHTML = state.pipelines.map(p => {
+    const icon = _PRESET_ICONS[p.type] || "⚙️";
+    return `<button class="preset-card" data-preset="${esc(p.id)}" type="button" title="${esc(p.title)}">
+      <span class="preset-icon">${icon}</span>
+      <span class="preset-label">${esc(p.title)}</span>
+    </button>`;
+  }).join("");
   qsa(".preset-card", container).forEach(btn => {
     btn.addEventListener("click", () => loadPreset(btn.dataset.preset));
   });
 }
 
-function loadPreset(presetId) {
-  const preset = PRESET_TEMPLATES.find(p => p.id === presetId);
-  if (!preset) return;
+function loadPreset(pipelineId) {
+  const found = state.pipelines.find(p => p.id === pipelineId);
+  if (!found) { showToast("Pipeline not found", "warn"); return; }
   if (state.nodes.length && !confirm("Replace current canvas with preset?")) return;
-  const { nodes, edges } = preset.build();
+  const { nodes, edges } = stageListToGraph(found.stageList || []);
   state.nodes = nodes;
   state.edges = edges;
-  state.pipelineType = preset.type;
+  state.pipelineType = found.type || state.pipelineType;
+  state.savedPipelineId = found.id;
   state.selectedNodeId = null;
   state.panX = 0; state.panY = 0; state.zoom = 1;
   const titleEl = qs("#pipelineTitleInput");
-  if (titleEl) titleEl.value = preset.label;
+  if (titleEl) titleEl.value = found.title || "";
   saveState(); renderAll();
   setTimeout(fitToScreen, 100);
-  showToast(`${preset.icon} ${preset.label} preset loaded`, "good");
+  showToast(`${_PRESET_ICONS[found.type] || "⚙️"} ${found.title} loaded`, "good");
 }
 
 // ── Role library ──────────────────────────────────────────────────────────────
@@ -892,13 +766,21 @@ function renderSavedPipelineSelector() {
 async function refreshPipelines() {
   const r = await callApi("/api/pipelines");
   if (!r.ok) return;
-  state.pipelines = (r.body?.items || []).map(p => ({
-    id: p.public_id || p.id,
-    title: p.title || p.name || "Untitled",
-    type: p.type || "",
-    stages: p.stages,
-  }));
-  saveState(); renderSavedPipelineSelector();
+  state.pipelines = (r.body?.items || []).map(p => {
+    let stageList = [];
+    try {
+      const raw = p.stages;
+      const parsed = (typeof raw === "string") ? JSON.parse(raw || "[]") : (raw || []);
+      stageList = Array.isArray(parsed) ? parsed : [];
+    } catch { stageList = []; }
+    return {
+      id: p.public_id || p.id,
+      title: p.title || p.name || "Untitled",
+      type: p.type || "",
+      stageList,
+    };
+  });
+  saveState(); renderSavedPipelineSelector(); renderPresetLibrary();
 }
 
 // ── Save / load ───────────────────────────────────────────────────────────────
@@ -928,18 +810,20 @@ function stageListToGraph(stages) {
     input: "input", transform: "planner", build: "coder",
     verify: "verifier", branch: "branch", handoff: "projection",
   };
-  const cols = 2;
+  const PAD_X = 60, PAD_Y = 80, STEP_X = NODE_W + 60, STEP_Y = NODE_H + 80;
+  const COLS = Math.ceil(Math.sqrt(stages.length + 1));
+
   const nodes = stages.map((stage, i) => ({
     id: stage.id || `n_${i}`,
     title: stage.title || stage.id || `Stage ${i + 1}`,
     type: typeMap[stage.kind] || "planner",
     desc: stage.summary || "",
-    group: stage.kind || "",
+    group: stage.role || stage.kind || "",
     role: stage.role || "",
     stage: stage.id || "",
     model: (Array.isArray(stage.models) ? stage.models[0] : stage.model) || "",
-    x: 40 + (i % cols) * (NODE_W + 60),
-    y: 40 + Math.floor(i / cols) * (NODE_H + 80),
+    x: PAD_X + (i % COLS) * STEP_X,
+    y: PAD_Y + Math.floor(i / COLS) * STEP_Y,
     notes: "", quorumRule: "single pass", timeout: "60s",
   }));
   const edges = nodes.slice(0, -1).map((n, i) => ({
@@ -954,13 +838,9 @@ async function loadPipeline(id) {
   const found = state.pipelines.find(p => p.id === id);
   if (!found) return;
   try {
-    const raw = found.stages;
-    const graph = (typeof raw === "string") ? JSON.parse(raw || "{}") : (raw || {});
-    if (Array.isArray(graph.nodes)) {
-      state.nodes = graph.nodes;
-      state.edges = graph.edges || [];
-    } else if (Array.isArray(graph)) {
-      const converted = stageListToGraph(graph);
+    const stageList = found.stageList || [];
+    if (stageList.length) {
+      const converted = stageListToGraph(stageList);
       state.nodes = converted.nodes;
       state.edges = converted.edges;
     } else {
@@ -976,7 +856,7 @@ async function loadPipeline(id) {
     setTimeout(fitToScreen, 100);
     showToast("Pipeline loaded", "good");
   } catch (err) {
-    showToast("Could not parse pipeline graph", "warn");
+    showToast("Could not parse pipeline", "warn");
     console.error("loadPipeline error:", err);
   }
 }
