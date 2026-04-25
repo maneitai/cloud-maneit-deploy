@@ -5,22 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PortalCreator — PM</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../creator-shell.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="page.css" />
 </head>
-<body data-page="portal">
-<div class="creator-shell">
+<body>
 
-  <header class="creator-header">
-    <div class="header-brand">
+<div class="page-shell">
+
+  <!-- ── HEADER ── -->
+  <header class="page-header">
+    <div class="brand">
       <div class="brand-mark">PC</div>
-      <div class="header-titles">
-        <div class="eyebrow accent">Creator</div>
+      <div class="brand-copy">
+        <div class="eyebrow">Creator Surface</div>
         <h1>PortalCreator</h1>
-        <p>Web + infrastructure pipeline — frontend, backend, deployment, hardware setup</p>
+        <p>Design and build web portals — frontend, backend, full infrastructure</p>
       </div>
     </div>
-    <nav class="header-nav" aria-label="Primary">
+    <nav class="global-nav">
       <a class="nav-link" href="../">Home</a>
       <a class="nav-link" href="../projects/">Projects</a>
       <a class="nav-link" href="../pipelines/">Pipelines</a>
@@ -33,162 +35,288 @@
       <a class="nav-link" href="../state/">State</a>
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
-    <div class="header-controls">
-      <button class="btn btn--sm" id="refreshBtn">Refresh</button>
-      <span class="chip" id="activeProjectChip">No project</span>
+    <div class="header-actions">
+      <button class="btn" id="refreshBtn" type="button">Refresh</button>
+      <span class="status-chip" id="activeProjectChip">No project</span>
     </div>
   </header>
 
-  <div class="job-status-bar" id="jobStatusBar">
-    <div class="job-status-dot"></div>
-    <div class="job-status-text">No active job</div>
-    <div class="job-status-meta">Select a project, pipeline, and stack target to launch</div>
-    <span class="chip">idle</span>
+  <!-- ── JOB STATUS BAR ── -->
+  <div class="job-bar" id="jobBar">
+    <span class="job-dot" id="jobDot"></span>
+    <span class="job-label" id="jobLabel">No active job</span>
+    <span class="job-meta" id="jobMeta">Select a project and launch a pipeline</span>
+    <span class="chip" id="jobChip">idle</span>
   </div>
 
+  <!-- ── THREE COLUMN LAYOUT ── -->
   <div class="creator-layout">
 
-    <!-- ══ LEFT RAIL ══ -->
+    <!-- ════ LEFT RAIL ════ -->
     <aside class="left-rail">
 
+      <!-- Projects -->
       <div class="panel">
-        <div class="rail-section">
-          <div class="rail-head">
-            <div class="eyebrow">Projects</div>
-            <a href="../projects/" class="btn btn--sm">+ New</a>
-          </div>
-          <div class="project-list" id="projectList">
-            <div class="section-meta">Loading…</div>
-          </div>
+        <div class="panel-head">
+          <div class="eyebrow">Projects</div>
+          <button class="btn btn--sm" id="newProjectBtn" type="button">+ New</button>
+        </div>
+        <div class="project-list" id="projectList">
+          <div class="empty-state">Loading…</div>
         </div>
       </div>
 
+      <!-- Stack target -->
       <div class="panel">
-        <div class="rail-section">
-          <div class="eyebrow" style="margin-bottom:10px;">Project plan</div>
-          <div id="projectPlan"><div class="section-meta">Select a project.</div></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="rail-section">
-          <div class="eyebrow" style="margin-bottom:10px;">Stack target</div>
-          <div class="target-selector" id="targetSelector">
-            <button class="target-btn active" data-target="frontend">
-              <span class="target-btn-icon">🌐</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Frontend only</span>
-                <span class="target-btn-desc">HTML/CSS/JS — static site, Cloudflare deploy</span>
-              </span>
-            </button>
-            <button class="target-btn" data-target="frontend+backend">
-              <span class="target-btn-icon">⚡</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Frontend + Backend</span>
-                <span class="target-btn-desc">Web app with API, DB, auth</span>
-              </span>
-            </button>
-            <button class="target-btn" data-target="full-infra">
-              <span class="target-btn-icon">🏗️</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Full infrastructure</span>
-                <span class="target-btn-desc">Backend setup, systemd, nginx, TLS, deploy scripts</span>
-              </span>
-            </button>
-            <button class="target-btn" data-target="hardware-setup">
-              <span class="target-btn-icon">🖥️</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Hardware setup</span>
-                <span class="target-btn-desc">New machine onboarding, services, model stack</span>
-              </span>
-            </button>
-          </div>
+        <div class="eyebrow" style="margin-bottom:12px;">Stack target</div>
+        <div class="stack-targets" id="stackTargets">
+          <button class="stack-btn stack-btn--active" data-target="frontend" type="button">
+            <span class="stack-icon">🌐</span>
+            <span class="stack-body">
+              <span class="stack-label">Frontend only</span>
+              <span class="stack-desc">HTML/CSS/JS — static site, Cloudflare deploy</span>
+            </span>
+          </button>
+          <button class="stack-btn" data-target="frontend+backend" type="button">
+            <span class="stack-icon">⚡</span>
+            <span class="stack-body">
+              <span class="stack-label">Frontend + Backend</span>
+              <span class="stack-desc">Web app with API, DB, auth</span>
+            </span>
+          </button>
+          <button class="stack-btn" data-target="full-infra" type="button">
+            <span class="stack-icon">🏗️</span>
+            <span class="stack-body">
+              <span class="stack-label">Full infrastructure</span>
+              <span class="stack-desc">Backend, systemd, nginx, TLS, deploy scripts</span>
+            </span>
+          </button>
+          <button class="stack-btn" data-target="hardware-setup" type="button">
+            <span class="stack-icon">🖥️</span>
+            <span class="stack-body">
+              <span class="stack-label">Hardware setup</span>
+              <span class="stack-desc">New machine onboarding, services, model stack</span>
+            </span>
+          </button>
         </div>
       </div>
 
     </aside>
 
-    <!-- ══ CENTER ══ -->
-    <main class="center-col" id="centerCol">
+    <!-- ════ CENTER ════ -->
+    <main class="center-col">
 
-      <!-- Pipeline selector — above stage list -->
-      <div id="pipelineSelector" class="pipeline-selector panel"></div>
+      <!-- Tab bar -->
+      <div class="tab-bar">
+        <button class="tab tab--active" data-tab="brief" type="button">Brief</button>
+        <button class="tab" data-tab="sections" type="button">Sections</button>
+        <button class="tab" data-tab="pipeline" type="button">Pipeline</button>
+        <button class="tab" data-tab="preview" type="button">Preview</button>
+        <div class="tab-spacer"></div>
+        <span class="tab-project" id="tabProjectName">No project selected</span>
+      </div>
 
-      <div class="panel">
-        <div class="pipeline-header">
-          <div>
-            <div class="eyebrow accent">Execution plan</div>
-            <h2 id="launchTitle">Select a project and pipeline</h2>
-            <p id="launchMeta">Pipeline stages for the selected stack target.</p>
+      <!-- ── TAB: BRIEF ── -->
+      <div class="tab-pane tab-pane--active" id="tab-brief">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="eyebrow">Project brief</div>
+              <h2>Define what you're building</h2>
+              <p class="muted">These fields become the pipeline objective. Every model reads this.</p>
+            </div>
+            <button class="btn btn--primary" id="saveBriefBtn" type="button">Save brief</button>
+          </div>
+
+          <div class="brief-form" id="briefForm">
+            <div class="field-row field-row--2">
+              <div class="field">
+                <label class="field-label">Project / Brand name</label>
+                <input class="field-input" id="briefName" type="text" placeholder="e.g. Fjordlab" />
+              </div>
+              <div class="field">
+                <label class="field-label">Tagline</label>
+                <input class="field-input" id="briefTagline" type="text" placeholder="e.g. Clean design. Smart automation." />
+              </div>
+            </div>
+
+            <div class="field-row field-row--2">
+              <div class="field">
+                <label class="field-label">Target audience</label>
+                <input class="field-input" id="briefAudience" type="text" placeholder="e.g. Small business owners, entrepreneurs" />
+              </div>
+              <div class="field">
+                <label class="field-label">Location / context</label>
+                <input class="field-input" id="briefLocation" type="text" placeholder="e.g. Norway, freelance studio" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Services / purpose</label>
+              <textarea class="field-textarea" id="briefServices" rows="3" placeholder="One service or section per line&#10;e.g. Web design — landing pages, business sites&#10;AI automation — workflow automation, content pipelines"></textarea>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Design direction</label>
+              <textarea class="field-textarea" id="briefDesign" rows="3" placeholder="e.g. Dark minimal professional. Not industrial. Dark background #0f1117. Clean blue-white accent. Inter font only. Structured and information-dense but approachable. No stock photos."></textarea>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Technical requirements</label>
+              <textarea class="field-textarea" id="briefTech" rows="2" placeholder="e.g. Single HTML file with inline CSS and JS. No external dependencies except Google Fonts. Deployable to GitHub Pages."></textarea>
+            </div>
+
+            <div class="field">
+              <label class="field-label">Extra notes</label>
+              <textarea class="field-textarea" id="briefNotes" rows="2" placeholder="Anything else the pipeline should know…"></textarea>
+            </div>
+          </div>
+
+          <!-- Assembled objective preview -->
+          <div class="objective-preview" id="objectivePreview">
+            <div class="eyebrow" style="margin-bottom:8px;">Assembled objective <span class="muted">(what gets sent to the pipeline)</span></div>
+            <pre class="objective-text" id="objectiveText">Fill in the brief fields above to see the assembled objective.</pre>
           </div>
         </div>
-        <div id="stageList" class="stage-list">
-          <div class="section-meta">Select a project to see the pipeline.</div>
+      </div>
+
+      <!-- ── TAB: SECTIONS ── -->
+      <div class="tab-pane" id="tab-sections">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="eyebrow">Page sections</div>
+              <h2>Define the structure</h2>
+              <p class="muted">Add, remove, and reorder sections. Each section becomes a pipeline node.</p>
+            </div>
+            <button class="btn btn--primary" id="addSectionBtn" type="button">+ Add section</button>
+          </div>
+          <div class="section-list" id="sectionList">
+            <div class="empty-state">No sections defined. Add sections or load from a project.</div>
+          </div>
         </div>
       </div>
 
-      <div class="launch-bar">
-        <div class="launch-info">
-          <h3 id="launchTitleBar">Select a project and target to launch</h3>
-          <p id="launchMetaBar">Pipeline will run fully automatically. Monitor and override from the right rail.</p>
+      <!-- ── TAB: PIPELINE ── -->
+      <div class="tab-pane" id="tab-pipeline">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="eyebrow">Pipeline selection</div>
+              <h2 id="pipelineTitle">Select a pipeline</h2>
+              <p class="muted" id="pipelineMeta">Choose which pipeline to run against this project.</p>
+            </div>
+          </div>
+          <div class="pipeline-list" id="pipelineList">
+            <div class="empty-state">Loading pipelines…</div>
+          </div>
         </div>
-        <button class="btn btn--launch" id="launchBtn" disabled>Launch Pipeline</button>
+
+        <div class="panel">
+          <div class="eyebrow" style="margin-bottom:12px;">Stage overview</div>
+          <div class="stage-list" id="stageList">
+            <div class="empty-state">Select a pipeline to see its stages.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="eyebrow" style="margin-bottom:12px;">Execution log</div>
+          <div class="exec-log" id="execLog">
+            <div class="log-line muted">No activity yet.</div>
+          </div>
+        </div>
       </div>
 
-      <div class="panel">
-        <div class="eyebrow accent" style="margin-bottom:8px;">Execution log</div>
-        <div class="exec-log" id="execLog">
-          <div class="log-line muted">No activity yet.</div>
+      <!-- ── TAB: PREVIEW ── -->
+      <div class="tab-pane" id="tab-preview">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <div class="eyebrow">Last output</div>
+              <h2>Preview</h2>
+              <p class="muted">Most recent assembled output from the pipeline.</p>
+            </div>
+            <div class="button-row">
+              <button class="btn" id="viewCodeBtn" type="button">View code</button>
+              <button class="btn btn--primary" id="downloadBtn" type="button">Download</button>
+            </div>
+          </div>
+          <div class="preview-wrap" id="previewWrap">
+            <div class="empty-state">No output yet. Run the pipeline first.</div>
+          </div>
         </div>
       </div>
 
     </main>
 
-    <!-- ══ RIGHT RAIL ══ -->
+    <!-- ════ RIGHT RAIL ════ -->
     <aside class="right-rail">
 
+      <!-- Launch -->
+      <div class="panel panel--launch">
+        <div class="eyebrow" style="margin-bottom:10px;">Launch pipeline</div>
+        <div class="launch-summary" id="launchSummary">
+          <span class="launch-field"><span class="launch-field-label">Project</span><span class="launch-field-val" id="lsProject">—</span></span>
+          <span class="launch-field"><span class="launch-field-label">Pipeline</span><span class="launch-field-val" id="lsPipeline">—</span></span>
+          <span class="launch-field"><span class="launch-field-label">Target</span><span class="launch-field-val" id="lsTarget">Frontend only</span></span>
+        </div>
+        <button class="btn btn--launch" id="launchBtn" type="button" disabled>▶ Launch Pipeline</button>
+      </div>
+
+      <!-- Run status -->
+      <div class="panel" id="runStatusPanel" style="display:none;">
+        <div class="panel-head">
+          <div class="eyebrow">Run status</div>
+          <span class="status-chip" id="runStatusChip">running</span>
+        </div>
+        <div class="stage-progress" id="stageProgress"></div>
+      </div>
+
+      <!-- Model activity -->
       <div class="panel">
-        <div class="eyebrow accent" style="margin-bottom:10px;">Model activity</div>
-        <div class="model-activity-list" id="modelActivityList">
-          <div class="section-meta">No active job.</div>
+        <div class="eyebrow" style="margin-bottom:10px;">Model activity</div>
+        <div class="model-activity" id="modelActivity">
+          <div class="empty-state">No active job.</div>
         </div>
       </div>
 
+      <!-- Artifacts -->
       <div class="panel">
-        <div class="rail-head" style="margin-bottom:10px;">
-          <div class="eyebrow accent">Artifacts</div>
+        <div class="panel-head">
+          <div class="eyebrow">Artifacts</div>
           <span class="chip" id="artifactCount">0</span>
         </div>
         <div class="artifact-list" id="artifactList">
-          <div class="section-meta">No artifacts yet.</div>
+          <div class="empty-state">No artifacts yet.</div>
         </div>
-        <div id="artifactViewer" style="margin-top:10px;"></div>
       </div>
 
+      <!-- Run history -->
       <div class="panel">
-        <div class="eyebrow accent" style="margin-bottom:10px;">Run history</div>
-        <div class="run-list" id="runHistory">
-          <div class="section-meta">No runs yet.</div>
+        <div class="eyebrow" style="margin-bottom:10px;">Run history</div>
+        <div class="run-history" id="runHistory">
+          <div class="empty-state">No runs yet.</div>
         </div>
       </div>
 
     </aside>
 
   </div>
+
 </div>
 
-<div id="toast" class="toast"></div>
+<div class="toast" id="toast"></div>
+
 <script>
-  (function() {
-    try {
-      const p = new URLSearchParams(window.location.search);
-      const b = p.get("apiBase");
-      if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
-      else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
-    } catch {}
-  })();
+(function() {
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const b = p.get("apiBase");
+    if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+    else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+  } catch(e) {}
+})();
 </script>
-<script src="../creator-shell.js"></script>
-<script src="page.js"></script>
+<script type="module" src="page.js"></script>
 </body>
 </html>
