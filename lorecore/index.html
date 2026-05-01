@@ -16,7 +16,7 @@
       <div class="header-copy">
         <div class="eyebrow">PM</div>
         <h1>LoreCore</h1>
-        <p>Creative thinking room · Story library · Chapter editor</p>
+        <p>Canon library · Author thinking room · Pipeline-aware</p>
       </div>
     </div>
     <nav class="global-nav" aria-label="Primary">
@@ -33,21 +33,43 @@
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
     <div class="header-actions">
+      <div class="mode-switcher" id="modeSwitcher">
+        <button class="mode-switch-btn mode-switch-btn--active" data-mode="author" type="button">Author</button>
+        <button class="mode-switch-btn" data-mode="library" type="button">Library</button>
+      </div>
       <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
-      <button class="button button--small button--primary" id="exportBtn" type="button">Extract &amp; Save</button>
     </div>
   </header>
 
-  <div class="lorecore-layout">
+  <!-- Library scope strip — visible in both modes -->
+  <section class="scope-strip panel">
+    <div class="scope-block">
+      <div class="eyebrow">Library</div>
+      <select class="select" id="libraryPicker"></select>
+    </div>
+    <div class="scope-block">
+      <div class="eyebrow">Universe</div>
+      <strong id="universeLabel" class="ctx-val">—</strong>
+    </div>
+    <div class="scope-block">
+      <div class="eyebrow">Books in library</div>
+      <strong id="bookCountLabel">—</strong>
+    </div>
+    <div class="scope-block scope-block--right">
+      <span class="status-chip" id="libraryStatusChip">Loading</span>
+    </div>
+  </section>
 
-    <!-- ══ LEFT RAIL ══ -->
+  <!-- ══ AUTHOR MODE ══ -->
+  <div class="lorecore-layout" id="authorLayout">
+
     <aside class="panel panel-left">
 
       <div class="left-block">
         <div class="left-block-head">
           <div>
             <div class="eyebrow">Chat</div>
-            <div class="left-block-title">History</div>
+            <div class="left-block-title">Sessions</div>
           </div>
           <span class="status-chip status-chip--warn" id="sessionChip">—</span>
         </div>
@@ -69,43 +91,29 @@
       <div class="left-block left-block--grow">
         <div class="left-block-head">
           <div>
-            <div class="eyebrow">Library</div>
+            <div class="eyebrow">Books in scope</div>
             <div class="left-block-title">Books</div>
           </div>
-          <span class="status-chip status-chip--warn" id="libraryStatusChip">Loading</span>
         </div>
 
         <div id="bookList" class="book-list">
           <div class="lib-placeholder">Loading…</div>
         </div>
-
-        <div id="newBookForm" class="new-book-form" style="display:none;">
-          <div class="eyebrow" style="margin-bottom:8px;">New book</div>
-          <input class="input" id="newBookTitle" placeholder="Title" style="margin-bottom:6px;" />
-          <input class="input" id="newBookStatus" placeholder="Phase: outline / draft…" style="margin-bottom:6px;" />
-          <textarea class="textarea" id="newBookDesc" placeholder="Description" rows="2" style="margin-bottom:8px;"></textarea>
-          <div class="button-row">
-            <button class="button" id="cancelNewBookBtn" type="button">Cancel</button>
-            <button class="button button--primary" id="saveNewBookBtn" type="button">Create</button>
-          </div>
-        </div>
-        <button class="button" id="newBookToggleBtn" type="button" style="width:100%;margin-top:8px;">+ New book</button>
       </div>
 
     </aside>
 
-    <!-- ══ CENTER ══ -->
     <main class="panel panel-center">
 
       <div class="chat-controls-bar">
-        <div class="mode-cards" id="modeCards">
-          <button class="mode-card mode-card--active" data-mode="single">
+        <div class="mode-cards" id="chatModeCards">
+          <button class="mode-card mode-card--active" data-mode="single" type="button">
             <span class="mode-icon">◉</span><span class="mode-label">Single</span>
           </button>
-          <button class="mode-card" data-mode="parallel">
+          <button class="mode-card" data-mode="parallel" type="button">
             <span class="mode-icon">⊞</span><span class="mode-label">Parallel</span>
           </button>
-          <button class="mode-card" data-mode="discussion">
+          <button class="mode-card" data-mode="discussion" type="button">
             <span class="mode-icon">⬡</span><span class="mode-label">Discussion</span>
           </button>
         </div>
@@ -132,8 +140,8 @@
       <div class="chat-feed" id="chatFeed">
         <div class="chat-placeholder">
           <div class="chat-placeholder-icon">📖</div>
-          <div class="chat-placeholder-title">LoreCore thinking room</div>
-          <div class="muted" style="font-size:13px;">Select a model. Optionally select a book for context.</div>
+          <div class="chat-placeholder-title">Author mode — thinking room</div>
+          <div class="muted" style="font-size:13px;">Pick a model. Optionally pick a book for context. Chat freely.</div>
         </div>
       </div>
 
@@ -148,109 +156,12 @@
         </div>
       </div>
 
-      <div class="library-section" id="librarySection">
-
-        <div class="lib-tab-bar">
-          <div class="lib-tabs" id="libTabs">
-            <button class="lib-tab lib-tab--active" data-tab="characters">Characters</button>
-            <button class="lib-tab" data-tab="worlds">Worlds</button>
-            <button class="lib-tab" data-tab="scenes">Scenes</button>
-            <button class="lib-tab" data-tab="chapters">Chapters</button>
-            <button class="lib-tab" data-tab="drafts">Drafts</button>
-            <button class="lib-tab" data-tab="notes">Notes</button>
-          </div>
-          <div class="lib-tab-actions">
-            <button class="button button--small" id="libNewBtn" type="button">+ New</button>
-          </div>
-        </div>
-
-        <div class="lib-content" id="libContent">
-
-          <div id="tabEntity" class="tab-pane tab-pane--active">
-            <div class="entity-columns">
-              <div class="entity-list-col">
-                <div id="entityList" class="entity-list">
-                  <div class="lib-placeholder muted">Select a book to load entities.</div>
-                </div>
-              </div>
-              <div class="entity-editor-col">
-                <div id="entityEditorEmpty" class="entity-editor-empty">
-                  <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">Select an entity or press + New.</div>
-                </div>
-                <div id="entityEditorActive" style="display:none;">
-                  <div class="entity-editor-header">
-                    <div>
-                      <div class="eyebrow" id="entityEditorEyebrow">Entity</div>
-                      <strong id="entityEditorTitle">—</strong>
-                    </div>
-                    <div class="button-row">
-                      <button class="button button--small" id="extractEntityBtn" type="button">Extract from chat</button>
-                      <button class="button button--small button--primary" id="saveEntityBtn" type="button">Save</button>
-                      <button class="button button--small" id="closeEntityBtn" type="button">✕</button>
-                    </div>
-                  </div>
-                  <div class="entity-fields" id="entityFields"></div>
-                  <div class="extract-status" id="extractStatus" style="display:none;"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div id="tabChapters" class="tab-pane" style="display:none;">
-            <div class="chapter-columns">
-              <div class="chapter-list-col">
-                <div id="chapterList" class="chapter-list">
-                  <div class="lib-placeholder muted">Select a book.</div>
-                </div>
-              </div>
-              <div class="chapter-editor-col">
-                <div id="chapterEditorEmpty" class="chapter-editor-empty">
-                  <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">Select a chapter or press + New.</div>
-                </div>
-                <div id="chapterEditorActive" style="display:none;flex-direction:column;gap:10px;">
-                  <div class="chapter-editor-header">
-                    <div class="chapter-nav">
-                      <button class="button button--small" id="prevChapterBtn" type="button">← Prev</button>
-                      <button class="button button--small" id="nextChapterBtn" type="button">Next →</button>
-                    </div>
-                    <input class="input chapter-title-input" id="chapterTitleInput" placeholder="Chapter title" />
-                    <span class="word-count" id="wordCount">0 words</span>
-                    <div class="button-row">
-                      <button class="button button--small" id="extractChapterBtn" type="button">Extract from chat</button>
-                      <button class="button button--small button--primary" id="saveChapterBtn" type="button">Save</button>
-                    </div>
-                  </div>
-                  <textarea class="textarea chapter-content" id="chapterContent" placeholder="Write here…"></textarea>
-                  <div class="chapter-footer">
-                    <span class="muted" id="chapterSaveStatus" style="font-size:11px;"></span>
-                    <span class="muted" id="wordCountDetail" style="font-size:11px;"></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <div id="quickCreatePanel" class="quick-create-panel" style="display:none;">
-          <div class="qc-header">
-            <span class="eyebrow" id="qcLabel">New entity</span>
-            <button class="button button--small" id="closeQcBtn" type="button">✕</button>
-          </div>
-          <div id="qcFields" class="qc-fields"></div>
-          <button class="button button--primary" id="qcCreateBtn" type="button" style="width:100%;margin-top:8px;">Create</button>
-        </div>
-
-      </div>
-
     </main>
 
-    <!-- ══ RIGHT RAIL ══ -->
     <aside class="panel panel-right">
       <div class="right-block-head">
         <div class="eyebrow">Right rail</div>
-        <div class="left-block-title">Pipeline</div>
-        <span class="status-chip status-chip--warn" id="pipelineStatusChip">Idle</span>
+        <div class="left-block-title">Extract &amp; Save</div>
       </div>
       <div class="stack--md">
 
@@ -263,11 +174,10 @@
           </div>
         </article>
 
-        <!-- ── Extract & Save ── -->
         <article class="card card--compact">
-          <div class="eyebrow">Extract &amp; Save to library</div>
+          <div class="eyebrow">Extract from chat → library</div>
           <p class="muted" style="font-size:12px;margin:4px 0 10px;">
-            Reads the active session. Saves characters, world, and scenes directly into the selected book.
+            Reads the active session. Saves canon entities (characters, world details, scenes) directly into the selected book/library.
           </p>
 
           <label class="inline-field" style="margin-bottom:8px;">
@@ -284,65 +194,66 @@
             Extract &amp; Save
           </button>
 
-          <!-- Book picker — shown when no book selected or free chat -->
-          <div id="extractBookPicker" style="display:none;"></div>
-
-          <!-- Status feedback -->
           <div id="extractSaveStatus" class="muted" style="display:none;font-size:12px;margin-top:4px;line-height:1.5;"></div>
         </article>
 
-        <!-- ── Run stage ── -->
         <article class="card card--compact">
-          <div class="eyebrow">Run stage</div>
-          <label class="inline-field" style="margin-top:8px;">
-            <span class="soft">Stage</span>
-            <select class="select" id="stageSelect">
-              <option value="draft">Draft</option>
-              <option value="outline">Outline</option>
-              <option value="revise">Revise</option>
-              <option value="worldbuild">Worldbuild</option>
-              <option value="character">Character</option>
-              <option value="polish">Polish</option>
-              <option value="export">Export</option>
-            </select>
-          </label>
-          <button class="button button--primary" id="runStageBtn" type="button" style="width:100%;margin-top:8px;">Run stage</button>
-          <div class="preview-box" id="stageResultBox" style="display:none;margin-top:8px;">
-            <strong>Result</strong><span id="stageResultText"></span>
-          </div>
-        </article>
-
-        <!-- ── Counts ── -->
-        <article class="card card--compact">
-          <div class="eyebrow">Counts</div>
-          <div class="preview-box" id="entityCountBox">
-            <strong>—</strong><span>Loading…</span>
-          </div>
-        </article>
-
-        <!-- ── Single entity extract (fills editor form) ── -->
-        <article class="card card--compact">
-          <div class="eyebrow">Fill editor from chat</div>
-          <p class="muted" style="font-size:12px;margin-bottom:8px;">
-            Opens the entity editor and fills it from the conversation. Review and save manually.
+          <div class="eyebrow">Tips</div>
+          <p class="muted" style="font-size:12px;line-height:1.55;margin:4px 0 0;">
+            Author mode is for ideation, brainstorming, and casual additions to canon. For serious editing of book outlines, chapters, scenes, and canon entities — switch to Library mode.
           </p>
-          <label class="inline-field">
-            <span class="soft">Type</span>
-            <select class="select" id="extractTypeSelect">
-              <option value="character">Character</option>
-              <option value="world">World</option>
-              <option value="scene">Scene</option>
-              <option value="chapter">Chapter</option>
-              <option value="note">Note</option>
-            </select>
-          </label>
-          <button class="button" id="openExtractBtn" type="button" style="width:100%;margin-top:8px;">Open in editor</button>
         </article>
 
       </div>
     </aside>
 
   </div>
+
+  <!-- ══ LIBRARY MODE — placeholder for Deploy 2 ══ -->
+  <div class="lorecore-layout lorecore-layout--placeholder" id="libraryLayout" style="display:none;">
+    <div class="panel placeholder-panel">
+      <div class="placeholder-icon">📚</div>
+      <h2 class="placeholder-title">Library mode</h2>
+      <p class="placeholder-text">Canon-first reader and editor for the current library.</p>
+      <div class="placeholder-features">
+        <div class="placeholder-feature">
+          <strong>Canon nav tree</strong>
+          <span class="muted">Worlds + characters at library scope, books with nested chapters and scenes</span>
+        </div>
+        <div class="placeholder-feature">
+          <strong>Per-entity reader</strong>
+          <span class="muted">View canonical content with status badges, provenance, and verdict displays</span>
+        </div>
+        <div class="placeholder-feature">
+          <strong>Edit-protected workflow</strong>
+          <span class="muted">Read-only by default. Per-entity edit toggle. Save requires confirmation. Promotes to <code>final</code> on apply</span>
+        </div>
+        <div class="placeholder-feature">
+          <strong>Pipeline-aware</strong>
+          <span class="muted">Provenance per row. Live polling when an active run targets this library. Open in Pipelines viewer per run</span>
+        </div>
+      </div>
+      <p class="placeholder-footer muted">
+        Deploy 2 ships next. Mode infrastructure is live now — toggle back to Author mode to resume work.
+      </p>
+    </div>
+  </div>
+
+  <!-- Discard-changes modal (used in Deploy 2; harmless if untriggered) -->
+  <div class="modal" id="confirmModal" style="display:none;" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-inner">
+      <div class="modal-head">
+        <strong id="confirmModalTitle">Confirm</strong>
+      </div>
+      <div class="modal-body" id="confirmModalBody"></div>
+      <div class="modal-actions">
+        <button class="button" id="confirmModalCancel" type="button">Cancel</button>
+        <button class="button button--primary" id="confirmModalOk" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
