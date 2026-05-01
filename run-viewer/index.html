@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PM — Run Viewer</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2064%2064%27%3E%3Crect%20width%3D%2764%27%20height%3D%2764%27%20rx%3D%2716%27%20fill%3D%27%23111827%27/%3E%3Cpath%20d%3D%27M16%2044V20h10l8%2014%208-14h10v24h-8V32l-7%2012h-6l-7-12v12z%27%20fill%3D%27%23d1d5db%27/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
+</head>
+<body>
+<div class="page-shell">
+
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">PM</div>
+      <div class="header-copy">
+        <div class="eyebrow">PM</div>
+        <h1>Run viewer</h1>
+        <p>Live state of a pipeline run · Click nodes to inspect · Auto-polling</p>
+      </div>
+    </div>
+    <nav class="global-nav" aria-label="Primary">
+      <a class="nav-link" href="../">Home</a>
+      <a class="nav-link" href="../projects/">Projects</a>
+      <a class="nav-link" href="../pipelines/">Pipelines</a>
+      <a class="nav-link" href="../agent-factory/">Agent Factory</a>
+      <a class="nav-link" href="../appcreator/">AppCreator</a>
+      <a class="nav-link" href="../portalcreator/">PortalCreator</a>
+      <a class="nav-link" href="../research-core/">Research Core</a>
+      <a class="nav-link" href="../lorecore/">LoreCore</a>
+      <a class="nav-link" href="../game-designer/">Game Designer</a>
+      <a class="nav-link" href="../state/">State</a>
+      <a class="nav-link" href="../settings/">Settings</a>
+      <a class="nav-link nav-link--active" href="../run-viewer/">Runs</a>
+    </nav>
+    <div class="header-actions">
+      <span class="chip" id="runStatusChip">no run</span>
+      <span class="chip" id="runProgressChip">0/0</span>
+      <span class="chip" id="runtimeChip">0s</span>
+    </div>
+  </header>
+
+  <section class="surface-banner panel">
+    <div>
+      <div class="eyebrow">Run</div>
+      <strong id="runTitle">Select a run</strong>
+      <span class="muted" id="runIdLabel" style="margin-left: 12px; font-size: 13px;"></span>
+    </div>
+    <div class="banner-note" id="runMeta"></div>
+  </section>
+
+  <section class="run-layout">
+
+    <!-- ── LEFT — Run picker ── -->
+    <aside class="panel panel-left">
+      <div class="section-title">
+        <div><div class="eyebrow">Active + recent</div><h2>Runs</h2></div>
+        <button class="button" id="refreshRunsBtn" type="button">↻</button>
+      </div>
+      <div class="stack">
+
+        <article class="card">
+          <div class="eyebrow" style="margin-bottom:8px;">Active</div>
+          <div id="activeRunsList">
+            <span class="soft" style="font-size:12px;">Loading…</span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow" style="margin-bottom:8px;">Open by ID</div>
+          <div class="save-row">
+            <input class="input" id="runIdInput" placeholder="PRUN-…" />
+            <button class="button button--primary" id="openRunBtn" type="button">Open</button>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow" style="margin-bottom:8px;">Status legend</div>
+          <div class="legend">
+            <div class="legend-row"><span class="legend-dot legend-dot--pending"></span>pending</div>
+            <div class="legend-row"><span class="legend-dot legend-dot--running"></span>running</div>
+            <div class="legend-row"><span class="legend-dot legend-dot--done"></span>done</div>
+            <div class="legend-row"><span class="legend-dot legend-dot--failed"></span>failed</div>
+            <div class="legend-row"><span class="legend-dot legend-dot--gate"></span>gate (countdown)</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow" style="margin-bottom:8px;">Run controls</div>
+          <div class="button-row">
+            <button class="button" id="pauseBtn" type="button" disabled>Pause</button>
+            <button class="button" id="resumeBtn" type="button" disabled>Resume</button>
+          </div>
+          <div class="button-row" style="margin-top: 8px;">
+            <button class="button" id="clearGateBtn" type="button" disabled>Clear gate</button>
+          </div>
+        </article>
+
+      </div>
+    </aside>
+
+    <!-- ── CENTER — Graph ── -->
+    <main class="panel panel-center">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Topology</div>
+          <h2>Pipeline graph</h2>
+          <p class="muted">Click any node to inspect · Auto-updates every 2s</p>
+        </div>
+        <div class="zoom-controls">
+          <button class="zoom-btn" id="zoomOutBtn" title="Zoom out">−</button>
+          <span class="zoom-label" id="zoomLabel">100%</span>
+          <button class="zoom-btn" id="zoomInBtn" title="Zoom in">+</button>
+          <button class="zoom-btn" id="zoomFitBtn" title="Fit to screen">⊡</button>
+        </div>
+      </div>
+
+      <section class="run-canvas" id="runCanvas" aria-label="Run graph">
+        <div id="canvasWorld">
+          <svg id="edgeSvg" aria-hidden="true">
+            <defs>
+              <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 Z" fill="rgba(110,231,255,0.5)" />
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        <div class="canvas-hint" id="canvasHint">No run loaded — pick one from the left rail or paste a run ID</div>
+      </section>
+    </main>
+
+    <!-- ── RIGHT — Inspector ── -->
+    <aside class="panel panel-right" id="inspectorPanel">
+      <div class="section-title">
+        <div><div class="eyebrow">Inspector</div><h2 id="inspectorTitle">Select a node</h2></div>
+        <span class="status-chip" id="inspectorStatusChip">—</span>
+      </div>
+      <div class="stack">
+
+        <article class="card">
+          <div class="eyebrow">Node info</div>
+          <dl class="kv">
+            <dt>Role</dt><dd id="kvRole">—</dd>
+            <dt>Model</dt><dd id="kvModel">—</dd>
+            <dt>Status</dt><dd id="kvStatus">—</dd>
+            <dt>Latency</dt><dd id="kvLatency">—</dd>
+            <dt>Output size</dt><dd id="kvSize">—</dd>
+            <dt>Library write</dt><dd id="kvLibwrite">—</dd>
+          </dl>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow" style="margin-bottom: 8px;">Output</div>
+          <div id="nodeOutputBox" class="output-box">
+            <span class="soft" style="font-size:12px;">No node selected</span>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="eyebrow" style="margin-bottom: 8px;">Error / retries</div>
+          <div id="nodeErrorBox" class="output-box output-box--error">
+            <span class="soft" style="font-size:12px;">—</span>
+          </div>
+        </article>
+
+      </div>
+    </aside>
+
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</div>
+
+<script>
+(function(){
+  try {
+    const p = new URLSearchParams(window.location.search);
+    const b = p.get("apiBase");
+    if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+    else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+  } catch(e) {}
+})();
+</script>
+<script type="module" src="page.js"></script>
+</body>
+</html>
