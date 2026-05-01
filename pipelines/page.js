@@ -1,3 +1,22 @@
+// ============================================================================
+//  pipelines/page.js — Pipeline workbench + integrated live run viewer
+//
+//  Two modes, same canvas:
+//    - EDIT mode: builder UI (drag nodes, link ports, save/load, etc.)
+//    - RUN mode:  canvas becomes a live run viewer, right rail shows run state
+//
+//  Mode switches automatically when a run starts. Returns to edit when run ends.
+//
+//  Key architectural decisions:
+//    - When a saved pipeline is loaded, canvas node IDs MIRROR stage IDs from
+//      the backend (e.g. "dispatcher", "synth_creative"). This makes
+//      backend-polled node_states match local node references directly —
+//      no translation layer.
+//    - Canvas is READ-ONLY during a run (no drag, no edge edits, no delete).
+//    - Right rail card stack switches: editor cards visible in EDIT,
+//      run-mode cards in RUN.
+// ============================================================================
+
 const PM_PIPELINES_KEY = "PM_PIPELINES_V6";
 const PM_API_BASE = (window.PM_API_BASE || "https://pm-api.maneit.net").replace(/\/+$/, "");
 
@@ -91,7 +110,6 @@ const ROLE_GROUPS = [
   },
 ];
 
-// Flat role list for inspector dropdown
 const ALL_ROLES = ROLE_GROUPS.flatMap(g => g.roles.map(r => ({ ...r, group: g.group })));
 
 const PIPELINE_TYPES = [
@@ -113,6 +131,16 @@ const TYPE_COLORS = {
   projection: { badge: "#bfe0ff", bg: "rgba(96,165,250,0.16)"  },
 };
 
+// Run-state colors painted on top of edit-mode node styling
+const RUN_STATUS_STYLES = {
+  pending:  { border: "rgba(255,255,255,0.10)", glow: "none",                                                opacity: "0.55" },
+  queued:   { border: "rgba(255,255,255,0.18)", glow: "none",                                                opacity: "0.75" },
+  running:  { border: "rgba(251,191,36,0.7)",   glow: "0 0 0 2px rgba(251,191,36,0.18), 0 4px 20px rgba(251,191,36,0.18)", opacity: "1" },
+  done:     { border: "rgba(52,211,153,0.6)",   glow: "0 0 0 2px rgba(52,211,153,0.15), 0 4px 18px rgba(0,0,0,0.4)",       opacity: "1" },
+  failed:   { border: "rgba(251,113,133,0.7)",  glow: "0 0 0 2px rgba(251,113,133,0.18), 0 4px 18px rgba(251,113,133,0.18)", opacity: "1" },
+  skipped:  { border: "rgba(255,255,255,0.10)", glow: "none",                                                opacity: "0.4" },
+};
+
 const NODE_W = 210;
 const NODE_H = 130;
 
@@ -127,7 +155,6 @@ function _node(id, title, type, desc, x, y, group = "", role = "", stage = "") {
 }
 
 const PRESET_TEMPLATES = [
-  // ── Game Design ────────────────────────────────────────────────────────────
   {
     id: "gamedesign",
     label: "Game Design",
@@ -154,8 +181,6 @@ const PRESET_TEMPLATES = [
       return { nodes, edges };
     }
   },
-
-  // ── App Creation ───────────────────────────────────────────────────────────
   {
     id: "appcreation",
     label: "App Creation",
@@ -179,8 +204,6 @@ const PRESET_TEMPLATES = [
       return { nodes, edges };
     }
   },
-
-  // ── Web / Portal ───────────────────────────────────────────────────────────
   {
     id: "webportal",
     label: "Web / Portal",
@@ -204,8 +227,6 @@ const PRESET_TEMPLATES = [
       return { nodes, edges };
     }
   },
-
-  // ── Research ───────────────────────────────────────────────────────────────
   {
     id: "research",
     label: "Research",
@@ -229,8 +250,6 @@ const PRESET_TEMPLATES = [
       return { nodes, edges };
     }
   },
-
-  // ── AI Training Data ───────────────────────────────────────────────────────
   {
     id: "aitraining",
     label: "AI Training Data",
@@ -277,6 +296,9 @@ function freshState() {
     runJobId: null,
     runObjective: "",
     runSelectedModels: [],
+    runMode: false,         // true while a run is active
+    runData: null,          // last /runs/{id} response
+    runStartedAt: null,     // ms timestamp when run started (for elapsed display)
   };
 }
 
@@ -295,13 +317,15 @@ function loadState() {
       pipelines: Array.isArray(p.pipelines) ? p.pipelines : [],
       availableModels: Array.isArray(p.availableModels) ? p.availableModels : [],
       panX: p.panX || 0, panY: p.panY || 0, zoom: p.zoom || 1,
-      runJobId: null, runObjective: p.runObjective || "", runSelectedModels: p.runSelectedModels || [],
+      runJobId: null, runMode: false, runData: null, runStartedAt: null,
+      runObjective: p.runObjective || "", runSelectedModels: p.runSelectedModels || [],
     };
   } catch { return freshState(); }
 }
 
 function saveState() {
-  const s = { ...state, tool: "select", linkSource: null, linkSide: null, runJobId: null };
+  // Don't persist run state across reloads — it's transient
+  const s = { ...state, tool: "select", linkSource: null, linkSide: null, runJobId: null, runMode: false, runData: null, runStartedAt: null };
   localStorage.setItem(PM_PIPELINES_KEY, JSON.stringify(s));
 }
 
@@ -311,6 +335,24 @@ const qs  = (s, r = document) => r.querySelector(s);
 const qsa = (s, r = document) => Array.from(r.querySelectorAll(s));
 const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 const uid = () => `n_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`;
+
+function fmtBytes(n) { if (!n) return "0"; if (n < 1024) return n + " chars"; return (n/1024).toFixed(1) + "k"; }
+function fmtDuration(seconds) {
+  if (!seconds || isNaN(seconds)) return "—";
+  const s = Math.max(0, Math.floor(seconds));
+  if (s < 60) return s + "s";
+  const m = Math.floor(s / 60);
+  const rem = s % 60;
+  return `${m}m ${rem}s`;
+}
+function parseTs(ts) {
+  if (!ts) return null;
+  // Handle "2026-05-01 17:39:23.248517" and ISO formats; treat as UTC if no zone given
+  let s = String(ts).trim();
+  if (!s.match(/[zZ]|[+-]\d\d:?\d\d$/)) s = s.replace(" ", "T") + "Z";
+  const t = new Date(s).getTime();
+  return isNaN(t) ? null : t;
+}
 
 function showToast(msg, tone = "good") {
   const t = qs("#toast"); if (!t) return;
@@ -351,7 +393,7 @@ function modelOptions(selected = "") {
   ].join("");
 }
 
-// ── Stage options (derived from active pipeline type) ─────────────────────────
+// ── Stage / role options (derived from active pipeline type) ──────────────────
 
 const STAGE_OPTIONS_BY_TYPE = {
   gamedesign:      ["plan","design","arch","codegen","data","assets","verify","package"],
@@ -476,6 +518,8 @@ function renderEdges() {
   const svg = qs("#edgeSvg"); if (!svg) return;
   qsa("path, polygon", svg).forEach(el => el.remove());
 
+  const ns = state.runData?.node_states || {};
+
   state.edges.forEach(edge => {
     const from = state.nodes.find(n => n.id === edge.from);
     const to   = state.nodes.find(n => n.id === edge.to);
@@ -485,19 +529,38 @@ function renderEdges() {
     const p2 = { x: to.x,            y: to.y   + NODE_H / 2 };
     const dx = Math.max(40, Math.abs(p2.x - p1.x) * 0.5);
 
+    // Edge color reflects upstream/downstream state during runs
+    let stroke = "url(#edgeGrad)";
+    let strokeWidth = "2";
+    if (state.runMode) {
+      const fromStatus = ns[edge.from]?.status;
+      const toStatus = ns[edge.to]?.status;
+      if (fromStatus === "done" && toStatus === "running") {
+        stroke = "rgba(110,231,255,0.7)"; strokeWidth = "2.5";
+      } else if (fromStatus === "done" && toStatus === "done") {
+        stroke = "rgba(52,211,153,0.5)";
+      } else if (fromStatus === "failed" || toStatus === "failed") {
+        stroke = "rgba(251,113,133,0.4)";
+      } else {
+        stroke = "rgba(255,255,255,0.12)";
+      }
+    }
+
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", `M${p1.x},${p1.y} C${p1.x+dx},${p1.y} ${p2.x-dx},${p2.y} ${p2.x},${p2.y}`);
-    path.setAttribute("stroke", "url(#edgeGrad)");
-    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke", stroke);
+    path.setAttribute("stroke-width", strokeWidth);
     path.setAttribute("fill", "none");
     path.setAttribute("stroke-linecap", "round");
     path.dataset.edgeId = edge.id;
-    path.style.cursor = "pointer";
-    path.addEventListener("click", () => {
-      state.edges = state.edges.filter(e => e.id !== edge.id);
-      saveState(); renderEdges();
-      showToast("Connection removed", "warn");
-    });
+    if (!state.runMode) {
+      path.style.cursor = "pointer";
+      path.addEventListener("click", () => {
+        state.edges = state.edges.filter(e => e.id !== edge.id);
+        saveState(); renderEdges();
+        showToast("Connection removed", "warn");
+      });
+    }
     svg.appendChild(path);
 
     const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
@@ -508,12 +571,12 @@ function renderEdges() {
       [ax - 5*Math.sin(angle), ay + 5*Math.cos(angle)],
       [ax + 5*Math.sin(angle), ay - 5*Math.cos(angle)],
     ].map(p => p.join(",")).join(" "));
-    arr.setAttribute("fill", "rgba(110,231,255,0.7)");
+    arr.setAttribute("fill", state.runMode ? stroke : "rgba(110,231,255,0.7)");
     arr.style.pointerEvents = "none";
     svg.appendChild(arr);
   });
 
-  if (state.tool === "link" && state.linkSource && state._mousePos) {
+  if (!state.runMode && state.tool === "link" && state.linkSource && state._mousePos) {
     const from = state.nodes.find(n => n.id === state.linkSource);
     if (from) {
       const p1 = { x: from.x + NODE_W, y: from.y + NODE_H / 2 };
@@ -536,6 +599,8 @@ function renderNodes() {
   const world = qs("#canvasWorld"); if (!world) return;
   qsa(".pipeline-node", world).forEach(el => el.remove());
 
+  const ns = state.runData?.node_states || {};
+
   state.nodes.forEach(node => {
     const col = TYPE_COLORS[node.type] || TYPE_COLORS.input;
     const isSelected = node.id === state.selectedNodeId;
@@ -544,17 +609,35 @@ function renderNodes() {
     const roleLabel  = node.role  || "— no role —";
     const stageLabel = node.stage || "— no stage —";
 
+    const nodeState = ns[node.id];
+    const status = state.runMode ? (nodeState?.status || "pending") : null;
+
     const el = document.createElement("article");
     el.className = "pipeline-node"
       + (isSelected ? " is-selected" : "")
       + (isLinkSrc  ? " is-link-source" : "");
     el.dataset.nodeId = node.id;
-    el.style.cssText = `left:${node.x}px;top:${node.y}px;width:${NODE_W}px;`;
+
+    let cssText = `left:${node.x}px;top:${node.y}px;width:${NODE_W}px;`;
+    if (status) {
+      const rs = RUN_STATUS_STYLES[status] || RUN_STATUS_STYLES.pending;
+      cssText += `border-color:${rs.border};opacity:${rs.opacity};`;
+      if (rs.glow !== "none") cssText += `box-shadow:${rs.glow};`;
+      if (status === "running") cssText += "animation: nodePulse 1.4s ease-in-out infinite;";
+    }
+    el.style.cssText = cssText;
+
+    // Node body — same layout as edit mode, but optionally with a status badge
+    const statusBadge = status
+      ? `<span class="node-badge" style="background:rgba(0,0,0,0.3);color:${(RUN_STATUS_STYLES[status]||RUN_STATUS_STYLES.pending).border};">${esc(status)}</span>`
+      : `<span class="node-badge" style="color:${col.badge};background:${col.bg};">${esc(node.group || node.type)}</span>`;
+
+    const delBtn = state.runMode ? "" : `<button class="node-del" data-del="${esc(node.id)}" title="Remove">✕</button>`;
 
     el.innerHTML = `
       <div class="node-head">
-        <span class="node-badge" style="color:${col.badge};background:${col.bg};">${esc(node.group || node.type)}</span>
-        <button class="node-del" data-del="${esc(node.id)}" title="Remove">✕</button>
+        ${statusBadge}
+        ${delBtn}
       </div>
       <div class="node-title">${esc(node.title)}</div>
       <div class="node-meta-row">
@@ -562,7 +645,7 @@ function renderNodes() {
         <span class="node-tag node-tag--stage">${esc(stageLabel)}</span>
       </div>
       <div class="node-model">${esc(modelLabel)}</div>
-      <div class="node-ports">
+      <div class="node-ports" style="${state.runMode ? "visibility:hidden;" : ""}">
         <div class="port port-in"  data-node="${esc(node.id)}" data-side="in"></div>
         <div class="port port-out" data-node="${esc(node.id)}" data-side="out"></div>
       </div>
@@ -570,10 +653,12 @@ function renderNodes() {
     world.appendChild(el);
   });
 
-  bindDrag();
-  bindPortClicks();
+  if (!state.runMode) {
+    bindDrag();
+    bindPortClicks();
+    bindDelBtns();
+  }
   bindNodeSelect();
-  bindDelBtns();
 }
 
 function renderAll() {
@@ -586,10 +671,10 @@ function renderAll() {
   updateToolbar();
   applyTransform();
   updateZoomLabel();
-  renderRunPanel();
+  applyRightRailMode();
 }
 
-// ── Drag ──────────────────────────────────────────────────────────────────────
+// ── Drag (edit mode only) ─────────────────────────────────────────────────────
 
 function bindDrag() {
   qsa(".pipeline-node").forEach(el => {
@@ -625,7 +710,7 @@ function bindDrag() {
   });
 }
 
-// ── Port linking ──────────────────────────────────────────────────────────────
+// ── Port linking (edit mode only) ─────────────────────────────────────────────
 
 function bindPortClicks() {
   qsa(".port").forEach(port => {
@@ -670,6 +755,7 @@ function cancelLink() {
 function bindCanvasEvents() {
   const canvas = qs("#pipelineCanvas"); if (!canvas) return;
   canvas.addEventListener("mousemove", e => {
+    if (state.runMode) return;
     if (state.tool !== "link" || !state.linkSource) return;
     const wp = screenToWorld(e.clientX, e.clientY);
     state._mousePos = wp;
@@ -688,7 +774,7 @@ function bindNodeSelect() {
   qsa(".pipeline-node").forEach(el => {
     el.addEventListener("click", e => {
       if (e.target.closest(".port") || e.target.closest(".node-del") || e.target.closest("select")) return;
-      if (state.tool === "link") return;
+      if (!state.runMode && state.tool === "link") return;
       selectNode(el.dataset.nodeId);
     });
   });
@@ -712,10 +798,12 @@ function bindDelBtns() {
 
 function selectNode(id) {
   state.selectedNodeId = id;
-  saveState(); renderNodes(); renderEdges(); updateInspector();
+  if (!state.runMode) saveState();
+  renderNodes(); renderEdges(); updateInspector();
 }
 
-function updateInspector() {
+// Edit-mode inspector (the original behavior)
+function renderEditModeInspector() {
   const node = state.nodes.find(n => n.id === state.selectedNodeId);
   qs("#selectedNodeTitle").textContent = node?.title || "No node selected";
   qs("#selectedNodeDesc").textContent  = node?.desc  || (node ? `Type: ${node.type}` : "Select a node to inspect.");
@@ -754,7 +842,6 @@ function updateInspector() {
       const n = state.nodes.find(n => n.id === state.selectedNodeId);
       if (!n) return;
       n.role = e.target.value;
-      // Also update type to match selected role
       const roleData = ALL_ROLES.find(r => r.title === e.target.value);
       if (roleData) { n.type = roleData.type; n.group = roleData.group; }
       saveState(); renderNodes();
@@ -772,7 +859,65 @@ function updateInspector() {
   }
 }
 
+// Run-mode inspector — shows live data for the selected node
+function renderRunModeInspector() {
+  const node = state.nodes.find(n => n.id === state.selectedNodeId);
+  const ns   = state.runData?.node_states || {};
+  const nodeState = node ? ns[node.id] : null;
+
+  qs("#selectedNodeTitle").textContent = node?.title || "No node selected";
+
+  const status = nodeState?.status || (node ? "pending" : "—");
+  const desc = node
+    ? `${esc(status.toUpperCase())} · ${esc(node.role || node.type || "")}`
+    : "Select a node to inspect its run state.";
+  qs("#selectedNodeDesc").innerHTML = desc;
+
+  const wrap = qs("#inspectorModelWrap");
+  if (!wrap) return;
+
+  if (!node) {
+    wrap.innerHTML = `<span class="soft" style="font-size:12px;">Click a node to inspect its run state.</span>`;
+    return;
+  }
+
+  // Latency
+  let latency = "—";
+  if (nodeState?.started_at && nodeState?.finished_at) {
+    const ms = parseTs(nodeState.finished_at) - parseTs(nodeState.started_at);
+    if (!isNaN(ms)) latency = fmtDuration(ms / 1000);
+  } else if (nodeState?.started_at && status === "running") {
+    const ms = Date.now() - parseTs(nodeState.started_at);
+    if (!isNaN(ms)) latency = fmtDuration(ms / 1000) + " (live)";
+  }
+
+  const output = nodeState?.output || "";
+  const error  = nodeState?.error || "";
+  const retries = nodeState?.retry_count || 0;
+
+  const modelLabel = state.availableModels.find(m => m.value === node.model)?.label || node.model || "—";
+
+  wrap.innerHTML = `
+    <div class="inspector-field-group">
+      <div class="run-inspector-kv">
+        <span class="soft">Status</span><strong style="color:${(RUN_STATUS_STYLES[status]||RUN_STATUS_STYLES.pending).border}">${esc(status)}</strong>
+        <span class="soft">Model</span><span>${esc(modelLabel)}</span>
+        <span class="soft">Latency</span><span>${esc(latency)}</span>
+        <span class="soft">Output</span><span>${esc(fmtBytes(output.length))}</span>
+        ${retries ? `<span class="soft">Retries</span><span>${retries}</span>` : ""}
+      </div>
+      <div class="run-output-box ${output ? "" : "is-empty"}">${output ? esc(output.slice(0, 4000)) + (output.length > 4000 ? "\n\n…(truncated, " + fmtBytes(output.length - 4000) + " more)" : "") : (status === "running" ? "Generating…" : "No output yet")}</div>
+      ${error ? `<div class="run-error-box">${esc(error)}</div>` : ""}
+    </div>`;
+}
+
+function updateInspector() {
+  if (state.runMode) renderRunModeInspector();
+  else renderEditModeInspector();
+}
+
 function persistInspector() {
+  if (state.runMode) return;  // editor controls disabled during run
   const node = state.nodes.find(n => n.id === state.selectedNodeId); if (!node) return;
   node.quorumRule = qs("#inspectorQuorumRule")?.value || node.quorumRule;
   node.timeout    = qs("#inspectorTimeout")?.value    || node.timeout;
@@ -785,9 +930,12 @@ function persistInspector() {
 function updateToolbar() {
   qsa(".chip-button[data-tool]").forEach(btn => {
     btn.classList.toggle("chip-button--active", btn.dataset.tool === state.tool);
+    // Disable destructive/edit tools during a run
+    btn.disabled = state.runMode && ["link","clear","reset"].includes(btn.dataset.tool);
+    btn.style.opacity = btn.disabled ? "0.4" : "";
   });
   const lb = qs("[data-tool='link']");
-  if (lb) lb.textContent = state.tool === "link" ? "🔗 linking… (cancel)" : "link nodes";
+  if (lb) lb.textContent = (!state.runMode && state.tool === "link") ? "🔗 linking… (cancel)" : "link nodes";
 }
 
 // ── Pipeline type picker ──────────────────────────────────────────────────────
@@ -796,11 +944,12 @@ function renderPipelineTypePicker() {
   const wrap = qs("#pipelineTypePicker"); if (!wrap) return;
   wrap.innerHTML = PIPELINE_TYPES.map(t => `
     <button class="type-pill ${state.pipelineType === t.id ? "type-pill--active" : ""}"
-      data-type="${esc(t.id)}" style="--pill-color:${t.color};" type="button">
+      data-type="${esc(t.id)}" style="--pill-color:${t.color};" type="button" ${state.runMode ? "disabled" : ""}>
       ${esc(t.label)}
     </button>`).join("");
   qsa(".type-pill", wrap).forEach(btn => {
     btn.addEventListener("click", () => {
+      if (state.runMode) return;
       state.pipelineType = btn.dataset.type;
       saveState(); renderPipelineTypePicker(); updateSaveBtn(); updateInspector();
     });
@@ -809,7 +958,7 @@ function renderPipelineTypePicker() {
 
 function updateSaveBtn() {
   const btn = qs("#savePipelineBtn"); if (!btn) return;
-  btn.disabled = !(qs("#pipelineTitleInput")?.value.trim() || "");
+  btn.disabled = state.runMode || !(qs("#pipelineTitleInput")?.value.trim() || "");
 }
 
 // ── Preset library ────────────────────────────────────────────────────────────
@@ -817,12 +966,15 @@ function updateSaveBtn() {
 function renderPresetLibrary() {
   const container = qs("#presetLibraryContainer"); if (!container) return;
   container.innerHTML = PRESET_TEMPLATES.map(t => `
-    <button class="preset-card" data-preset="${esc(t.id)}" type="button" title="${esc(t.desc)}">
+    <button class="preset-card" data-preset="${esc(t.id)}" type="button" title="${esc(t.desc)}" ${state.runMode ? "disabled" : ""}>
       <span class="preset-icon">${t.icon}</span>
       <span class="preset-label">${esc(t.label)}</span>
     </button>`).join("");
   qsa(".preset-card", container).forEach(btn => {
-    btn.addEventListener("click", () => loadPreset(btn.dataset.preset));
+    btn.addEventListener("click", () => {
+      if (state.runMode) return;
+      loadPreset(btn.dataset.preset);
+    });
   });
 }
 
@@ -835,6 +987,7 @@ function loadPreset(presetId) {
   state.edges = edges;
   state.pipelineType = preset.type;
   state.selectedNodeId = null;
+  state.savedPipelineId = null;
   state.panX = 0; state.panY = 0; state.zoom = 1;
   const titleEl = qs("#pipelineTitleInput");
   if (titleEl) titleEl.value = preset.label;
@@ -852,13 +1005,16 @@ function renderRoleLibrary() {
       <div class="role-group-label">${esc(g.group)}</div>
       <div class="role-chip-list">
         ${g.roles.map(r => `
-          <button class="role-chip" data-title="${esc(r.title)}" data-type="${esc(r.type)}" data-desc="${esc(r.desc)}" data-group="${esc(g.group)}" type="button" title="${esc(r.desc)}">
+          <button class="role-chip" data-title="${esc(r.title)}" data-type="${esc(r.type)}" data-desc="${esc(r.desc)}" data-group="${esc(g.group)}" type="button" title="${esc(r.desc)}" ${state.runMode ? "disabled" : ""}>
             ${esc(r.title)}
           </button>`).join("")}
       </div>
     </div>`).join("");
   qsa(".role-chip", container).forEach(chip => {
-    chip.addEventListener("click", () => spawnRoleNode(chip.dataset.title, chip.dataset.type, chip.dataset.desc, chip.dataset.group));
+    chip.addEventListener("click", () => {
+      if (state.runMode) return;
+      spawnRoleNode(chip.dataset.title, chip.dataset.type, chip.dataset.desc, chip.dataset.group);
+    });
   });
 }
 
@@ -884,9 +1040,12 @@ function spawnRoleNode(title, type, desc, group) {
 
 function renderSavedPipelineSelector() {
   const sel = qs("#pipelineSelector"); if (!sel) return;
+  sel.disabled = state.runMode;
   sel.innerHTML = state.pipelines.length
     ? state.pipelines.map(p => `<option value="${esc(p.id)}" ${p.id===state.savedPipelineId?"selected":""}>${esc(p.title)}</option>`).join("")
     : `<option value="">No saved pipelines</option>`;
+  const lb = qs("#loadPipelineBtn"); if (lb) lb.disabled = state.runMode;
+  const cb = qs("#clonePipelineBtn"); if (cb) cb.disabled = state.runMode;
 }
 
 async function refreshPipelines() {
@@ -923,47 +1082,58 @@ async function savePipeline() {
   showToast(`"${title}" saved — available in ${portal}`, "good");
 }
 
+// Convert backend stage list (from saved pipelines like pl-moody-pre-and-ch1)
+// into canvas nodes/edges, preserving stage IDs.
 function stageListToGraph(stages) {
+  if (!Array.isArray(stages) || !stages.length) return { nodes: [], edges: [] };
+
   const typeMap = {
     input: "input", transform: "planner", build: "coder",
     verify: "verifier", branch: "branch", handoff: "projection",
+    gate: "branch",
   };
-  const PAD_X = 60, PAD_Y = 80, STEP_X = NODE_W + 60, STEP_Y = NODE_H + 80;
-  const COLS = Math.ceil(Math.sqrt(stages.length + 1));
 
-  const nodes = stages.map((stage, i) => ({
-    id: stage.id || `n_${i}`,
-    title: stage.title || stage.id || `Stage ${i + 1}`,
-    type: typeMap[stage.kind] || "planner",
-    desc: stage.summary || "",
-    group: stage.role || stage.kind || "",
-    role: stage.role || "",
-    stage: stage.stage || stage.id || "",
-    model: (Array.isArray(stage.models) ? stage.models[0] : stage.model) || "",
-    x: stage.x != null ? stage.x : PAD_X + (i % COLS) * STEP_X,
-    y: stage.y != null ? stage.y : PAD_Y + Math.floor(i / COLS) * STEP_Y,
-    notes: "", quorumRule: "single pass", timeout: "60s",
-  }));
+  // Keep stage.id as canvas node.id — this is what makes node_states polling work directly
+  const cols = 4;
+  const nodes = stages.map((stage, i) => {
+    const stageId = stage.id || `stage_${i}`;
+    const xRaw = stage.x !== undefined ? parseInt(stage.x) : null;
+    const yRaw = stage.y !== undefined ? parseInt(stage.y) : null;
+    const x = (xRaw !== null && !isNaN(xRaw)) ? xRaw : (40 + (i % cols) * (NODE_W + 60));
+    const y = (yRaw !== null && !isNaN(yRaw)) ? yRaw : (40 + Math.floor(i / cols) * (NODE_H + 80));
+    return {
+      id: stageId,
+      title: stage.title || stage.id || `Stage ${i + 1}`,
+      type: typeMap[stage.kind] || "planner",
+      desc: stage.summary || stage.description || "",
+      group: stage.kind || "",
+      role: stage.role || "",
+      stage: stage.stage || stage.kind || "",
+      model: (Array.isArray(stage.models) ? stage.models[0] : stage.model) || "",
+      x, y,
+      notes: "", quorumRule: "single pass", timeout: "60s",
+    };
+  });
 
-  // Build edges from deps if present, otherwise chain sequentially
-  const nodeIds = new Set(nodes.map(n => n.id));
-  const hasDeps = stages.some(s => Array.isArray(s.deps) && s.deps.length > 0);
-  let edges = [];
-  if (hasDeps) {
-    stages.forEach(stage => {
-      const toId = stage.id || "";
-      (stage.deps || []).forEach(fromId => {
-        if (nodeIds.has(fromId) && nodeIds.has(toId)) {
-          edges.push({ id: `e_${fromId}_${toId}`, from: fromId, to: toId });
-        }
-      });
-    });
-  } else {
-    edges = nodes.slice(0, -1).map((n, i) => ({
-      id: `e_${n.id}_${nodes[i + 1].id}`,
-      from: n.id,
-      to: nodes[i + 1].id,
-    }));
+  // Build edges from each stage's `deps` (preferred). Fall back to linear chain only if no deps anywhere.
+  const edges = [];
+  let hasAnyDeps = false;
+  for (const stage of stages) {
+    const deps = Array.isArray(stage.deps) ? stage.deps : [];
+    if (deps.length) hasAnyDeps = true;
+    for (const dep of deps) {
+      const fromId = dep;
+      const toId = stage.id || `stage_${stages.indexOf(stage)}`;
+      if (nodes.find(n => n.id === fromId) && nodes.find(n => n.id === toId)) {
+        edges.push({ id: `e_${fromId}_${toId}`, from: fromId, to: toId });
+      }
+    }
+  }
+  if (!hasAnyDeps && nodes.length > 1) {
+    // Linear fallback — only when stages have no dependency information at all
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({ id: `e_${nodes[i].id}_${nodes[i+1].id}`, from: nodes[i].id, to: nodes[i+1].id });
+    }
   }
   return { nodes, edges };
 }
@@ -974,10 +1144,12 @@ async function loadPipeline(id) {
   try {
     const raw = found.stages;
     const graph = (typeof raw === "string") ? JSON.parse(raw || "{}") : (raw || {});
-    if (Array.isArray(graph.nodes)) {
+    if (Array.isArray(graph?.nodes)) {
+      // Already in canvas format
       state.nodes = graph.nodes;
       state.edges = graph.edges || [];
     } else if (Array.isArray(graph)) {
+      // Backend stage list — convert preserving stage IDs
       const converted = stageListToGraph(graph);
       state.nodes = converted.nodes;
       state.edges = converted.edges;
@@ -999,9 +1171,49 @@ async function loadPipeline(id) {
   }
 }
 
+// ── Right-rail mode switching ─────────────────────────────────────────────────
+//
+// Editor cards (the four below) are wrapped in DOM with class `card`. We tag
+// each one with a data attribute so we can hide/show as a group.
+
+function applyRightRailMode() {
+  const inspectorPanel = qs("#inspectorPanel"); if (!inspectorPanel) return;
+  const editorCards = qsa("#inspectorPanel article.card");
+
+  // The first 4 cards are editor cards (Selected node, Model, Execution, Notes).
+  // The 5th slot is #runPanelWrap. We hide editor cards in run mode.
+  editorCards.forEach((card, i) => {
+    if (i < 4) {
+      card.style.display = state.runMode ? "none" : "";
+    }
+  });
+
+  // Update section title chip
+  const chipWrap = qs("#inspectorPanel .section-title");
+  if (chipWrap) {
+    const chip = qs(".status-chip", chipWrap);
+    const heading = qs(".eyebrow", chipWrap);
+    if (state.runMode) {
+      if (heading) heading.textContent = "Run viewer";
+      if (chip) { chip.textContent = "Live"; chip.className = "status-chip status-chip--good"; }
+    } else {
+      if (heading) heading.textContent = "Right rail";
+      if (chip) { chip.textContent = "Node"; chip.className = "status-chip status-chip--warn"; }
+    }
+  }
+
+  renderRunPanel();
+  updateInspector();
+}
+
 // ── Run panel ─────────────────────────────────────────────────────────────────
+//
+// Two states:
+//   1. Idle (no run): show trigger UI (objective + run button)
+//   2. Running: show live status, controls, summary
 
 let _pollTimer = null;
+let _runtimeTimer = null;
 
 function renderRunPanel() {
   const wrap = qs("#runPanelWrap"); if (!wrap) return;
@@ -1009,38 +1221,93 @@ function renderRunPanel() {
   const hasNodes = state.nodes.length > 0;
   const models   = state.availableModels;
 
+  // Idle (edit) mode trigger card
+  if (!state.runMode) {
+    wrap.innerHTML = `
+      <article class="card">
+        <div class="eyebrow" style="margin-bottom:10px;">Run pipeline</div>
+        ${!hasNodes
+          ? `<p class="soft" style="font-size:12px;margin:0;">Build or load a pipeline first.</p>`
+          : `<div class="field-grid">
+              <label class="inline-field">
+                <span class="soft" style="font-size:11px;">Objective</span>
+                <textarea class="textarea" id="runObjective" placeholder="What should this pipeline produce or investigate…" style="min-height:70px;">${esc(state.runObjective)}</textarea>
+              </label>
+              <label class="inline-field">
+                <span class="soft" style="font-size:11px;">Override models (optional)</span>
+                <select class="select" id="runModel" style="font-size:12px;">
+                  <option value="">Use per-node model assignments</option>
+                  ${models.map(m => `<option value="${esc(m.value)}" ${state.runSelectedModels[0]===m.value?"selected":""}>${esc(m.label)}</option>`).join("")}
+                </select>
+              </label>
+              ${!hasSaved ? `<p class="soft" style="font-size:11px;margin:0;">Save the pipeline first to run it.</p>` : ""}
+              <button class="button button--primary" id="runPipelineBtn" type="button" ${!hasSaved ? "disabled" : ""}>
+                ▶ Run (${state.nodes.length} nodes)
+              </button>
+            </div>`}
+      </article>
+    `;
+    qs("#runObjective")?.addEventListener("input",  e => { state.runObjective = e.target.value; saveState(); });
+    qs("#runModel")?.addEventListener("change",     e => { state.runSelectedModels = e.target.value ? [e.target.value] : []; saveState(); });
+    qs("#runPipelineBtn")?.addEventListener("click", startRun);
+    return;
+  }
+
+  // Run mode — live status panel
+  const job = state.runData || {};
+  const ns = job.node_states || {};
+  const total = state.nodes.length;
+  const done = state.nodes.filter(n => ns[n.id]?.status === "done").length;
+  const running = state.nodes.filter(n => ns[n.id]?.status === "running").length;
+  const failed = state.nodes.filter(n => ns[n.id]?.status === "failed").length;
+  const status = job.status || "starting";
+
+  const statusColor = { queued:"#fbbf24", running:"#fbbf24", completed:"#34d399", partial:"#fbbf24", failed:"#fb7185", cancelled:"#fb7185" }[status] || "#8ea0b5";
+  const isTerminal = ["completed","failed","partial","cancelled"].includes(status);
+  const isPaused = !!job.pause_requested;
+
+  const elapsed = state.runStartedAt ? (Date.now() - state.runStartedAt) / 1000 : 0;
+
   wrap.innerHTML = `
     <article class="card">
-      <div class="eyebrow" style="margin-bottom:10px;">Run pipeline</div>
-      ${!hasNodes
-        ? `<p class="soft" style="font-size:12px;margin:0;">Build or load a pipeline first.</p>`
-        : `<div class="field-grid">
-            <label class="inline-field">
-              <span class="soft" style="font-size:11px;">Objective</span>
-              <textarea class="textarea" id="runObjective" placeholder="What should this pipeline produce or investigate…" style="min-height:70px;">${esc(state.runObjective)}</textarea>
-            </label>
-            <label class="inline-field">
-              <span class="soft" style="font-size:11px;">Override models (optional)</span>
-              <select class="select" id="runModel" style="font-size:12px;">
-                <option value="">Use per-node model assignments</option>
-                ${models.map(m => `<option value="${esc(m.value)}" ${state.runSelectedModels[0]===m.value?"selected":""}>${esc(m.label)}</option>`).join("")}
-              </select>
-            </label>
-            ${!hasSaved ? `<p class="soft" style="font-size:11px;margin:0;">Save the pipeline first to run it.</p>` : ""}
-            <button class="button button--primary" id="runPipelineBtn" type="button" ${!hasSaved ? "disabled" : ""}>
-              ▶ Run (${state.nodes.length} nodes)
-            </button>
-          </div>`}
+      <div class="eyebrow" style="margin-bottom:6px;">Run status</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+        <strong style="color:${statusColor};font-size:13px;">${esc(status.toUpperCase())}</strong>
+        <span class="soft" style="font-size:11px;font-family:ui-monospace,monospace;">${esc(state.runJobId || "")}</span>
+      </div>
+      <div class="run-progress-bar"><div class="run-progress-fill" style="width:${total ? Math.round((done/total)*100) : 0}%;"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px;">
+        <span>${done}/${total} done${running ? ` · ${running} running` : ""}${failed ? ` · ${failed} failed` : ""}</span>
+        <span id="runtimeDisplay">${fmtDuration(elapsed)}</span>
+      </div>
     </article>
-    <article class="card" id="runStatusCard" style="${state.runJobId ? "" : "display:none"}">
-      <div class="eyebrow" style="margin-bottom:8px;">Run status</div>
-      <div id="runStatusBody"><span class="soft" style="font-size:12px;">Starting…</span></div>
+
+    <article class="card">
+      <div class="eyebrow" style="margin-bottom:8px;">Controls</div>
+      <div class="button-row">
+        <button class="button" id="pauseBtn" type="button" ${isTerminal || isPaused ? "disabled" : ""}>Pause</button>
+        <button class="button" id="resumeBtn" type="button" ${isTerminal || !isPaused ? "disabled" : ""}>Resume</button>
+        <button class="button" id="clearGateBtn" type="button" ${isTerminal ? "disabled" : ""}>Clear gate</button>
+      </div>
+      <div class="button-row" style="margin-top:8px;">
+        <button class="button" id="exitRunBtn" type="button">${isTerminal ? "← Back to editor" : "Detach view"}</button>
+      </div>
+    </article>
+
+    ${job.error ? `<article class="card"><div class="eyebrow" style="margin-bottom:6px;color:var(--bad);">Error</div><p style="font-size:12px;margin:0;color:#ffd7dd;">${esc(job.error)}</p></article>` : ""}
+
+    <article class="card">
+      <div class="eyebrow" style="margin-bottom:8px;">Tips</div>
+      <p class="soft" style="font-size:11px;margin:0;line-height:1.5;">
+        Click any node on the canvas to inspect its run state. Edit controls are disabled while a run is active.
+      </p>
     </article>
   `;
 
-  qs("#runObjective")?.addEventListener("input",  e => { state.runObjective = e.target.value; saveState(); });
-  qs("#runModel")?.addEventListener("change",     e => { state.runSelectedModels = e.target.value ? [e.target.value] : []; saveState(); });
-  qs("#runPipelineBtn")?.addEventListener("click", startRun);
+  qs("#pauseBtn")?.addEventListener("click", pauseRun);
+  qs("#resumeBtn")?.addEventListener("click", resumeRun);
+  qs("#clearGateBtn")?.addEventListener("click", clearGate);
+  qs("#exitRunBtn")?.addEventListener("click", () => exitRunMode(isTerminal));
 }
 
 async function startRun() {
@@ -1051,117 +1318,129 @@ async function startRun() {
   const btn = qs("#runPipelineBtn");
   if (btn) { btn.disabled = true; btn.textContent = "Starting…"; }
 
+  // Backend builds the graph from stored stages — never send a graph field
   const r = await callApi(`/api/pipelines/${encodeURIComponent(state.savedPipelineId)}/run`, "POST", {
     objective,
-    selected_models: state.runSelectedModels,
+    selected_models: state.runSelectedModels,  // array — empty means use per-node assignments
     surface: "pipelines",
-    graph: { nodes: state.nodes, edges: state.edges },
   });
 
   if (!r.ok || !r.body?.job_id) {
-    showToast("Failed to start run", "warn");
+    showToast("Failed to start run: " + (r.body?.detail || r.error || `HTTP ${r.status}`), "warn");
     if (btn) { btn.disabled = false; btn.textContent = `▶ Run (${state.nodes.length} nodes)`; }
     return;
   }
 
   state.runJobId = r.body.job_id;
+  state.runMode = true;
+  state.runData = null;
+  state.runStartedAt = Date.now();
   showToast(`Pipeline started — ${state.runJobId}`, "good");
-  qs("#runStatusCard")?.style.removeProperty("display");
+  applyRightRailMode();
+  startPolling();
+}
+
+function attachToRun(jobId) {
+  if (!jobId) return;
+  state.runJobId = jobId;
+  state.runMode = true;
+  state.runData = null;
+  state.runStartedAt = Date.now();
+  applyRightRailMode();
   startPolling();
 }
 
 function startPolling() {
   clearInterval(_pollTimer);
+  clearInterval(_runtimeTimer);
   _pollTimer = setInterval(pollRunStatus, 2500);
+  _runtimeTimer = setInterval(() => {
+    const el = qs("#runtimeDisplay");
+    if (el && state.runStartedAt) el.textContent = fmtDuration((Date.now() - state.runStartedAt) / 1000);
+  }, 1000);
   pollRunStatus();
 }
 
 async function pollRunStatus() {
-  if (!state.runJobId) { clearInterval(_pollTimer); return; }
+  if (!state.runJobId) { clearInterval(_pollTimer); clearInterval(_runtimeTimer); return; }
   const r = await callApi(`/api/pipelines/runs/${encodeURIComponent(state.runJobId)}`);
   if (!r.ok) return;
 
-  const job = r.body;
-  const body = qs("#runStatusBody"); if (!body) return;
+  state.runData = r.body;
 
-  const statusColor = { queued:"#fbbf24", running:"#6ee7ff", completed:"#34d399", partial:"#fbbf24", failed:"#fb7185" }[job.status] || "#8ea0b5";
-  const nodeStates = job.node_states || {};
+  // Use server start time if we don't have one yet
+  if (!state.runStartedAt && r.body?.started_at) {
+    const t = parseTs(r.body.started_at);
+    if (t) state.runStartedAt = t;
+  }
 
-  const nodeRows = state.nodes.map(node => {
-    const ns = nodeStates[node.id] || {};
-    const nsStatus = ns.status || "queued";
-    const dot = { queued:"⬜", running:"🔵", done:"✅", failed:"❌" }[nsStatus] || "⬜";
-    return `<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-      <span style="font-size:14px;">${dot}</span>
-      <span style="font-size:11px;color:#c8d8ec;flex:1;">${esc(node.title)}</span>
-      <span style="font-size:10px;color:#8ea0b5;">${nsStatus}</span>
-    </div>`;
-  }).join("");
+  // Re-render canvas (nodes + edges) with live state
+  renderNodes();
+  renderEdges();
+  renderRunPanel();
+  if (state.selectedNodeId) renderRunModeInspector();
 
-  body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <span style="font-size:12px;font-weight:700;color:${statusColor};">${(job.status||"").toUpperCase()}</span>
-      <span style="font-size:11px;color:#8ea0b5;">${job.job_id}</span>
-    </div>
-    <div style="margin-bottom:10px;">${nodeRows}</div>
-    ${job.status === "completed" || job.status === "partial"
-      ? `<button class="button button--primary" id="viewArtifactsBtn" type="button" style="width:100%;margin-top:6px;">View artifacts</button>` : ""}
-    ${job.error ? `<p style="color:#fb7185;font-size:11px;margin:6px 0 0;">${esc(job.error)}</p>` : ""}
-  `;
-
-  qs("#viewArtifactsBtn")?.addEventListener("click", () => showArtifacts(state.savedPipelineId, state.runJobId));
-
-  if (["completed","failed","partial"].includes(job.status)) {
+  const status = r.body?.status;
+  if (["completed","failed","partial","cancelled"].includes(status)) {
     clearInterval(_pollTimer);
-    const btn = qs("#runPipelineBtn");
-    if (btn) { btn.disabled = false; btn.textContent = `▶ Run (${state.nodes.length} nodes)`; }
-    showToast(`Pipeline ${job.status}`, job.status === "completed" ? "good" : "warn");
+    clearInterval(_runtimeTimer);
+    showToast(`Pipeline ${status}`, status === "completed" ? "good" : "warn");
   }
 }
 
-async function showArtifacts(pipelineId, jobId) {
-  const r = await callApi(`/api/artifacts?scope_type=pipeline&scope_public_id=${encodeURIComponent(pipelineId)}&job_public_id=${encodeURIComponent(jobId)}`);
-  if (!r.ok) { showToast("Could not load artifacts", "warn"); return; }
+async function pauseRun() {
+  if (!state.runJobId) return;
+  const r = await callApi(`/api/pipelines/runs/${encodeURIComponent(state.runJobId)}/pause`, "POST");
+  if (r.ok) { showToast("Pause requested", "good"); pollRunStatus(); }
+  else showToast("Pause failed", "warn");
+}
+async function resumeRun() {
+  if (!state.runJobId) return;
+  const r = await callApi(`/api/pipelines/runs/${encodeURIComponent(state.runJobId)}/resume`, "POST");
+  if (r.ok) { showToast("Resumed", "good"); pollRunStatus(); }
+  else showToast("Resume failed", "warn");
+}
+async function clearGate() {
+  if (!state.runJobId) return;
+  const r = await callApi(`/api/pipelines/runs/${encodeURIComponent(state.runJobId)}/clear-gate`, "POST");
+  if (r.ok) { showToast("Gate cleared", "good"); pollRunStatus(); }
+  else showToast("Clear gate failed", "warn");
+}
+
+function exitRunMode(forceCleanup = false) {
+  clearInterval(_pollTimer);
+  clearInterval(_runtimeTimer);
+  state.runMode = false;
+  if (forceCleanup) {
+    state.runJobId = null;
+    state.runData = null;
+    state.runStartedAt = null;
+  }
+  applyRightRailMode();
+  renderNodes();
+  renderEdges();
+}
+
+// On init, check if there's an active run — if so, auto-attach
+async function checkActiveRun() {
+  // Only attach if we just loaded the pipeline matching the active run
+  if (!state.savedPipelineId) return;
+  const r = await callApi("/api/pipelines/runs/active");
+  if (!r.ok) return;
   const items = r.body?.items || [];
-  if (!items.length) { showToast("No artifacts yet", "warn"); return; }
-
-  const modal = document.createElement("div");
-  modal.className = "artifact-modal";
-  modal.innerHTML = `
-    <div class="artifact-modal-inner">
-      <div class="artifact-modal-header">
-        <span class="eyebrow">Pipeline artifacts</span>
-        <button class="button" id="closeArtifactModal" type="button">✕ Close</button>
-      </div>
-      <div class="artifact-tabs">
-        ${items.map((a, i) => `
-          <button class="artifact-tab ${i===0?"artifact-tab--active":""}" data-idx="${i}" type="button">${esc(a.title || `Item ${i+1}`)}</button>
-        `).join("")}
-      </div>
-      <div class="artifact-body" id="artifactBody">
-        <pre style="white-space:pre-wrap;font-size:12px;color:#c8d8ec;line-height:1.7;">${esc(items[0]?.content || "")}</pre>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
-
-  qs("#closeArtifactModal", modal)?.addEventListener("click", () => modal.remove());
-  modal.addEventListener("click", e => { if (e.target === modal) modal.remove(); });
-  qsa(".artifact-tab", modal).forEach(tab => {
-    tab.addEventListener("click", () => {
-      qsa(".artifact-tab", modal).forEach(t => t.classList.remove("artifact-tab--active"));
-      tab.classList.add("artifact-tab--active");
-      const item = items[parseInt(tab.dataset.idx)];
-      qs("#artifactBody", modal).innerHTML = `<pre style="white-space:pre-wrap;font-size:12px;color:#c8d8ec;line-height:1.7;">${esc(item?.content || "")}</pre>`;
-    });
-  });
+  const match = items.find(it => it.pipeline_id === state.savedPipelineId);
+  if (match) attachToRun(match.public_id);
 }
 
 // ── Bind events ───────────────────────────────────────────────────────────────
 
 function bindEvents() {
-  qs("[data-tool='select']")?.addEventListener("click", () => { cancelLink(); state.tool = "select"; updateToolbar(); renderNodes(); });
+  qs("[data-tool='select']")?.addEventListener("click", () => {
+    if (state.runMode) return;
+    cancelLink(); state.tool = "select"; updateToolbar(); renderNodes();
+  });
   qs("[data-tool='link']")?.addEventListener("click", () => {
+    if (state.runMode) return;
     if (state.tool === "link") cancelLink();
     else { state.tool = "link"; state.linkSource = null; updateToolbar(); showToast("Click a port to start linking", "good"); }
   });
@@ -1170,12 +1449,14 @@ function bindEvents() {
     else showToast("Select a node first", "warn");
   });
   qs("[data-tool='clear']")?.addEventListener("click", () => {
+    if (state.runMode) return;
     if (!confirm("Clear all nodes and connections?")) return;
     state.nodes = []; state.edges = []; state.selectedNodeId = null;
     cancelLink(); saveState(); renderAll();
     showToast("Pipeline cleared", "warn");
   });
   qs("[data-tool='reset']")?.addEventListener("click", () => {
+    if (state.runMode) return;
     if (!confirm("Reset canvas?")) return;
     state.nodes = []; state.edges = []; state.selectedNodeId = null;
     state.panX = 0; state.panY = 0; state.zoom = 1;
@@ -1186,11 +1467,13 @@ function bindEvents() {
   qs("#savePipelineBtn")?.addEventListener("click",   savePipeline);
   qs("#pipelineTitleInput")?.addEventListener("input", updateSaveBtn);
   qs("#loadPipelineBtn")?.addEventListener("click", () => {
+    if (state.runMode) return;
     const id = qs("#pipelineSelector")?.value;
     if (!id) { showToast("No pipeline selected", "warn"); return; }
     loadPipeline(id);
   });
   qs("#clonePipelineBtn")?.addEventListener("click", async () => {
+    if (state.runMode) return;
     const id = qs("#pipelineSelector")?.value;
     if (!id) { showToast("No saved pipeline selected", "warn"); return; }
     const r = await callApi(`/api/pipelines/${encodeURIComponent(id)}/clone`, "POST");
@@ -1210,9 +1493,71 @@ function bindEvents() {
   bindCanvasEvents();
 }
 
+// ── Inject run-mode styles (extension to existing page.css) ───────────────────
+
+function injectRunStyles() {
+  if (document.getElementById("pmRunStyles")) return;
+  const style = document.createElement("style");
+  style.id = "pmRunStyles";
+  style.textContent = `
+@keyframes nodePulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(251,191,36,0.18), 0 4px 18px rgba(251,191,36,0.18); }
+  50%      { box-shadow: 0 0 0 6px rgba(251,191,36,0.05), 0 4px 18px rgba(251,191,36,0.18); }
+}
+.run-progress-bar {
+  height: 6px; border-radius: 999px;
+  background: rgba(255,255,255,0.06); overflow: hidden; margin-top: 4px;
+}
+.run-progress-fill {
+  height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.4s ease;
+}
+.run-inspector-kv {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 6px 12px;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.run-inspector-kv .soft { font-weight: 600; }
+.run-output-box {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px;
+  line-height: 1.55;
+  color: #c8d8ec;
+  max-height: 280px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.run-output-box.is-empty {
+  font-family: inherit; font-size: 12px; color: var(--muted);
+}
+.run-error-box {
+  margin-top: 8px;
+  background: rgba(251,113,133,0.07);
+  border: 1px solid rgba(251,113,133,0.18);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: ui-monospace, "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: #ffd7dd;
+  white-space: pre-wrap;
+  max-height: 160px;
+  overflow-y: auto;
+}
+`;
+  document.head.appendChild(style);
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
+  injectRunStyles();
   bindPanZoom();
   bindEvents();
   renderAll();
@@ -1221,6 +1566,8 @@ async function init() {
   await Promise.all([loadModels(), refreshPipelines()]);
   renderAll();
   if (state.nodes.length) setTimeout(fitToScreen, 200);
+  // If a run is currently active for the loaded pipeline, attach automatically
+  setTimeout(checkActiveRun, 300);
 }
 
 document.addEventListener("DOMContentLoaded", init);
