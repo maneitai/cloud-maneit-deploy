@@ -3,24 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Game Designer — PM</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..800;1,9..40,300..800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../creator-shell.css" />
+  <title>PM — AppCore Creator</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='16'%20fill='%23111827'/%3E%3Cpath%20d='M14%2018h8v8h-8zm0%2012h8v8h-8zm0%2012h8v8h-8zm12-24h24v8H26zm0%2012h24v8H26zm0%2012h24v8H26z'%20fill='%2306b6d4'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="page.css" />
 </head>
-<body data-page="game">
-<div class="creator-shell">
+<body>
+<div class="page-shell">
 
-  <header class="creator-header">
-    <div class="header-brand">
-      <div class="brand-mark">GD</div>
-      <div class="header-titles">
-        <div class="eyebrow accent">Creator</div>
-        <h1>Game Designer</h1>
-        <p>Fully automated game production — design doc to importable engine project</p>
+  <header class="page-header">
+    <div class="brand">
+      <div class="brand-mark">PM</div>
+      <div class="header-copy">
+        <div class="eyebrow">PM</div>
+        <h1>AppCore Creator</h1>
+        <p>Application design substrate · 22-tier model · Pipeline-driven population</p>
       </div>
     </div>
-    <nav class="header-nav" aria-label="Primary">
+    <nav class="global-nav" aria-label="Primary">
       <a class="nav-link" href="../">Home</a>
       <a class="nav-link" href="../projects/">Projects</a>
       <a class="nav-link" href="../pipelines/">Pipelines</a>
@@ -29,202 +28,296 @@
       <a class="nav-link" href="../portalcreator/">PortalCreator</a>
       <a class="nav-link" href="../research-core/">Research Core</a>
       <a class="nav-link" href="../lorecore/">LoreCore</a>
-      <a class="nav-link nav-link--active" href="../game-designer/">Game Designer</a>
+      <a class="nav-link" href="../gamecore-designer/">GameCore</a>
+      <a class="nav-link nav-link--active" href="../appcore-creator/">AppCore</a>
       <a class="nav-link" href="../state/">State</a>
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
-    <div class="header-controls">
-      <button class="btn btn--sm" id="refreshBtn">Refresh</button>
-      <span class="chip" id="activeProjectChip">No project</span>
+    <div class="header-actions">
+      <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+      <button class="button button--small" id="modeToggleBtn" type="button">📚 Library</button>
     </div>
   </header>
 
-  <div class="job-status-bar" id="jobStatusBar">
-    <div class="job-status-dot"></div>
-    <div class="job-status-text">No active job</div>
-    <div class="job-status-meta">Select a project, pipeline, and engine target to launch</div>
-    <span class="chip">idle</span>
-  </div>
-
-  <div class="creator-layout">
+  <div class="ac-layout">
 
     <!-- ══ LEFT RAIL ══ -->
-    <aside class="left-rail">
+    <aside class="panel panel-left">
 
-      <div class="panel">
-        <div class="rail-section">
-          <div class="rail-head">
-            <div class="eyebrow">Projects</div>
-            <a href="../projects/" class="btn btn--sm">+ New</a>
+      <!-- Sessions block -->
+      <div class="left-block">
+        <div class="left-block-head">
+          <div>
+            <div class="eyebrow">Chat</div>
+            <div class="left-block-title">Sessions</div>
           </div>
-          <div class="project-list" id="projectList">
-            <div class="section-meta">Loading…</div>
+          <span class="status-chip status-chip--warn" id="sessionChip">—</span>
+        </div>
+
+        <button class="session-item session-item--free" id="freeChatBtn" type="button">
+          <div class="session-item-title">🌐 Free chat</div>
+          <div class="session-item-sub">No app context</div>
+        </button>
+
+        <div id="sessionList" class="session-list">
+          <div class="lib-placeholder">Loading…</div>
+        </div>
+
+        <button class="button button--small" id="newSessionBtn" type="button" style="width:100%;margin-top:6px;">+ New session</button>
+      </div>
+
+      <div class="left-divider"></div>
+
+      <!-- Workspace / App / Version selector -->
+      <div class="left-block">
+        <div class="left-block-head">
+          <div>
+            <div class="eyebrow">Scope</div>
+            <div class="left-block-title">Workspace → App → Version</div>
+          </div>
+          <span class="status-chip status-chip--warn" id="scopeChip">—</span>
+        </div>
+
+        <label class="inline-field" style="margin-bottom:6px;">
+          <span class="soft">Workspace</span>
+          <select class="select" id="workspaceSelect"><option value="">Loading…</option></select>
+        </label>
+        <button class="button button--small" id="newWorkspaceBtn" type="button" style="margin-bottom:8px;">+ New workspace</button>
+        <div id="newWorkspaceForm" class="inline-form" style="display:none;margin-bottom:8px;">
+          <input class="input" id="newWorkspaceName" placeholder="Workspace name" style="margin-bottom:4px;" />
+          <textarea class="textarea" id="newWorkspaceSummary" placeholder="Summary" rows="2" style="margin-bottom:4px;"></textarea>
+          <div class="button-row">
+            <button class="button button--small" id="cancelWorkspaceBtn" type="button">Cancel</button>
+            <button class="button button--small button--primary" id="saveWorkspaceBtn" type="button">Create</button>
+          </div>
+        </div>
+
+        <label class="inline-field" style="margin-bottom:6px;">
+          <span class="soft">App</span>
+          <select class="select" id="appSelect"><option value="">—</option></select>
+        </label>
+        <button class="button button--small" id="newAppBtn" type="button" style="margin-bottom:8px;">+ New app</button>
+        <div id="newAppForm" class="inline-form" style="display:none;margin-bottom:8px;">
+          <input class="input" id="newAppName" placeholder="App name" style="margin-bottom:4px;" />
+          <input class="input" id="newAppPurpose" placeholder="One-line purpose" style="margin-bottom:4px;" />
+          <div class="eyebrow" style="font-size:10px;margin-top:4px;margin-bottom:4px;">Categories</div>
+          <div id="newAppCategoryList" class="category-checks-group"></div>
+          <div class="button-row" style="margin-top:6px;">
+            <button class="button button--small" id="cancelAppBtn" type="button">Cancel</button>
+            <button class="button button--small button--primary" id="saveAppBtn" type="button">Create</button>
+          </div>
+        </div>
+
+        <label class="inline-field" style="margin-bottom:6px;">
+          <span class="soft">Version</span>
+          <select class="select" id="versionSelect"><option value="">—</option></select>
+        </label>
+        <button class="button button--small" id="newVersionBtn" type="button">+ New version</button>
+        <div id="newVersionForm" class="inline-form" style="display:none;margin-top:6px;">
+          <input class="input" id="newVersionName" placeholder="Version label (v0.1)" style="margin-bottom:4px;" />
+          <select class="select" id="newVersionKind" style="margin-bottom:4px;">
+            <option value="concept">Concept</option>
+            <option value="prototype">Prototype</option>
+            <option value="alpha">Alpha</option>
+            <option value="beta">Beta</option>
+            <option value="release">Release</option>
+            <option value="maintenance">Maintenance</option>
+          </select>
+          <div class="button-row">
+            <button class="button button--small" id="cancelVersionBtn" type="button">Cancel</button>
+            <button class="button button--small button--primary" id="saveVersionBtn" type="button">Create</button>
           </div>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="rail-section">
-          <div class="eyebrow" style="margin-bottom:10px;">Project plan</div>
-          <div id="projectPlan"><div class="section-meta">Select a project.</div></div>
-        </div>
-      </div>
+      <div class="left-divider"></div>
 
-      <div class="panel">
-        <div class="rail-section">
-          <div class="eyebrow" style="margin-bottom:10px;">Engine target</div>
-          <div class="target-selector" id="targetSelector">
-            <button class="target-btn active" data-target="unity">
-              <span class="target-btn-icon">🎮</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Unity</span>
-                <span class="target-btn-desc">C# scripts, ScriptableObjects, prefab specs, Unity project structure</span>
-              </span>
-            </button>
-            <button class="target-btn" data-target="unreal">
-              <span class="target-btn-icon">🔵</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Unreal Engine</span>
-                <span class="target-btn-desc">C++ / Blueprints, UE project files, asset specs</span>
-              </span>
-            </button>
-            <button class="target-btn" data-target="godot">
-              <span class="target-btn-icon">🌀</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Godot</span>
-                <span class="target-btn-desc">GDScript, scenes, resources, Godot project structure</span>
-              </span>
-            </button>
-            <button class="target-btn" data-target="custom">
-              <span class="target-btn-icon">⚡</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Custom engine</span>
-                <span class="target-btn-desc">Engine-agnostic specs, data formats, core systems</span>
-              </span>
-            </button>
+      <!-- Adaptive library tree -->
+      <div class="left-block left-block--grow">
+        <div class="left-block-head">
+          <div>
+            <div class="eyebrow">Library</div>
+            <div class="left-block-title">Substrate tree</div>
           </div>
+          <span class="status-chip status-chip--warn" id="libraryChip">Loading</span>
         </div>
-      </div>
-
-      <div class="panel">
-        <div class="rail-section">
-          <div class="eyebrow" style="margin-bottom:10px;">Production scope</div>
-          <div class="target-selector" id="scopeSelector">
-            <button class="target-btn active" data-scope="full">
-              <span class="target-btn-icon">🏭</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Full production</span>
-                <span class="target-btn-desc">All systems — design doc to complete project</span>
-              </span>
-            </button>
-            <button class="target-btn" data-scope="code">
-              <span class="target-btn-icon">💻</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Code only</span>
-                <span class="target-btn-desc">Game systems, mechanics, AI — no assets</span>
-              </span>
-            </button>
-            <button class="target-btn" data-scope="design">
-              <span class="target-btn-icon">📋</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Design docs</span>
-                <span class="target-btn-desc">GDD, specs, balance sheets, lore</span>
-              </span>
-            </button>
-            <button class="target-btn" data-scope="assets">
-              <span class="target-btn-icon">🎨</span>
-              <span class="target-btn-body">
-                <span class="target-btn-label">Asset prompts</span>
-                <span class="target-btn-desc">Image gen prompts, audio briefs, 3D asset specs</span>
-              </span>
-            </button>
-          </div>
+        <div id="libraryTree" class="library-tree">
+          <div class="lib-placeholder">Select an app.</div>
         </div>
       </div>
 
     </aside>
 
     <!-- ══ CENTER ══ -->
-    <main class="center-col" id="centerCol">
+    <main class="panel panel-center">
 
-      <!-- Pipeline selector — above stage list -->
-      <div id="pipelineSelector" class="pipeline-selector panel"></div>
+      <!-- DESIGN MODE: Chat -->
+      <div id="designMode" class="mode-pane">
 
-      <div class="panel">
-        <div class="pipeline-header">
-          <div>
-            <div class="eyebrow accent">Production plan</div>
-            <h2 id="launchTitle">Select a project and pipeline</h2>
-            <p id="launchMeta">Pipeline produces complete importable engine project files.</p>
+        <div class="chat-controls-bar">
+          <div class="mode-cards" id="modeCards">
+            <button class="mode-card mode-card--active" data-mode="single">
+              <span class="mode-icon">◉</span><span class="mode-label">Single</span>
+            </button>
+            <button class="mode-card" data-mode="parallel">
+              <span class="mode-icon">⊞</span><span class="mode-label">Parallel</span>
+            </button>
+            <button class="mode-card" data-mode="discussion">
+              <span class="mode-icon">⬡</span><span class="mode-label">Discussion</span>
+            </button>
+          </div>
+
+          <div class="model-selector-wrap">
+            <div class="eyebrow" style="margin-bottom:4px;">Model</div>
+            <div id="modelSelectorWrap">
+              <div class="muted" style="font-size:12px;">Loading…</div>
+            </div>
+          </div>
+
+          <div class="ctx-strip">
+            <div class="ctx-item">
+              <span class="soft">App</span>
+              <span class="status-chip" id="appScopeChip">Free chat</span>
+            </div>
+            <div class="ctx-item">
+              <span class="soft">Version</span>
+              <strong id="versionScopeLabel" class="ctx-val">—</strong>
+            </div>
           </div>
         </div>
-        <div id="stageList" class="stage-list">
-          <div class="section-meta">Select a project to see the production plan.</div>
+
+        <div class="chat-feed" id="chatFeed">
+          <div class="chat-placeholder">
+            <div class="chat-placeholder-icon">🧱</div>
+            <div class="chat-placeholder-title">AppCore design room</div>
+            <div class="muted" style="font-size:13px;">Select a model. Optionally select an app for substrate context.</div>
+          </div>
+        </div>
+
+        <div id="chatResizeHandle" class="chat-resize-handle" title="Drag to resize"></div>
+
+        <div class="chat-input-area">
+          <textarea class="textarea chat-textarea" id="messageInput"
+            placeholder="Think out loud about the app's design. Enter to send, Shift+Enter for newline." rows="3"></textarea>
+          <div class="chat-input-actions">
+            <span class="muted" id="chatStatusText" style="font-size:12px;"></span>
+            <button class="button button--primary" id="sendBtn" type="button">Send</button>
+          </div>
         </div>
       </div>
 
-      <div class="launch-bar">
-        <div class="launch-info">
-          <h3 id="launchTitleBar">Select a project, pipeline, and engine to launch</h3>
-          <p id="launchMetaBar">Pipeline will run fully automatically. Monitor from the right rail.</p>
-        </div>
-        <button class="btn btn--launch" id="launchBtn" disabled>Launch Production</button>
-      </div>
+      <!-- LIBRARY MODE: Substrate browser -->
+      <div id="libraryMode" class="mode-pane" style="display:none;">
 
-      <div class="panel">
-        <div class="eyebrow accent" style="margin-bottom:8px;">Execution log</div>
-        <div class="exec-log" id="execLog">
-          <div class="log-line muted">No activity yet.</div>
+        <div class="lib-tab-bar">
+          <div class="lib-tabs" id="tierTabs">
+            <!-- Populated dynamically by JS based on app.active_tiers -->
+          </div>
+          <div class="lib-tab-actions">
+            <select class="select" id="resourceSelect" style="font-size:12px;width:auto;min-width:140px;">
+              <option value="">— select resource —</option>
+            </select>
+            <button class="button button--small" id="newRecordBtn" type="button">+ New</button>
+          </div>
         </div>
+
+        <div class="lib-content">
+          <div class="record-columns">
+            <div class="record-list-col">
+              <div id="recordList" class="record-list">
+                <div class="lib-placeholder muted">Pick a tier and resource.</div>
+              </div>
+            </div>
+            <div class="record-editor-col">
+              <div id="recordEditorEmpty" class="record-editor-empty">
+                <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">
+                  Select a record or press + New.
+                </div>
+              </div>
+              <div id="recordEditorActive" style="display:none;flex-direction:column;gap:10px;">
+                <div class="record-editor-header">
+                  <div>
+                    <div class="eyebrow" id="recordEditorEyebrow">Record</div>
+                    <strong id="recordEditorTitle">—</strong>
+                  </div>
+                  <div class="button-row">
+                    <button class="button button--small button--primary" id="saveRecordBtn" type="button">Save</button>
+                    <button class="button button--small button--danger" id="deleteRecordBtn" type="button">Delete</button>
+                    <button class="button button--small" id="closeRecordBtn" type="button">✕</button>
+                  </div>
+                </div>
+                <div class="record-fields" id="recordFields"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
     </main>
 
     <!-- ══ RIGHT RAIL ══ -->
-    <aside class="right-rail">
+    <aside class="panel panel-right">
 
-      <div class="panel">
-        <div class="eyebrow accent" style="margin-bottom:10px;">Model activity</div>
-        <div class="model-activity-list" id="modelActivityList">
-          <div class="section-meta">No active job.</div>
+      <!-- Active context -->
+      <article class="card card--compact">
+        <div class="eyebrow">Active context</div>
+        <div class="context-rows">
+          <div class="context-row"><span class="soft">Workspace</span><strong id="ctxWorkspace">—</strong></div>
+          <div class="context-row"><span class="soft">App</span><strong id="ctxApp">—</strong></div>
+          <div class="context-row"><span class="soft">Version</span><strong id="ctxVersion">—</strong></div>
+          <div class="context-row"><span class="soft">Categories</span><strong id="ctxCategories">—</strong></div>
+          <div class="context-row"><span class="soft">Mode</span><strong id="ctxMode">design</strong></div>
         </div>
-      </div>
+        <div style="margin-top:8px;">
+          <div class="soft" style="font-size:11px;margin-bottom:4px;">Active tiers</div>
+          <div id="ctxActiveTiers" class="active-tier-chips"><span class="muted" style="font-size:11px;">—</span></div>
+        </div>
+      </article>
 
-      <div class="panel">
-        <div class="rail-head" style="margin-bottom:10px;">
-          <div class="eyebrow accent">Artifacts</div>
-          <span class="chip" id="artifactCount">0</span>
+      <!-- Pipeline launcher (collapsible) -->
+      <article class="card card--compact pipeline-launcher">
+        <button class="card-collapse-toggle" id="pipelineToggleBtn" type="button">
+          <span class="eyebrow accent">Pipeline launcher</span>
+          <span class="collapse-arrow" id="pipelineArrow">▾</span>
+        </button>
+        <div id="pipelineCards" class="pipeline-cards">
+          <div class="muted" style="font-size:12px;">Select an app to see available pipelines.</div>
         </div>
-        <div class="artifact-list" id="artifactList">
-          <div class="section-meta">No artifacts yet.</div>
-        </div>
-        <div id="artifactViewer" style="margin-top:10px;"></div>
-      </div>
+      </article>
 
-      <div class="panel">
-        <div class="eyebrow accent" style="margin-bottom:10px;">Run history</div>
-        <div class="run-list" id="runHistory">
-          <div class="section-meta">No runs yet.</div>
+      <!-- Counts -->
+      <article class="card card--compact">
+        <div class="eyebrow">Substrate counts</div>
+        <div class="preview-box" id="countsBox">
+          <strong>—</strong><span>Select an app.</span>
         </div>
-      </div>
+      </article>
+
+      <!-- Recent runs -->
+      <article class="card card--compact">
+        <div class="eyebrow">Recent pipeline runs</div>
+        <div class="run-list" id="runList">
+          <div class="muted" style="font-size:12px;">No runs yet.</div>
+        </div>
+      </article>
 
     </aside>
 
   </div>
 </div>
 
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
-  (function() {
+  (function () {
     try {
       const p = new URLSearchParams(window.location.search);
       const b = p.get("apiBase");
-      if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+      if (b) { window.PM_API_BASE = b.replace(/\/+$/, ""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
       else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
     } catch {}
   })();
 </script>
-<script src="../creator-shell.js"></script>
-<script src="page.js"></script>
+<script type="module" src="page.js"></script>
 </body>
 </html>
