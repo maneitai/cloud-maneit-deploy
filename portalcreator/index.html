@@ -3,319 +3,334 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PortalCreator — PM</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <title>PM — WebCore</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='16'%20fill='%23071019'/%3E%3Cpath%20d='M14%2018h36c2.2%200%204%201.8%204%204v22c0%202.2-1.8%204-4%204H14c-2.2%200-4-1.8-4-4V22c0-2.2%201.8-4%204-4zm-1%2010v18c0%201.1.9%202%202%202h34c1.1%200%202-.9%202-2V28H13zm6%204h12v3H19v-3zm0%206h20v3H19v-3z'%20fill='%2310b981'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="page.css" />
 </head>
 <body>
-
 <div class="page-shell">
 
-  <!-- ── HEADER ── -->
   <header class="page-header">
     <div class="brand">
-      <div class="brand-mark">PC</div>
-      <div class="brand-copy">
-        <div class="eyebrow">Creator Surface</div>
-        <h1>PortalCreator</h1>
-        <p>Design and build web portals — frontend, backend, full infrastructure</p>
+      <div class="brand-mark">PM</div>
+      <div class="header-copy">
+        <div class="eyebrow">PM</div>
+        <h1>WebCore</h1>
+        <p>Web product delivery substrate · Brief → IA → Components → Deploy</p>
       </div>
     </div>
-    <nav class="global-nav">
+    <nav class="global-nav" aria-label="Primary">
       <a class="nav-link" href="../">Home</a>
       <a class="nav-link" href="../projects/">Projects</a>
       <a class="nav-link" href="../pipelines/">Pipelines</a>
       <a class="nav-link" href="../agent-factory/">Agent Factory</a>
       <a class="nav-link" href="../appcreator/">AppCreator</a>
-      <a class="nav-link nav-link--active" href="../portalcreator/">PortalCreator</a>
+      <a class="nav-link" href="../portalcreator/">PortalCreator</a>
       <a class="nav-link" href="../research-core/">Research Core</a>
       <a class="nav-link" href="../lorecore/">LoreCore</a>
-      <a class="nav-link" href="../game-designer/">Game Designer</a>
+      <a class="nav-link" href="../gamecore-designer/">GameCore</a>
+      <a class="nav-link nav-link--active" href="../webcore-builder/">WebCore</a>
       <a class="nav-link" href="../state/">State</a>
       <a class="nav-link" href="../settings/">Settings</a>
     </nav>
     <div class="header-actions">
-      <button class="btn" id="refreshBtn" type="button">Refresh</button>
-      <span class="status-chip" id="activeProjectChip">No project</span>
+      <button class="button button--small" id="refreshBtn" type="button">Refresh</button>
+      <button class="button button--small" id="modeToggleBtn" type="button">📚 Library</button>
     </div>
   </header>
 
-  <!-- ── JOB STATUS BAR ── -->
-  <div class="job-bar" id="jobBar">
-    <span class="job-dot" id="jobDot"></span>
-    <span class="job-label" id="jobLabel">No active job</span>
-    <span class="job-meta" id="jobMeta">Select a project and launch a pipeline</span>
-    <span class="chip" id="jobChip">idle</span>
-  </div>
+  <div class="wc-layout">
 
-  <!-- ── THREE COLUMN LAYOUT ── -->
-  <div class="creator-layout">
+    <!-- ══ LEFT RAIL ══ -->
+    <aside class="panel panel-left">
 
-    <!-- ════ LEFT RAIL ════ -->
-    <aside class="left-rail">
-
-      <!-- Projects -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="eyebrow">Projects</div>
-          <button class="btn btn--sm" id="newProjectBtn" type="button">+ New</button>
+      <!-- Sessions block -->
+      <div class="left-block">
+        <div class="left-block-head">
+          <div>
+            <div class="eyebrow">Chat</div>
+            <div class="left-block-title">Sessions</div>
+          </div>
+          <span class="status-chip status-chip--warn" id="sessionChip">—</span>
         </div>
-        <div class="project-list" id="projectList">
-          <div class="empty-state">Loading…</div>
+
+        <button class="session-item session-item--free" id="freeChatBtn" type="button">
+          <div class="session-item-title">🌐 Free chat</div>
+          <div class="session-item-sub">No site context</div>
+        </button>
+
+        <div id="sessionList" class="session-list">
+          <div class="lib-placeholder">Loading…</div>
+        </div>
+
+        <button class="button button--small" id="newSessionBtn" type="button" style="width:100%;margin-top:6px;">+ New session</button>
+      </div>
+
+      <div class="left-divider"></div>
+
+      <!-- Workspace / Site / Deployment selector -->
+      <div class="left-block">
+        <div class="left-block-head">
+          <div>
+            <div class="eyebrow">Scope</div>
+            <div class="left-block-title">Workspace → Site → Deploy</div>
+          </div>
+          <span class="status-chip status-chip--warn" id="scopeChip">—</span>
+        </div>
+
+        <label class="inline-field" style="margin-bottom:6px;">
+          <span class="soft">Workspace</span>
+          <select class="select" id="workspaceSelect"><option value="">Loading…</option></select>
+        </label>
+        <button class="button button--small" id="newWorkspaceBtn" type="button" style="margin-bottom:8px;">+ New workspace</button>
+        <div id="newWorkspaceForm" class="inline-form" style="display:none;margin-bottom:8px;">
+          <input class="input" id="newWorkspaceName" placeholder="Workspace name" style="margin-bottom:4px;" />
+          <textarea class="textarea" id="newWorkspaceDescription" placeholder="Description" rows="2" style="margin-bottom:4px;"></textarea>
+          <div class="button-row">
+            <button class="button button--small" id="cancelWorkspaceBtn" type="button">Cancel</button>
+            <button class="button button--small button--primary" id="saveWorkspaceBtn" type="button">Create</button>
+          </div>
+        </div>
+
+        <label class="inline-field" style="margin-bottom:6px;">
+          <span class="soft">Site</span>
+          <select class="select" id="siteSelect"><option value="">—</option></select>
+        </label>
+        <button class="button button--small" id="newSiteBtn" type="button" style="margin-bottom:8px;">+ New site</button>
+        <div id="newSiteForm" class="inline-form" style="display:none;margin-bottom:8px;">
+          <input class="input" id="newSiteName" placeholder="Site name" style="margin-bottom:4px;" />
+          <input class="input" id="newSiteTagline" placeholder="Tagline" style="margin-bottom:4px;" />
+          <input class="input" id="newSiteDomain" placeholder="primary domain (e.g. example.com)" style="margin-bottom:4px;" />
+          <div class="eyebrow" style="font-size:10px;margin-top:4px;margin-bottom:4px;">Site categories</div>
+          <div id="newSiteSiteCategories" class="category-checks" style="margin-bottom:6px;"></div>
+          <div class="eyebrow" style="font-size:10px;margin-top:4px;margin-bottom:4px;">Stack</div>
+          <div id="newSiteStackCategories" class="category-checks" style="margin-bottom:6px;"></div>
+          <div class="eyebrow" style="font-size:10px;margin-top:4px;margin-bottom:4px;">Deploy target</div>
+          <div id="newSiteDeployCategories" class="category-checks" style="margin-bottom:6px;"></div>
+          <div class="button-row">
+            <button class="button button--small" id="cancelSiteBtn" type="button">Cancel</button>
+            <button class="button button--small button--primary" id="saveSiteBtn" type="button">Create</button>
+          </div>
+        </div>
+
+        <label class="inline-field" style="margin-bottom:6px;">
+          <span class="soft">Deployment</span>
+          <select class="select" id="deploymentSelect"><option value="">—</option></select>
+        </label>
+        <button class="button button--small" id="newDeploymentBtn" type="button">+ Queue deploy</button>
+        <div id="newDeploymentForm" class="inline-form" style="display:none;margin-top:6px;">
+          <input class="input" id="newDeploymentLabel" placeholder="Label (e.g. v1.0 launch)" style="margin-bottom:4px;" />
+          <input class="input" id="newDeploymentVersion" placeholder="Version (e.g. 1.0.0)" style="margin-bottom:4px;" />
+          <input class="input" id="newDeploymentBranch" placeholder="Branch (default: main)" style="margin-bottom:4px;" />
+          <select class="select" id="newDeploymentTarget" style="margin-bottom:4px;">
+            <option value="">— deploy target —</option>
+          </select>
+          <div class="button-row">
+            <button class="button button--small" id="cancelDeploymentBtn" type="button">Cancel</button>
+            <button class="button button--small button--primary" id="saveDeploymentBtn" type="button">Queue</button>
+          </div>
         </div>
       </div>
 
-      <!-- Stack target -->
-      <div class="panel">
-        <div class="eyebrow" style="margin-bottom:12px;">Stack target</div>
-        <div class="stack-targets" id="stackTargets">
-          <button class="stack-btn stack-btn--active" data-target="frontend" type="button">
-            <span class="stack-icon">🌐</span>
-            <span class="stack-body">
-              <span class="stack-label">Frontend only</span>
-              <span class="stack-desc">HTML/CSS/JS — static site, Cloudflare deploy</span>
-            </span>
-          </button>
-          <button class="stack-btn" data-target="frontend+backend" type="button">
-            <span class="stack-icon">⚡</span>
-            <span class="stack-body">
-              <span class="stack-label">Frontend + Backend</span>
-              <span class="stack-desc">Web app with API, DB, auth</span>
-            </span>
-          </button>
-          <button class="stack-btn" data-target="full-infra" type="button">
-            <span class="stack-icon">🏗️</span>
-            <span class="stack-body">
-              <span class="stack-label">Full infrastructure</span>
-              <span class="stack-desc">Backend, systemd, nginx, TLS, deploy scripts</span>
-            </span>
-          </button>
-          <button class="stack-btn" data-target="hardware-setup" type="button">
-            <span class="stack-icon">🖥️</span>
-            <span class="stack-body">
-              <span class="stack-label">Hardware setup</span>
-              <span class="stack-desc">New machine onboarding, services, model stack</span>
-            </span>
-          </button>
+      <div class="left-divider"></div>
+
+      <!-- Adaptive library tree -->
+      <div class="left-block left-block--grow">
+        <div class="left-block-head">
+          <div>
+            <div class="eyebrow">Library</div>
+            <div class="left-block-title">Substrate tree</div>
+          </div>
+          <span class="status-chip status-chip--warn" id="libraryChip">Loading</span>
+        </div>
+        <div id="libraryTree" class="library-tree">
+          <div class="lib-placeholder">Select a site.</div>
         </div>
       </div>
 
     </aside>
 
-    <!-- ════ CENTER ════ -->
-    <main class="center-col">
+    <!-- ══ CENTER ══ -->
+    <main class="panel panel-center">
 
-      <!-- Tab bar -->
-      <div class="tab-bar">
-        <button class="tab tab--active" data-tab="brief" type="button">Brief</button>
-        <button class="tab" data-tab="sections" type="button">Sections</button>
-        <button class="tab" data-tab="pipeline" type="button">Pipeline</button>
-        <button class="tab" data-tab="preview" type="button">Preview</button>
-        <div class="tab-spacer"></div>
-        <span class="tab-project" id="tabProjectName">No project selected</span>
-      </div>
+      <!-- DESIGN MODE: Chat -->
+      <div id="designMode" class="mode-pane">
 
-      <!-- ── TAB: BRIEF ── -->
-      <div class="tab-pane tab-pane--active" id="tab-brief">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <div class="eyebrow">Project brief</div>
-              <h2>Define what you're building</h2>
-              <p class="muted">These fields become the pipeline objective. Every model reads this.</p>
-            </div>
-            <button class="btn btn--primary" id="saveBriefBtn" type="button">Save brief</button>
+        <div class="chat-controls-bar">
+          <div class="mode-cards" id="modeCards">
+            <button class="mode-card mode-card--active" data-mode="single">
+              <span class="mode-icon">◉</span><span class="mode-label">Single</span>
+            </button>
+            <button class="mode-card" data-mode="parallel">
+              <span class="mode-icon">⊞</span><span class="mode-label">Parallel</span>
+            </button>
+            <button class="mode-card" data-mode="discussion">
+              <span class="mode-icon">⬡</span><span class="mode-label">Discussion</span>
+            </button>
           </div>
 
-          <div class="brief-form" id="briefForm">
-            <div class="field-row field-row--2">
-              <div class="field">
-                <label class="field-label">Project / Brand name</label>
-                <input class="field-input" id="briefName" type="text" placeholder="e.g. Fjordlab" />
-              </div>
-              <div class="field">
-                <label class="field-label">Tagline</label>
-                <input class="field-input" id="briefTagline" type="text" placeholder="e.g. Clean design. Smart automation." />
-              </div>
-            </div>
-
-            <div class="field-row field-row--2">
-              <div class="field">
-                <label class="field-label">Target audience</label>
-                <input class="field-input" id="briefAudience" type="text" placeholder="e.g. Small business owners, entrepreneurs" />
-              </div>
-              <div class="field">
-                <label class="field-label">Location / context</label>
-                <input class="field-input" id="briefLocation" type="text" placeholder="e.g. Norway, freelance studio" />
-              </div>
-            </div>
-
-            <div class="field">
-              <label class="field-label">Services / purpose</label>
-              <textarea class="field-textarea" id="briefServices" rows="3" placeholder="One service or section per line&#10;e.g. Web design — landing pages, business sites&#10;AI automation — workflow automation, content pipelines"></textarea>
-            </div>
-
-            <div class="field">
-              <label class="field-label">Design direction</label>
-              <textarea class="field-textarea" id="briefDesign" rows="3" placeholder="e.g. Dark minimal professional. Not industrial. Dark background #0f1117. Clean blue-white accent. Inter font only. Structured and information-dense but approachable. No stock photos."></textarea>
-            </div>
-
-            <div class="field">
-              <label class="field-label">Technical requirements</label>
-              <textarea class="field-textarea" id="briefTech" rows="2" placeholder="e.g. Single HTML file with inline CSS and JS. No external dependencies except Google Fonts. Deployable to GitHub Pages."></textarea>
-            </div>
-
-            <div class="field">
-              <label class="field-label">Extra notes</label>
-              <textarea class="field-textarea" id="briefNotes" rows="2" placeholder="Anything else the pipeline should know…"></textarea>
+          <div class="model-selector-wrap">
+            <div class="eyebrow" style="margin-bottom:4px;">Model</div>
+            <div id="modelSelectorWrap">
+              <div class="muted" style="font-size:12px;">Loading…</div>
             </div>
           </div>
 
-          <!-- Assembled objective preview -->
-          <div class="objective-preview" id="objectivePreview">
-            <div class="eyebrow" style="margin-bottom:8px;">Assembled objective <span class="muted">(what gets sent to the pipeline)</span></div>
-            <pre class="objective-text" id="objectiveText">Fill in the brief fields above to see the assembled objective.</pre>
+          <div class="ctx-strip">
+            <div class="ctx-item">
+              <span class="soft">Site</span>
+              <span class="status-chip" id="siteScopeChip">Free chat</span>
+            </div>
+            <div class="ctx-item">
+              <span class="soft">Deploy</span>
+              <strong id="deploymentScopeLabel" class="ctx-val">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="chat-feed" id="chatFeed">
+          <div class="chat-placeholder">
+            <div class="chat-placeholder-icon">🌐</div>
+            <div class="chat-placeholder-title">WebCore design room</div>
+            <div class="muted" style="font-size:13px;">Select a model. Optionally select a site for substrate context.</div>
+          </div>
+        </div>
+
+        <div id="chatResizeHandle" class="chat-resize-handle" title="Drag to resize"></div>
+
+        <div class="chat-input-area">
+          <textarea class="textarea chat-textarea" id="messageInput"
+            placeholder="Brief, design ideas, IA decisions, deploy questions. Enter to send, Shift+Enter for newline." rows="3"></textarea>
+          <div class="chat-input-actions">
+            <span class="muted" id="chatStatusText" style="font-size:12px;"></span>
+            <button class="button button--primary" id="sendBtn" type="button">Send</button>
           </div>
         </div>
       </div>
 
-      <!-- ── TAB: SECTIONS ── -->
-      <div class="tab-pane" id="tab-sections">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <div class="eyebrow">Page sections</div>
-              <h2>Define the structure</h2>
-              <p class="muted">Add, remove, and reorder sections. Each section becomes a pipeline node.</p>
-            </div>
-            <button class="btn btn--primary" id="addSectionBtn" type="button">+ Add section</button>
-          </div>
-          <div class="section-list" id="sectionList">
-            <div class="empty-state">No sections defined. Add sections or load from a project.</div>
-          </div>
-        </div>
-      </div>
+      <!-- LIBRARY MODE: Substrate browser -->
+      <div id="libraryMode" class="mode-pane" style="display:none;">
 
-      <!-- ── TAB: PIPELINE ── -->
-      <div class="tab-pane" id="tab-pipeline">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <div class="eyebrow">Pipeline selection</div>
-              <h2 id="pipelineTitle">Select a pipeline</h2>
-              <p class="muted" id="pipelineMeta">Choose which pipeline to run against this project.</p>
-            </div>
+        <div class="lib-tab-bar">
+          <div class="lib-tabs" id="tierTabs">
+            <button class="lib-tab lib-tab--active" data-tier="foundation">Foundation</button>
+            <button class="lib-tab" data-tier="ia_visual">IA · Visual</button>
+            <button class="lib-tab" data-tier="components">Components</button>
+            <button class="lib-tab" data-tier="content" data-conditional="content">Content</button>
+            <button class="lib-tab" data-tier="backend" data-conditional="backend">Backend</button>
+            <button class="lib-tab" data-tier="seo_a11y">SEO · A11y</button>
+            <button class="lib-tab" data-tier="analytics" data-conditional="analytics">Analytics</button>
+            <button class="lib-tab" data-tier="deploy">Deploy</button>
+            <button class="lib-tab" data-tier="pipelines">Pipelines</button>
           </div>
-          <div class="pipeline-list" id="pipelineList">
-            <div class="empty-state">Loading pipelines…</div>
+          <div class="lib-tab-actions">
+            <select class="select" id="resourceSelect" style="font-size:12px;width:auto;min-width:140px;">
+              <option value="">— select resource —</option>
+            </select>
+            <button class="button button--small" id="newRecordBtn" type="button">+ New</button>
           </div>
         </div>
 
-        <div class="panel">
-          <div class="eyebrow" style="margin-bottom:12px;">Stage overview</div>
-          <div class="stage-list" id="stageList">
-            <div class="empty-state">Select a pipeline to see its stages.</div>
+        <div class="lib-content">
+          <div class="record-columns">
+            <div class="record-list-col">
+              <div id="recordList" class="record-list">
+                <div class="lib-placeholder muted">Pick a tier and resource.</div>
+              </div>
+            </div>
+            <div class="record-editor-col">
+              <div id="recordEditorEmpty" class="record-editor-empty">
+                <div class="muted" style="text-align:center;padding:32px 16px;font-size:13px;">
+                  Select a record or press + New.
+                </div>
+              </div>
+              <div id="recordEditorActive" style="display:none;flex-direction:column;gap:10px;">
+                <div class="record-editor-header">
+                  <div>
+                    <div class="eyebrow" id="recordEditorEyebrow">Record</div>
+                    <strong id="recordEditorTitle">—</strong>
+                  </div>
+                  <div class="button-row">
+                    <button class="button button--small button--primary" id="saveRecordBtn" type="button">Save</button>
+                    <button class="button button--small button--danger" id="deleteRecordBtn" type="button">Delete</button>
+                    <button class="button button--small" id="closeRecordBtn" type="button">✕</button>
+                  </div>
+                </div>
+                <div class="record-fields" id="recordFields"></div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div class="panel">
-          <div class="eyebrow" style="margin-bottom:12px;">Execution log</div>
-          <div class="exec-log" id="execLog">
-            <div class="log-line muted">No activity yet.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── TAB: PREVIEW ── -->
-      <div class="tab-pane" id="tab-preview">
-        <div class="panel">
-          <div class="panel-head">
-            <div>
-              <div class="eyebrow">Last output</div>
-              <h2>Preview</h2>
-              <p class="muted">Most recent assembled output from the pipeline.</p>
-            </div>
-            <div class="button-row">
-              <button class="btn" id="viewCodeBtn" type="button">View code</button>
-              <button class="btn btn--primary" id="downloadBtn" type="button">Download</button>
-            </div>
-          </div>
-          <div class="preview-wrap" id="previewWrap">
-            <div class="empty-state">No output yet. Run the pipeline first.</div>
-          </div>
-        </div>
       </div>
 
     </main>
 
-    <!-- ════ RIGHT RAIL ════ -->
-    <aside class="right-rail">
+    <!-- ══ RIGHT RAIL ══ -->
+    <aside class="panel panel-right">
 
-      <!-- Launch -->
-      <div class="panel panel--launch">
-        <div class="eyebrow" style="margin-bottom:10px;">Launch pipeline</div>
-        <div class="launch-summary" id="launchSummary">
-          <span class="launch-field"><span class="launch-field-label">Project</span><span class="launch-field-val" id="lsProject">—</span></span>
-          <span class="launch-field"><span class="launch-field-label">Pipeline</span><span class="launch-field-val" id="lsPipeline">—</span></span>
-          <span class="launch-field"><span class="launch-field-label">Target</span><span class="launch-field-val" id="lsTarget">Frontend only</span></span>
+      <!-- Active context -->
+      <article class="card card--compact">
+        <div class="eyebrow">Active context</div>
+        <div class="context-rows">
+          <div class="context-row"><span class="soft">Workspace</span><strong id="ctxWorkspace">—</strong></div>
+          <div class="context-row"><span class="soft">Site</span><strong id="ctxSite">—</strong></div>
+          <div class="context-row"><span class="soft">Deploy</span><strong id="ctxDeployment">—</strong></div>
+          <div class="context-row"><span class="soft">Categories</span><strong id="ctxCategories">—</strong></div>
+          <div class="context-row"><span class="soft">Mode</span><strong id="ctxMode">design</strong></div>
         </div>
-        <button class="btn btn--launch" id="launchBtn" type="button" disabled>▶ Launch Pipeline</button>
-      </div>
+      </article>
 
-      <!-- Run status -->
-      <div class="panel" id="runStatusPanel" style="display:none;">
-        <div class="panel-head">
-          <div class="eyebrow">Run status</div>
-          <span class="status-chip" id="runStatusChip">running</span>
+      <!-- Deploy mini-card (WebCore-specific) -->
+      <article class="card card--compact deploy-mini-card">
+        <div class="eyebrow accent">Deploy</div>
+        <div class="deploy-rows" id="deployMini">
+          <div class="muted" style="font-size:12px;">Select a site to view deploy state.</div>
         </div>
-        <div class="stage-progress" id="stageProgress"></div>
-      </div>
+      </article>
 
-      <!-- Model activity -->
-      <div class="panel">
-        <div class="eyebrow" style="margin-bottom:10px;">Model activity</div>
-        <div class="model-activity" id="modelActivity">
-          <div class="empty-state">No active job.</div>
+      <!-- Pipeline launcher (collapsible) -->
+      <article class="card card--compact pipeline-launcher">
+        <button class="card-collapse-toggle" id="pipelineToggleBtn" type="button">
+          <span class="eyebrow accent">Pipeline launcher</span>
+          <span class="collapse-arrow" id="pipelineArrow">▾</span>
+        </button>
+        <div id="pipelineCards" class="pipeline-cards">
+          <div class="muted" style="font-size:12px;">Select a site to see available pipelines.</div>
         </div>
-      </div>
+      </article>
 
-      <!-- Artifacts -->
-      <div class="panel">
-        <div class="panel-head">
-          <div class="eyebrow">Artifacts</div>
-          <span class="chip" id="artifactCount">0</span>
+      <!-- Counts -->
+      <article class="card card--compact">
+        <div class="eyebrow">Substrate counts</div>
+        <div class="preview-box" id="countsBox">
+          <strong>—</strong><span>Select a site.</span>
         </div>
-        <div class="artifact-list" id="artifactList">
-          <div class="empty-state">No artifacts yet.</div>
-        </div>
-      </div>
+      </article>
 
-      <!-- Run history -->
-      <div class="panel">
-        <div class="eyebrow" style="margin-bottom:10px;">Run history</div>
-        <div class="run-history" id="runHistory">
-          <div class="empty-state">No runs yet.</div>
+      <!-- Recent runs -->
+      <article class="card card--compact">
+        <div class="eyebrow">Recent pipeline runs</div>
+        <div class="run-list" id="runList">
+          <div class="muted" style="font-size:12px;">No runs yet.</div>
         </div>
-      </div>
+      </article>
 
     </aside>
 
   </div>
-
 </div>
 
-<div class="toast" id="toast"></div>
-
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
-(function() {
-  try {
-    const p = new URLSearchParams(window.location.search);
-    const b = p.get("apiBase");
-    if (b) { window.PM_API_BASE = b.replace(/\/+$/,""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
-    else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
-  } catch(e) {}
-})();
+  (function () {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const b = p.get("apiBase");
+      if (b) { window.PM_API_BASE = b.replace(/\/+$/, ""); localStorage.setItem("PM_API_BASE", window.PM_API_BASE); }
+      else { const s = localStorage.getItem("PM_API_BASE"); if (s) window.PM_API_BASE = s; }
+    } catch {}
+  })();
 </script>
 <script type="module" src="page.js"></script>
 </body>
